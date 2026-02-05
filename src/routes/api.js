@@ -1,9 +1,33 @@
 import { Router } from 'express';
 import { KiroClient, KiroApiError } from '../kiro-client.js';
 import { EventStreamDecoder, parseKiroEvent } from '../event-parser.js';
+import { countTokens, countMessagesTokens, countToolUseTokens } from '../tokenizer.js';
 import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs/promises';
 import path from 'path';
+
+// 获取模型上下文长度
+function getModelContextLength(model, config) {
+  const configured = Number(config?.modelContextLength);
+  if (Number.isFinite(configured) && configured > 0) {
+    return configured;
+  }
+  const lower = String(model || '').toLowerCase();
+  if (lower.includes('sonnet')) return 200000;
+  if (lower.includes('opus')) return 200000;
+  if (lower.includes('haiku')) return 200000;
+  return 200000;
+}
+
+// 标准化上下文使用百分比
+function normalizeContextUsagePercentage(value) {
+  let pct = Number(value);
+  if (!Number.isFinite(pct)) return 0;
+  if (pct > 1) pct = pct / 100;
+  if (pct < 0) pct = 0;
+  if (pct > 1) pct = 1;
+  return pct;
+}
 
 export function createApiRouter(state) {
   const router = Router();
@@ -64,7 +88,7 @@ export function createApiRouter(state) {
   router.post('/messages', async (req, res) => {
     const startTime = Date.now();
     let selected = null;
-    
+
     try {
       // 选择账号
       selected = await state.accountPool.selectAccount();
@@ -77,10 +101,10 @@ export function createApiRouter(state) {
 
       const isStream = req.body.stream === true;
       const kiroClient = new KiroClient(state.config, selected.tokenManager);
-      
+
       // 调用 Kiro API
       const { response, toolNameMap } = await kiroClient.callApiStream(req.body);
-      
+
       if (isStream) {
         // 流式响应
         await handleStreamResponse(res, response, toolNameMap, selected, state, startTime, req.body.model);
@@ -96,7 +120,7 @@ export function createApiRouter(state) {
           accountId: selected.id,
           accountName: selected.name,
           model: req.body.model,
-          inputTokens: 0,
+          inputTokens: inputTokens,
           outputTokens: 0,
           durationMs: Date.now() - startTime,
           success: false,
@@ -181,19 +205,23 @@ async function handleStreamResponse(res, response, toolNameMap, selected, state,
   for (const [originalName, kiroName] of toolNameMap || []) {
     toolNameReverse.set(kiroName, originalName);
   }
-  let outputTokens = 0;
   let inputTokens = 0;
+  const modelContextLength = getModelContextLength(model, state.config);
+  let outputTokens = 0;
   let contentBlockIndex = 0;
   let thinkingBlockIndex = -1;
   let textBlockIndex = -1;
   let hasToolUse = false;
   let eventCount = 0;
-  
+  let outputTextBuffer = '';
+  let outputThinkingBuffer = '';
+  const toolUseBuffers = new Map(); // toolUseId -> { name, input }
+
   // thinking 处理状态
   let thinkingBuffer = '';
   let inThinkingBlock = false;
   let thinkingExtracted = false;
-  
+
   // 工具调用状态跟踪
   const toolBlocks = new Map(); // toolUseId -> blockIndex
 
@@ -216,7 +244,9 @@ async function handleStreamResponse(res, response, toolNameMap, selected, state,
   // 辅助函数：发送 text_delta
   function sendTextDelta(text) {
     if (!text) return;
-    
+
+    outputTextBuffer += text;
+
     if (textBlockIndex === -1) {
       // 如果有 thinking 块，先结束它
       if (thinkingBlockIndex !== -1) {
@@ -226,7 +256,7 @@ async function handleStreamResponse(res, response, toolNameMap, selected, state,
         })}\n\n`);
         thinkingBlockIndex = -1;
       }
-      
+
       textBlockIndex = contentBlockIndex++;
       res.write(`event: content_block_start\ndata: ${JSON.stringify({
         type: 'content_block_start',
@@ -234,16 +264,20 @@ async function handleStreamResponse(res, response, toolNameMap, selected, state,
         content_block: { type: 'text', text: '' }
       })}\n\n`);
     }
-    
+
     res.write(`event: content_block_delta\ndata: ${JSON.stringify({
       type: 'content_block_delta',
       index: textBlockIndex,
       delta: { type: 'text_delta', text: text }
     })}\n\n`);
   }
-  
+
   // 辅助函数：发送 thinking_delta
   function sendThinkingDelta(thinking) {
+    if (!thinking) return;
+
+    outputThinkingBuffer += thinking;
+    
     if (thinkingBlockIndex === -1) {
       thinkingBlockIndex = contentBlockIndex++;
       res.write(`event: content_block_start\ndata: ${JSON.stringify({
@@ -371,6 +405,12 @@ async function handleStreamResponse(res, response, toolNameMap, selected, state,
           const toolInput = data.input || '';
           const isStop = data.stop || false;
 
+          // 累积工具调用到 buffer
+          if (!toolUseBuffers.has(toolUseId)) {
+            toolUseBuffers.set(toolUseId, { name: toolName, input: '' });
+          }
+          toolUseBuffers.get(toolUseId).input += toolInput;
+
           // 如果是新的工具调用，先结束文本块
           if (!toolBlocks.has(toolUseId)) {
             // flush thinking buffer
@@ -382,7 +422,7 @@ async function handleStreamResponse(res, response, toolNameMap, selected, state,
               }
               thinkingBuffer = '';
             }
-            
+
             if (textBlockIndex !== -1) {
               res.write(`event: content_block_stop\ndata: ${JSON.stringify({
                 type: 'content_block_stop',
@@ -393,7 +433,7 @@ async function handleStreamResponse(res, response, toolNameMap, selected, state,
 
             const toolBlockIndex = contentBlockIndex++;
             toolBlocks.set(toolUseId, toolBlockIndex);
-            
+
             res.write(`event: content_block_start\ndata: ${JSON.stringify({
               type: 'content_block_start',
               index: toolBlockIndex,
@@ -424,8 +464,11 @@ async function handleStreamResponse(res, response, toolNameMap, selected, state,
           }
 
         } else if (eventType === 'contextUsageEvent') {
-          const percentage = data.contextUsagePercentage || 0;
-          inputTokens = Math.round(percentage * 2000);
+          const percentage = normalizeContextUsagePercentage(data.contextUsagePercentage || 0);
+          const estimated = Math.round(percentage * modelContextLength);
+          if (estimated > inputTokens) {
+            inputTokens = estimated;
+          }
         }
       }
     }
@@ -457,11 +500,14 @@ async function handleStreamResponse(res, response, toolNameMap, selected, state,
     // 确定 stop_reason
     const stopReason = hasToolUse ? 'tool_use' : 'end_turn';
 
+    // 使用 tiktoken 计算输出 token
+    outputTokens = countTokens(outputTextBuffer) + countTokens(outputThinkingBuffer) + countToolUseTokens(toolUseBuffers);
+
     // 发送最终事件
     res.write(`event: message_delta\ndata: ${JSON.stringify({
       type: 'message_delta',
       delta: { stop_reason: stopReason, stop_sequence: null },
-      usage: { output_tokens: outputTokens }
+      usage: { input_tokens: inputTokens, output_tokens: outputTokens }
     })}\n\n`);
 
     res.write(`event: message_stop\ndata: ${JSON.stringify({ type: 'message_stop' })}\n\n`);
@@ -493,12 +539,13 @@ async function handleNonStreamResponse(res, response, toolNameMap, selected, sta
   let thinkingContent = '';
   const toolUses = [];
   let inputTokens = 0;
+  const modelContextLength = getModelContextLength(model, state.config);
   let outputTokens = 0;
   const toolNameReverse = new Map();
   for (const [originalName, kiroName] of toolNameMap || []) {
     toolNameReverse.set(kiroName, originalName);
   }
-  
+
   // 工具调用 JSON 缓冲区
   const toolJsonBuffers = new Map();
 
@@ -551,15 +598,18 @@ async function handleNonStreamResponse(res, response, toolNameMap, selected, sta
             }
           }
         } else if (eventType === 'contextUsageEvent') {
-          const percentage = data.contextUsagePercentage || 0;
-          inputTokens = Math.round(percentage * 2000);
+          const percentage = normalizeContextUsagePercentage(data.contextUsagePercentage || 0);
+          const estimated = Math.round(percentage * modelContextLength);
+          if (estimated > inputTokens) {
+            inputTokens = estimated;
+          }
         }
       }
     }
 
     // 构建响应内容
     const content = [];
-    
+
     if (thinkingContent) {
       content.push({
         type: 'thinking',
@@ -576,8 +626,8 @@ async function handleNonStreamResponse(res, response, toolNameMap, selected, sta
 
     content.push(...toolUses);
 
-    // 估算输出 tokens
-    outputTokens = Math.ceil((textContent.length + thinkingContent.length) / 4);
+    // 使用 tiktoken 计算输出 tokens
+    outputTokens = countTokens(textContent) + countTokens(thinkingContent) + countToolUseTokens(toolJsonBuffers);
 
     const messageId = 'msg_' + uuidv4().replace(/-/g, '');
     const stopReason = toolUses.length > 0 ? 'tool_use' : 'end_turn';
