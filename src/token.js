@@ -35,6 +35,8 @@ export class TokenManager {
     const machineId = this.credentials.machineId || TokenManager.generateMachineId();
     const kiroVersion = this.config.kiroVersion || '1.6.0';
 
+    console.log(`[Token] 刷新 Social Token, refreshToken前缀: ${this.credentials.refreshToken?.substring(0, 20)}...`);
+
     const fetchOptions = {
       method: 'POST',
       headers: {
@@ -44,7 +46,7 @@ export class TokenManager {
         'Accept-Encoding': 'gzip, compress, deflate, br',
         'Connection': 'close'
       },
-      body: JSON.stringify({ refresh_token: this.credentials.refreshToken })
+      body: JSON.stringify({ refreshToken: this.credentials.refreshToken })
     };
 
     // 代理支持
@@ -58,16 +60,24 @@ export class TokenManager {
     }
 
     const response = await fetch(tokenUrl, fetchOptions);
-    
+
     if (!response.ok) {
       const error = await response.text();
+      console.error(`[Token] Social Token 刷新失败: ${response.status} - ${error}`);
       throw new Error(`Social Token 刷新失败: ${response.status} - ${error}`);
     }
 
     const data = await response.json();
-    this.accessToken = data.access_token;
-    this.expiresAt = new Date(Date.now() + (data.expires_in || 3600) * 1000);
-    
+    this.accessToken = data.accessToken || data.access_token;
+    this.expiresAt = new Date(Date.now() + (data.expiresIn || data.expires_in || 3600) * 1000);
+
+    // 如果返回了新的 refreshToken，更新它
+    if (data.refreshToken || data.refresh_token) {
+      this.credentials.refreshToken = data.refreshToken || data.refresh_token;
+    }
+
+    console.log(`[Token] Social Token 刷新成功, 新token前缀: ${this.accessToken?.substring(0, 20)}...`);
+
     return this.accessToken;
   }
 

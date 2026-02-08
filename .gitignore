@@ -2,3 +2,10 @@ node_modules/
 data/accounts.json
 data/request_logs.json
 .env
+/data/debug
+/data/backup/2026-02-08T13-51-16-704Z
+/data/backup
+/reference-project-kiro-account-manager-main
+data/database.db
+data/database.db-wal
+data/database.db-shm

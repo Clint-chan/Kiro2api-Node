@@ -31,8 +31,28 @@ export async function checkUsageLimits(accessToken, config = {}) {
   const response = await fetch(url, fetchOptions);
 
   if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`获取使用限制失败: ${response.status} - ${error}`);
+    const text = await response.text();
+
+    // 尝试解析错误响应
+    try {
+      const errorJson = JSON.parse(text);
+
+      // 检查是否被封禁
+      if (errorJson.reason) {
+        throw new Error(`BANNED:${errorJson.reason}`);
+      }
+
+      // 检查是否token无效 (403/401)
+      if (response.status === 403 || response.status === 401) {
+        throw new Error(`TOKEN_INVALID:${errorJson.message || 'Token无效'}`);
+      }
+    } catch (e) {
+      if (e.message.startsWith('BANNED:') || e.message.startsWith('TOKEN_INVALID:')) {
+        throw e;
+      }
+    }
+
+    throw new Error(`获取使用限制失败: ${response.status} - ${text}`);
   }
 
   const data = await response.json();
@@ -83,9 +103,9 @@ function parseUsageLimits(data) {
     }
   }
 
-  // 重置日期
+  // 重置日期（nextDateReset 是秒级时间戳，需要转换为毫秒）
   if (data.nextDateReset) {
-    result.nextReset = new Date(data.nextDateReset);
+    result.nextReset = new Date(data.nextDateReset * 1000);
   }
 
   return result;

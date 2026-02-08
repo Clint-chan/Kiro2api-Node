@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3:*)",
+      "Bash(wc:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run migrate:*)",
+      "Bash(node:*)",
+      "Bash(pkill:*)",
+      "Bash(curl:*)",
+      "Bash(kill:*)",
+      "Bash(lsof:*)",
+      "Bash(xargs kill:*)",
+      "Bash(unset:*)",
+      "Bash(echo:*)",
+      "Bash(sqlite3:*)",
+      "Bash(/tmp/update_admin_path.js << 'EOF'\nimport Database from 'better-sqlite3';\n\nconst db = new Database\\('./data/database.db'\\);\n\n// Check if admin_path setting exists\nconst existing = db.prepare\\('SELECT * FROM system_settings WHERE key = ?'\\).get\\('admin_path'\\);\n\nif \\(!existing\\) {\n  // Insert default admin path\n  db.prepare\\('INSERT INTO system_settings \\(key, value, updated_at\\) VALUES \\(?, ?, ?\\)'\\).run\\(\n    'admin_path',\n    '/admin.html',\n    new Date\\(\\).toISOString\\(\\)\n  \\);\n  console.log\\('✓ 已添加 admin_path 设置，默认值: /admin.html'\\);\n} else {\n  console.log\\('✓ admin_path 设置已存在:', existing.value\\);\n}\n\ndb.close\\(\\);\nEOF)",
+      "Bash(/tmp/update_admin_path.mjs:*)",
+      "Bash(http_proxy=\"\" https_proxy=\"\" curl -s -X POST http://localhost:9091/v1/messages -H \"Content-Type: application/json\" -H \"x-api-key: sk-4bc0d6b2-3a5e-4b7f-9e8c-1d2f3a4b5c6d\" -d '{\n    \"\"model\"\": \"\"claude-sonnet-4-5-20250929\"\",\n    \"\"max_tokens\"\": 50,\n    \"\"messages\"\": [{\"\"role\"\": \"\"user\"\", \"\"content\"\": \"\"Hi\"\"}]\n  }')",
+      "Bash(http_proxy=\"\" https_proxy=\"\" curl -s http://localhost:9091/health)",
+      "Bash(timeout 5 bash -c 'http_proxy=\"\"\"\" https_proxy=\"\"\"\" curl -s http://localhost:9091/health')",
+      "Bash(netstat:*)",
+      "Bash(ss:*)",
+      "Bash(wget:*)",
+      "Bash(timeout 3 bash -c 'exec 3<>/dev/tcp/localhost/18964 && echo -e \"\"GET /health HTTP/1.1\\\\r\\\\nHost: localhost\\\\r\\\\n\\\\r\\\\n\"\" >&3 && cat <&3')",
+      "Bash(xargs:*)",
+      "Bash(export http_proxy=\"\" https_proxy=\"\" all_proxy=\"\")"
+    ]
+  }
+}

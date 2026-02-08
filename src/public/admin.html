@@ -1,0 +1,1581 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>管理员控制台 - ClaudeAPI v2.1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+        @keyframes scaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
+        .animate-slideIn { animation: slideIn 0.3s ease-out; }
+        .animate-slideOut { animation: slideOut 0.3s ease-out forwards; }
+        .animate-scaleIn { animation: scaleIn 0.3s ease-out; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- 加载中 -->
+    <div id="loadingPage" class="min-h-screen flex items-center justify-center">
+        <div class="text-center">
+            <div class="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p class="text-gray-500">加载中...</p>
+        </div>
+    </div>
+
+    <!-- 主面板 -->
+    <div id="mainPanel" class="hidden">
+        <!-- 顶部导航 -->
+        <nav class="bg-white border-b border-gray-200 sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center mr-3">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <span class="text-xl font-bold text-gray-900">ClaudeAPI</span>
+                            <span class="ml-2 text-sm text-gray-500">管理员控制台</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button onclick="logout()" class="text-gray-500 hover:text-gray-700 text-sm font-medium transition">退出登录</button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fadeIn">
+            <!-- 第一行统计卡片 -->
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-6">
+                <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+                    <div class="text-2xl font-bold text-gray-900" id="stat-active">-</div>
+                    <div class="text-sm text-gray-500">活跃账号</div>
+                </div>
+                <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+                    <div class="text-2xl font-bold text-yellow-500" id="stat-cooldown">-</div>
+                    <div class="text-sm text-gray-500">冷却中</div>
+                </div>
+                <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+                    <div class="text-2xl font-bold text-red-500" id="stat-invalid">-</div>
+                    <div class="text-sm text-gray-500">已失效</div>
+                </div>
+                <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+                    <div class="text-2xl font-bold text-gray-900" id="stat-requests">-</div>
+                    <div class="text-sm text-gray-500">总请求</div>
+                </div>
+                <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+                    <div class="text-2xl font-bold text-blue-500" id="stat-input">-</div>
+                    <div class="text-sm text-gray-500">输入Tokens</div>
+                </div>
+                <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+                    <div class="text-2xl font-bold text-green-500" id="stat-output">-</div>
+                    <div class="text-sm text-gray-500">输出Tokens</div>
+                </div>
+                <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+                    <div class="text-2xl font-bold text-purple-500" id="stat-uptime">-</div>
+                    <div class="text-sm text-gray-500">运行时间</div>
+                </div>
+            </div>
+
+            <!-- 第二行：额度统计和图表 -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                <!-- 总额度卡片 -->
+                <div class="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl p-6 shadow-lg text-white">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="text-sm font-medium opacity-90">账号池总额度</div>
+                        <svg class="w-8 h-8 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                        </svg>
+                    </div>
+                    <div class="text-3xl font-bold mb-2" id="stat-total-quota">-</div>
+                    <div class="flex items-center justify-between text-sm opacity-90">
+                        <span>可用: <span id="stat-available-quota" class="font-semibold">-</span></span>
+                        <span>已用: <span id="stat-used-percent" class="font-semibold">-</span></span>
+                    </div>
+                    <div class="mt-3 h-2 bg-white bg-opacity-20 rounded-full overflow-hidden">
+                        <div id="quota-progress" class="h-full bg-white rounded-full transition-all" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- 今日统计 -->
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                    <h4 class="text-sm font-semibold text-gray-700 mb-4">今日统计</h4>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">请求数</span>
+                            <span class="text-lg font-bold text-gray-900" id="today-requests">-</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">消耗</span>
+                            <span class="text-lg font-bold text-green-600" id="today-revenue">-</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">输入Tokens</span>
+                            <span class="text-sm font-medium text-blue-600" id="today-input">-</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">输出Tokens</span>
+                            <span class="text-sm font-medium text-green-600" id="today-output">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 最近7天趋势 -->
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                    <h4 class="text-sm font-semibold text-gray-700 mb-4">最近7天请求趋势</h4>
+                    <div style="position: relative; height: 150px; width: 100%;">
+                        <canvas id="weeklyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 标签页 -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-6">
+                <div class="border-b border-gray-100">
+                    <nav class="flex space-x-8 px-6">
+                        <button onclick="switchTab('users')" class="tab-btn border-b-2 border-blue-500 text-blue-600 py-4 px-1 text-sm font-medium" data-tab="users">用户管理</button>
+                        <button onclick="switchTab('accounts')" class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1 text-sm font-medium" data-tab="accounts">Kiro账号池</button>
+                        <button onclick="switchTab('logs')" class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1 text-sm font-medium" data-tab="logs">请求记录</button>
+                        <button onclick="switchTab('settings')" class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1 text-sm font-medium" data-tab="settings">系统设置</button>
+                    </nav>
+                </div>
+
+                <!-- 用户管理 -->
+                <div id="tab-users" class="p-6 tab-content">
+                    <div class="flex justify-end items-center mb-6">
+                        <button onclick="showModal('createUserModal')" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                            创建用户
+                        </button>
+                    </div>
+                    <div id="users-table" class="overflow-x-auto"></div>
+
+                    <!-- 用户分页控件 -->
+                    <div id="users-pagination" class="flex items-center justify-between mt-6 pt-4 border-t border-gray-100 hidden">
+                        <div class="text-sm text-gray-600">
+                            显示 <span id="users-page-start">0</span> - <span id="users-page-end">0</span>，共 <span id="total-users">0</span> 个用户
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="changeUsersPage('prev')" id="users-prev-btn" class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled>上一页</button>
+                            <div id="users-page-numbers" class="flex gap-1"></div>
+                            <button onclick="changeUsersPage('next')" id="users-next-btn" class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled>下一页</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Kiro账号管理 -->
+                <div id="tab-accounts" class="p-6 tab-content hidden">
+                    <div class="flex flex-wrap items-center gap-3 mb-6">
+                        <button onclick="showModal('addModal')" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                            添加账号
+                        </button>
+                        <button onclick="showModal('importModal')" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                            批量导入
+                        </button>
+                        <button onclick="refreshAllUsage()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                            刷新全部额度
+                        </button>
+                        <button id="batchDeleteBtn" onclick="batchDeleteAccounts()" class="hidden bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            批量删除 (<span id="selectedCount">0</span>)
+                        </button>
+                        <select id="strategy" onchange="setStrategy(this.value)" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="round-robin">轮询策略</option>
+                            <option value="random">随机策略</option>
+                            <option value="least-used">最少使用</option>
+                        </select>
+                        <button onclick="refresh()" class="border border-gray-200 hover:bg-gray-50 px-4 py-2 rounded-lg text-sm font-medium text-gray-600 transition">刷新</button>
+                    </div>
+                    <div id="accounts-table" class="overflow-x-auto"></div>
+
+                    <!-- 分页控件 -->
+                    <div id="accounts-pagination" class="flex items-center justify-between mt-6 pt-4 border-t border-gray-100">
+                        <div class="text-sm text-gray-600">
+                            显示 <span id="page-start">0</span> - <span id="page-end">0</span>，共 <span id="total-accounts">0</span> 个账号
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="changePage('prev')" id="prev-btn" class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled>上一页</button>
+                            <div id="page-numbers" class="flex gap-1"></div>
+                            <button onclick="changePage('next')" id="next-btn" class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled>下一页</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 请求记录 -->
+                <div id="tab-logs" class="p-6 tab-content hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <div class="flex gap-3">
+                            <button onclick="loadLogs()" class="border border-gray-200 hover:bg-gray-50 px-4 py-2 rounded-lg text-sm font-medium text-gray-600 transition">刷新</button>
+                            <button onclick="clearLogs()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                清空记录
+                            </button>
+                        </div>
+                        <label class="flex items-center cursor-pointer">
+                            <input type="checkbox" id="autoRefreshToggle" onchange="toggleAutoRefresh()" class="sr-only peer">
+                            <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            <span class="ml-3 text-sm font-medium text-gray-700">自动刷新</span>
+                        </label>
+                    </div>
+                    <div id="logs-table" class="overflow-x-auto"></div>
+
+                    <!-- 日志分页控件 -->
+                    <div id="logs-pagination" class="flex items-center justify-between mt-6 pt-4 border-t border-gray-100 hidden">
+                        <div class="text-sm text-gray-600">
+                            显示 <span id="logs-page-start">0</span> - <span id="logs-page-end">0</span>，共 <span id="total-logs">0</span> 条记录
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="changeLogsPage('prev')" id="logs-prev-btn" class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled>上一页</button>
+                            <div id="logs-page-numbers" class="flex gap-1"></div>
+                            <button onclick="changeLogsPage('next')" id="logs-next-btn" class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled>下一页</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 设置 -->
+                <div id="tab-settings" class="p-6 tab-content hidden">
+                    <div class="max-w-2xl">
+                        <!-- API 端点信息 -->
+                        <div class="mb-8 p-4 bg-gray-50 rounded-lg">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-3">API 端点</h3>
+                            
+                            <div class="mb-4">
+                                <p class="text-xs text-gray-500 mb-2 font-medium">Anthropic 格式</p>
+                                <div class="space-y-2 font-mono text-sm">
+                                    <div class="flex items-center gap-2">
+                                        <span class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">GET</span>
+                                        <span class="text-gray-700">/v1/models</span>
+                                        <button onclick="copyText(location.origin + '/v1/models')" class="text-blue-500 hover:text-blue-700 text-xs">复制</button>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">POST</span>
+                                        <span class="text-gray-700">/v1/messages</span>
+                                        <button onclick="copyText(location.origin + '/v1/messages')" class="text-blue-500 hover:text-blue-700 text-xs">复制</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <p class="text-xs text-gray-500 mt-3">Base URL: <span class="text-gray-700" id="baseUrl"></span></p>
+                        </div>
+
+                        <div class="mb-8">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2">管理密钥</h3>
+                            <p class="text-sm text-gray-500 mb-4">用于登录管理面板</p>
+                            <div class="flex gap-3">
+                                <input type="password" id="new-admin-key" placeholder="输入新的管理密钥" class="flex-1 max-w-xs px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <button onclick="changeAdminKey()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition">修改密钥</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 通知容器 -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+    <!-- 添加账号弹窗 -->
+    <div id="addModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 animate-scaleIn">
+            <div class="flex items-center justify-between p-6 border-b border-gray-100">
+                <h3 class="text-lg font-semibold text-gray-900">添加账号</h3>
+                <button onclick="hideModal('addModal')" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <input type="text" id="acc-name" placeholder="账号名称" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <select id="acc-auth" onchange="toggleIdcFields()" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="social">Social</option>
+                    <option value="idc">IdC / BuilderId</option>
+                </select>
+                <textarea id="acc-refresh" placeholder="Refresh Token" rows="3" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
+                <div id="idc-fields" class="hidden space-y-4">
+                    <input type="text" id="acc-client-id" placeholder="Client ID" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <textarea id="acc-client-secret" placeholder="Client Secret" rows="2" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 p-6 border-t border-gray-100">
+                <button onclick="hideModal('addModal')" class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition">取消</button>
+                <button onclick="addAccount()" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition">添加</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 创建用户弹窗 -->
+    <div id="createUserModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 animate-scaleIn">
+            <div class="flex items-center justify-between p-6 border-b border-gray-100">
+                <h3 class="text-lg font-semibold text-gray-900">创建用户</h3>
+                <button onclick="hideModal('createUserModal')" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">用户名 *</label>
+                    <input type="text" id="new-username" placeholder="请输入用户名" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">初始余额 (USD)</label>
+                    <input type="number" step="0.01" id="new-balance" placeholder="0.00" value="0" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">输入价格 ($/MTok)</label>
+                    <input type="number" step="0.01" id="new-price-input" placeholder="3.0" value="3.0" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">输出价格 ($/MTok)</label>
+                    <input type="number" step="0.01" id="new-price-output" placeholder="15.0" value="15.0" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 p-6 border-t border-gray-100">
+                <button onclick="hideModal('createUserModal')" class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition">取消</button>
+                <button onclick="createUser()" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition">创建</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 充值弹窗 -->
+    <div id="rechargeModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 animate-scaleIn">
+            <div class="flex items-center justify-between p-6 border-b border-gray-100">
+                <h3 class="text-lg font-semibold text-gray-900">用户充值</h3>
+                <button onclick="hideModal('rechargeModal')" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <div class="text-sm text-gray-500">用户</div>
+                    <div class="text-lg font-medium text-gray-900" id="recharge-username">-</div>
+                    <div class="text-sm text-gray-500 mt-2">当前余额</div>
+                    <div class="text-2xl font-bold text-green-600" id="recharge-balance">$0.00</div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">充值金额 (USD) *</label>
+                    <input type="number" step="0.01" id="recharge-amount" placeholder="请输入充值金额" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">备注（可选）</label>
+                    <textarea id="recharge-notes" placeholder="充值备注" rows="2" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 p-6 border-t border-gray-100">
+                <button onclick="hideModal('rechargeModal')" class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition">取消</button>
+                <button onclick="doRecharge()" class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-medium transition">确认充值</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 导入弹窗 -->
+    <div id="importModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 animate-scaleIn max-h-[90vh] flex flex-col">
+            <div class="flex items-center justify-between p-6 border-b border-gray-100">
+                <h3 class="text-lg font-semibold text-gray-900">批量导入账号</h3>
+                <button onclick="hideModal('importModal')" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1">
+                <!-- 模板按钮 -->
+                <div class="mb-4">
+                    <p class="text-sm font-medium text-gray-700 mb-2">快速模板</p>
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="loadTemplate('social')" class="px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-sm font-medium transition flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+                            Social 模板
+                        </button>
+                        <button onclick="loadTemplate('builderid')" class="px-3 py-2 bg-purple-50 hover:bg-purple-100 text-purple-600 rounded-lg text-sm font-medium transition flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+                            BuilderId 模板
+                        </button>
+                        <button onclick="loadTemplate('enterprise')" class="px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-lg text-sm font-medium transition flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+                            Enterprise 模板
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 文件选择 -->
+                <div class="mb-4">
+                    <p class="text-sm font-medium text-gray-700 mb-2">选择文件</p>
+                    <input type="file" id="import-file" accept=".json" class="hidden" onchange="handleFileSelect(event)">
+                    <button onclick="document.getElementById('import-file').click()" class="w-full bg-blue-50 hover:bg-blue-100 text-blue-600 border-2 border-dashed border-blue-200 rounded-lg py-3 text-sm font-medium transition flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                        选择 JSON 文件
+                    </button>
+                    <div id="file-name" class="text-sm text-gray-500 mt-2"></div>
+                </div>
+
+                <div class="text-center text-gray-400 text-sm my-3">— 或粘贴 JSON —</div>
+
+                <!-- JSON 输入 -->
+                <div class="mb-4">
+                    <textarea id="import-json" placeholder='粘贴 JSON 内容，例如：
+[
+  {
+    "name": "账号1",
+    "refreshToken": "aor...",
+    "authMethod": "social"
+  },
+  {
+    "name": "账号2",
+    "refreshToken": "aor...",
+    "authMethod": "idc",
+    "clientId": "xxx",
+    "clientSecret": "xxx",
+    "region": "us-east-1"
+  }
+]' rows="10" class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-sm font-mono"></textarea>
+                </div>
+
+                <!-- 格式说明 -->
+                <div class="bg-gray-50 rounded-lg p-4 text-sm">
+                    <p class="font-medium text-gray-700 mb-2">格式说明：</p>
+                    <ul class="text-gray-600 space-y-1 text-xs">
+                        <li><strong>Social 账号</strong>：需要 name, refreshToken, authMethod: "social"</li>
+                        <li><strong>IdC 账号</strong>：需要 name, refreshToken, authMethod: "idc", clientId, clientSecret, region</li>
+                        <li>所有 refreshToken 必须以 "aor" 开头</li>
+                        <li>支持单个对象或数组格式</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 p-6 border-t border-gray-100">
+                <button onclick="hideModal('importModal')" class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition">取消</button>
+                <button onclick="importAccounts()" class="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white rounded-lg text-sm font-medium transition flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                    开始导入
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let token = localStorage.getItem('kiro_token');
+        let adminKey = token || '';
+        let selectedAccounts = new Set();
+        let autoRefreshInterval = null;
+        let serverStartTime = null;
+        let uptimeInterval = null;
+        let currentRechargeUserId = null;
+        let currentPage = 1;
+        let pageSize = 15;
+        let allAccounts = [];
+        let weeklyChart = null;
+        let usersCurrentPage = 1;
+        let usersPageSize = 15;
+        let allUsers = [];
+        let logsCurrentPage = 1;
+        let logsPageSize = 20;
+        let allLogs = [];
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const colors = { success: 'bg-green-500', error: 'bg-red-500', info: 'bg-blue-500', warning: 'bg-yellow-500' };
+            const toast = document.createElement('div');
+            toast.className = `${colors[type]} text-white px-4 py-3 rounded-lg shadow-lg text-sm font-medium animate-slideIn`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => { toast.classList.add('animate-slideOut'); setTimeout(() => toast.remove(), 300); }, 3000);
+        }
+
+        function toggleAutoRefresh() {
+            const toggle = document.getElementById('autoRefreshToggle');
+            if (toggle.checked) {
+                autoRefreshInterval = setInterval(() => {
+                    loadLogs();
+                }, 5000);
+                showToast('已开启自动刷新', 'success');
+            } else {
+                if (autoRefreshInterval) {
+                    clearInterval(autoRefreshInterval);
+                    autoRefreshInterval = null;
+                }
+                showToast('已关闭自动刷新', 'info');
+            }
+        }
+
+        function startUptimeCounter() {
+            if (uptimeInterval) {
+                clearInterval(uptimeInterval);
+            }
+            uptimeInterval = setInterval(() => {
+                if (serverStartTime) {
+                    const uptime = Math.floor((Date.now() - serverStartTime) / 1000);
+                    const uptimeEl = document.getElementById('stat-uptime');
+                    if (uptimeEl) {
+                        uptimeEl.textContent = formatUptime(uptime);
+                    }
+                }
+            }, 1000);
+        }
+
+        async function fetchApi(url, options = {}) {
+            const res = await fetch(url, { ...options, headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey, ...options.headers } });
+            if (res.status === 401) { logout(); throw new Error('认证失败'); }
+            if (!res.ok && res.status !== 204) {
+                const error = await res.json().catch(() => ({}));
+                throw new Error(error.error?.message || res.statusText);
+            }
+            return res.status === 204 ? null : res.json();
+        }
+
+        function logout() {
+            if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+            if (uptimeInterval) clearInterval(uptimeInterval);
+            localStorage.removeItem('kiro_token');
+            localStorage.removeItem('kiro_user');
+            window.location.href = '/login.html';
+        }
+
+        function showMainPanel() {
+            document.getElementById('loginPage').classList.add('hidden');
+            document.getElementById('mainPanel').classList.remove('hidden');
+            refresh();
+        }
+
+        function formatUptime(secs) {
+            const h = Math.floor(secs / 3600), m = Math.floor((secs % 3600) / 60);
+            return h > 0 ? `${h}h ${m}m` : `${m}m ${secs % 60}s`;
+        }
+
+        function formatNumber(n) {
+            if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+            if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+            return n.toString();
+        }
+
+        async function loadStatus() {
+            try {
+                const data = await fetchApi('/api/admin/stats/overview');
+                const stats = data.data;
+
+                // Kiro accounts stats
+                document.getElementById('stat-active').textContent = stats.kiroAccounts?.active || 0;
+                document.getElementById('stat-cooldown').textContent = 0; // Not tracked in new system
+                document.getElementById('stat-invalid').textContent = stats.kiroAccounts?.total - stats.kiroAccounts?.active || 0;
+
+                // Request stats
+                document.getElementById('stat-requests').textContent = formatNumber(stats.allTime?.requests || 0);
+                document.getElementById('stat-input').textContent = formatNumber(stats.allTime?.inputTokens || 0);
+                document.getElementById('stat-output').textContent = formatNumber(stats.allTime?.outputTokens || 0);
+
+                // 今日统计
+                document.getElementById('today-requests').textContent = formatNumber(stats.today?.requests || 0);
+                document.getElementById('today-revenue').textContent = '$' + (stats.today?.revenue || 0).toFixed(2);
+                document.getElementById('today-input').textContent = formatNumber(stats.today?.inputTokens || 0);
+                document.getElementById('today-output').textContent = formatNumber(stats.today?.outputTokens || 0);
+
+                // 计算账号池总额度
+                await loadQuotaStats();
+
+                // 加载7天趋势图
+                await loadWeeklyChart();
+
+                // Uptime - 启动自动更新
+                if (!serverStartTime) {
+                    serverStartTime = Date.now();
+                }
+                startUptimeCounter();
+            } catch (e) {
+                console.error('Load status error:', e);
+            }
+        }
+
+        async function loadQuotaStats() {
+            try {
+                const data = await fetchApi('/api/admin/accounts');
+                const accounts = data.data || [];
+
+                let totalQuota = 0;
+                let totalUsed = 0;
+                let totalAvailable = 0;
+
+                accounts.forEach(acc => {
+                    if (acc.usage_limit && acc.status === 'active') {
+                        totalQuota += acc.usage_limit || 0;
+                        totalUsed += acc.current_usage || 0;
+                        totalAvailable += acc.available || 0;
+                    }
+                });
+
+                const usedPercent = totalQuota > 0 ? Math.round((totalUsed / totalQuota) * 100) : 0;
+
+                document.getElementById('stat-total-quota').textContent = totalQuota.toFixed(1);
+                document.getElementById('stat-available-quota').textContent = totalAvailable.toFixed(1);
+                document.getElementById('stat-used-percent').textContent = usedPercent + '%';
+                document.getElementById('quota-progress').style.width = usedPercent + '%';
+            } catch (e) {
+                console.error('Load quota stats error:', e);
+            }
+        }
+
+        async function loadWeeklyChart() {
+            try {
+                // 获取最近7天的数据
+                const endDate = new Date();
+                const startDate = new Date();
+                startDate.setDate(startDate.getDate() - 6);
+
+                const labels = [];
+                const requestData = [];
+
+                // 按日期分组统计
+                const dailyStats = {};
+                for (let i = 0; i < 7; i++) {
+                    const date = new Date(startDate);
+                    date.setDate(date.getDate() + i);
+                    const dateStr = date.toISOString().split('T')[0];
+                    labels.push((date.getMonth() + 1) + '/' + date.getDate());
+                    dailyStats[dateStr] = 0;
+                }
+
+                // 从数据库获取最近7天的日志统计（只获取最近7天的数据）
+                const startDateStr = startDate.toISOString();
+                const endDateStr = endDate.toISOString();
+                const logsData = await fetchApi(`/api/admin/logs?limit=1000&startDate=${startDateStr}&endDate=${endDateStr}`);
+                const logs = logsData.data || [];
+
+                // 统计每天的请求数
+                logs.forEach(log => {
+                    const logDate = new Date(log.timestamp).toISOString().split('T')[0];
+                    if (dailyStats.hasOwnProperty(logDate)) {
+                        dailyStats[logDate]++;
+                    }
+                });
+
+                // 转换为数组
+                Object.keys(dailyStats).sort().forEach(date => {
+                    requestData.push(dailyStats[date]);
+                });
+
+                // 如果图表已存在，只更新数据，不重新创建
+                if (weeklyChart) {
+                    weeklyChart.data.labels = labels;
+                    weeklyChart.data.datasets[0].data = requestData;
+                    weeklyChart.update('none'); // 'none' 模式不使用动画，避免卡顿
+                } else {
+                    // 首次创建图表
+                    const ctx = document.getElementById('weeklyChart').getContext('2d');
+                    weeklyChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: '请求数',
+                                data: requestData,
+                                borderColor: 'rgb(59, 130, 246)',
+                                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                tension: 0.4,
+                                fill: true
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            animation: false, // 禁用动画，提升性能
+                            plugins: {
+                                legend: { display: false }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        precision: 0
+                                    }
+                                },
+                                x: {
+                                    ticks: {
+                                        maxRotation: 0,
+                                        autoSkip: false
+                                    }
+                                }
+                            },
+                            layout: {
+                                padding: 0
+                            }
+                        }
+                    });
+                }
+            } catch (e) {
+                console.error('Load weekly chart error:', e);
+            }
+        }
+
+        function startUptimeCounter() {
+            if (uptimeInterval) clearInterval(uptimeInterval);
+
+            uptimeInterval = setInterval(() => {
+                const uptime = Math.floor((Date.now() - serverStartTime) / 1000);
+                document.getElementById('stat-uptime').textContent = formatUptime(uptime);
+            }, 1000);
+        }
+
+        async function loadAccounts() {
+            try {
+                const data = await fetchApi('/api/admin/accounts');
+                allAccounts = data.data || [];
+                renderAccountsPage();
+            } catch (e) { console.error(e); }
+        }
+
+        function renderAccountsPage() {
+            const container = document.getElementById('accounts-table');
+            selectedAccounts.clear();
+            updateBatchDeleteBtn();
+
+            if (allAccounts.length === 0) {
+                container.innerHTML = '<div class="text-center py-12 text-gray-500">暂无账号，点击上方按钮添加</div>';
+                document.getElementById('accounts-pagination').classList.add('hidden');
+                return;
+            }
+
+            document.getElementById('accounts-pagination').classList.remove('hidden');
+
+            // 分页计算
+            const totalPages = Math.ceil(allAccounts.length / pageSize);
+            const startIdx = (currentPage - 1) * pageSize;
+            const endIdx = Math.min(startIdx + pageSize, allAccounts.length);
+            const pageAccounts = allAccounts.slice(startIdx, endIdx);
+
+            // 更新分页信息
+            document.getElementById('page-start').textContent = startIdx + 1;
+            document.getElementById('page-end').textContent = endIdx;
+            document.getElementById('total-accounts').textContent = allAccounts.length;
+            document.getElementById('prev-btn').disabled = currentPage === 1;
+            document.getElementById('next-btn').disabled = currentPage === totalPages;
+
+            // 渲染页码
+            renderPageNumbers(totalPages);
+
+            // 渲染表格
+            container.innerHTML = `
+                <table class="w-full">
+                    <thead>
+                        <tr class="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th class="px-4 py-3 rounded-tl-lg w-10"><input type="checkbox" id="selectAll" onchange="toggleSelectAll(this.checked)" class="rounded border-gray-300 text-blue-500 focus:ring-blue-500"></th>
+                            <th class="px-4 py-3">名称</th>
+                            <th class="px-4 py-3">状态</th>
+                            <th class="px-4 py-3">额度</th>
+                            <th class="px-4 py-3">请求</th>
+                            <th class="px-4 py-3">错误</th>
+                            <th class="px-4 py-3 rounded-tr-lg">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        ${pageAccounts.map((a, i) => `
+                            <tr class="hover:bg-gray-50 transition ${i % 2 === 1 ? 'bg-gray-50/50' : ''}">
+                                <td class="px-4 py-4"><input type="checkbox" data-id="${a.id}" onchange="toggleSelect('${a.id}', this.checked)" class="account-checkbox rounded border-gray-300 text-blue-500 focus:ring-blue-500"></td>
+                                <td class="px-4 py-4">
+                                    <div class="font-medium text-gray-900">${a.name}</div>
+                                    ${a.user_email ? `<div class="text-xs text-gray-500">${a.user_email}</div>` : ''}
+                                </td>
+                                <td class="px-4 py-4">${formatStatus(a.status)}</td>
+                                <td class="px-4 py-4">${formatUsage(a)}</td>
+                                <td class="px-4 py-4 text-gray-600">${a.request_count || 0}</td>
+                                <td class="px-4 py-4 text-gray-600">${a.error_count || 0}</td>
+                                <td class="px-4 py-4">
+                                    <div class="flex items-center gap-2">
+                                        <button onclick="refreshUsage('${a.id}')" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition" title="刷新额度">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                            </svg>
+                                        </button>
+                                        <button onclick="exportAccountJson('${a.id}')" class="p-1.5 text-purple-600 hover:bg-purple-50 rounded transition" title="导出JSON">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                            </svg>
+                                        </button>
+                                        ${a.status === 'disabled'
+                                            ? `<button onclick="enableAccount('${a.id}')" class="p-1.5 text-green-600 hover:bg-green-50 rounded transition" title="启用">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                </svg>
+                                            </button>`
+                                            : `<button onclick="disableAccount('${a.id}')" class="p-1.5 text-orange-600 hover:bg-orange-50 rounded transition" title="禁用">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                                                </svg>
+                                            </button>`}
+                                        <button onclick="removeAccount('${a.id}')" class="p-1.5 text-red-600 hover:bg-red-50 rounded transition" title="删除">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>`;
+        }
+
+        function renderPageNumbers(totalPages) {
+            const container = document.getElementById('page-numbers');
+            const maxVisible = 5;
+            let pages = [];
+
+            if (totalPages <= maxVisible) {
+                pages = Array.from({ length: totalPages }, (_, i) => i + 1);
+            } else {
+                if (currentPage <= 3) {
+                    pages = [1, 2, 3, 4, '...', totalPages];
+                } else if (currentPage >= totalPages - 2) {
+                    pages = [1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+                } else {
+                    pages = [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
+                }
+            }
+
+            container.innerHTML = pages.map(p => {
+                if (p === '...') {
+                    return '<span class="px-3 py-1 text-gray-400">...</span>';
+                }
+                const isActive = p === currentPage;
+                return `<button onclick="goToPage(${p})" class="px-3 py-1 rounded ${isActive ? 'bg-blue-500 text-white' : 'border border-gray-300 hover:bg-gray-50'} text-sm">${p}</button>`;
+            }).join('');
+        }
+
+        function changePage(direction) {
+            if (direction === 'prev' && currentPage > 1) {
+                currentPage--;
+                renderAccountsPage();
+            } else if (direction === 'next') {
+                const totalPages = Math.ceil(allAccounts.length / pageSize);
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    renderAccountsPage();
+                }
+            }
+        }
+
+        function goToPage(page) {
+            currentPage = page;
+            renderAccountsPage();
+        }
+
+        function toggleSelect(id, checked) {
+            if (checked) selectedAccounts.add(id);
+            else selectedAccounts.delete(id);
+            updateBatchDeleteBtn();
+        }
+
+        function toggleSelectAll(checked) {
+            document.querySelectorAll('.account-checkbox').forEach(cb => {
+                cb.checked = checked;
+                if (checked) selectedAccounts.add(cb.dataset.id);
+                else selectedAccounts.delete(cb.dataset.id);
+            });
+            updateBatchDeleteBtn();
+        }
+
+        function updateBatchDeleteBtn() {
+            const btn = document.getElementById('batchDeleteBtn');
+            document.getElementById('selectedCount').textContent = selectedAccounts.size;
+            btn.classList.toggle('hidden', selectedAccounts.size === 0);
+        }
+
+        async function batchDeleteAccounts() {
+            if (selectedAccounts.size === 0) return;
+            if (!confirm(`确定删除选中的 ${selectedAccounts.size} 个账号？`)) return;
+            try {
+                const result = await fetchApi('/api/accounts/batch', { method: 'DELETE', body: JSON.stringify({ ids: Array.from(selectedAccounts) }) });
+                showToast(`成功删除 ${result.removed} 个账号`, 'success');
+                refresh();
+            } catch (e) { showToast('批量删除失败: ' + e.message, 'error'); }
+        }
+
+        async function clearLogs() {
+            if (!confirm('确定清空所有请求记录？')) return;
+            try {
+                await fetchApi('/api/logs', { method: 'DELETE' });
+                loadLogs();
+                loadStatus();
+                showToast('记录已清空', 'success');
+            } catch (e) { showToast('清空失败: ' + e.message, 'error'); }
+        }
+
+        function formatStatus(status) {
+            const styles = { active: 'bg-green-100 text-green-700', cooldown: 'bg-yellow-100 text-yellow-700', error: 'bg-red-100 text-red-700', inactive: 'bg-gray-100 text-gray-700', disabled: 'bg-gray-100 text-gray-700' };
+            return `<span class="px-2 py-1 rounded-full text-xs font-medium ${styles[status] || styles.disabled}">${status}</span>`;
+        }
+
+        function formatUsage(account) {
+            if (!account) return '<span class="text-gray-400 text-sm">未知</span>';
+
+            const used = account.current_usage || 0;
+            const limit = account.usage_limit || 0;
+            const available = account.available || 0;
+
+            if (limit === 0) return '<span class="text-gray-400 text-sm">未知</span>';
+
+            const percent = Math.round((used / limit) * 100);
+            const barColor = percent > 90 ? 'bg-red-500' : percent > 70 ? 'bg-yellow-500' : 'bg-green-500';
+            const textColor = percent > 90 ? 'text-red-600' : percent > 70 ? 'text-yellow-600' : 'text-green-600';
+
+            // 订阅类型标签（放在名称旁边，不在这里显示）
+
+            // 格式化重置时间
+            let resetInfo = '';
+            if (account.next_reset) {
+                const resetDate = new Date(account.next_reset);
+                const now = new Date();
+                const diffDays = Math.ceil((resetDate - now) / (1000 * 60 * 60 * 24));
+                if (diffDays > 0) {
+                    resetInfo = `<div class="text-xs text-gray-400 mt-1.5">重置: ${diffDays}天后</div>`;
+                } else if (diffDays === 0) {
+                    resetInfo = `<div class="text-xs text-gray-400 mt-1.5">重置: 今天</div>`;
+                } else {
+                    resetInfo = `<div class="text-xs text-red-400 mt-1.5">已过期</div>`;
+                }
+            }
+
+            return `<div class="w-36">
+                <div class="flex justify-between text-xs mb-1.5">
+                    <span class="${textColor} font-medium">${available.toFixed(1)}</span>
+                    <span class="text-gray-400">/ ${limit.toFixed(0)}</span>
+                </div>
+                <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div class="${barColor} h-full rounded-full transition-all" style="width: ${percent}%"></div>
+                </div>
+                <div class="text-xs text-gray-400 mt-1">${percent}% 已用</div>
+                ${resetInfo}
+            </div>`;
+        }
+
+        async function refreshUsage(id) {
+            try { await fetchApi(`/api/admin/accounts/${id}/refresh-usage`, { method: 'POST' }); loadAccounts(); showToast('刷新成功', 'success'); }
+            catch (e) { showToast('刷新失败: ' + e.message, 'error'); }
+        }
+
+        async function refreshAllUsage() {
+            try {
+                showToast('正在刷新所有账号，请稍候...', 'info');
+
+                // 设置较长的超时时间（2分钟）
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 120000);
+
+                const response = await fetch('/api/admin/accounts/refresh-all-usage', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-key': token
+                    },
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeoutId);
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error?.message || response.statusText);
+                }
+
+                const data = await response.json();
+                loadAccounts();
+
+                // 统计成功和失败的数量
+                const successCount = data.data.filter(r => r.usage && !r.usage.error).length;
+                const failCount = data.data.filter(r => r.usage && r.usage.error).length;
+
+                showToast(`刷新完成！成功: ${successCount}, 失败: ${failCount}`, 'success');
+            } catch (e) {
+                if (e.name === 'AbortError') {
+                    showToast('刷新超时，请稍后重试', 'error');
+                } else {
+                    showToast('刷新失败: ' + e.message, 'error');
+                }
+            }
+        }
+
+        async function loadLogs() {
+            try {
+                const data = await fetchApi('/api/admin/logs?limit=1000');
+                allLogs = data.data || [];
+                renderLogsPage();
+            } catch (e) { console.error(e); }
+        }
+
+        function renderLogsPage() {
+            const container = document.getElementById('logs-table');
+
+            if (!allLogs || allLogs.length === 0) {
+                container.innerHTML = '<div class="text-center py-12 text-gray-500">暂无请求记录</div>';
+                document.getElementById('logs-pagination').classList.add('hidden');
+                return;
+            }
+
+            document.getElementById('logs-pagination').classList.remove('hidden');
+
+            // 分页计算
+            const totalPages = Math.ceil(allLogs.length / logsPageSize);
+            const startIdx = (logsCurrentPage - 1) * logsPageSize;
+            const endIdx = Math.min(startIdx + logsPageSize, allLogs.length);
+            const pageLogs = allLogs.slice(startIdx, endIdx);
+
+            // 更新分页信息
+            document.getElementById('logs-page-start').textContent = startIdx + 1;
+            document.getElementById('logs-page-end').textContent = endIdx;
+            document.getElementById('total-logs').textContent = allLogs.length;
+            document.getElementById('logs-prev-btn').disabled = logsCurrentPage === 1;
+            document.getElementById('logs-next-btn').disabled = logsCurrentPage === totalPages;
+
+            // 渲染页码
+            renderLogsPageNumbers(totalPages);
+
+            // 渲染表格
+            container.innerHTML = `
+                <table class="w-full">
+                    <thead><tr class="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th class="px-4 py-3 rounded-tl-lg">时间</th><th class="px-4 py-3">账号</th><th class="px-4 py-3">模型</th><th class="px-4 py-3">输入</th><th class="px-4 py-3">输出</th><th class="px-4 py-3">耗时</th><th class="px-4 py-3 rounded-tr-lg">状态</th>
+                    </tr></thead>
+                    <tbody class="divide-y divide-gray-100">
+                        ${pageLogs.map((l, i) => `<tr class="hover:bg-gray-50 transition ${i % 2 === 1 ? 'bg-gray-50/50' : ''}">
+                            <td class="px-4 py-3 text-sm text-gray-600">${new Date(l.timestamp).toLocaleString()}</td>
+                            <td class="px-4 py-3 text-sm text-gray-900">${l.kiro_account_name || l.accountName}</td>
+                            <td class="px-4 py-3 text-xs text-gray-500">${l.model || '-'}</td>
+                            <td class="px-4 py-3 text-sm text-gray-600">${l.input_tokens || l.inputTokens || 0}</td>
+                            <td class="px-4 py-3 text-sm text-gray-600">${l.output_tokens || l.outputTokens || 0}</td>
+                            <td class="px-4 py-3 text-sm text-gray-600">${l.duration_ms || l.durationMs}ms</td>
+                            <td class="px-4 py-3">${l.success ? '<span class="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">成功</span>' : '<span class="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">失败</span>'}</td>
+                        </tr>`).join('')}
+                    </tbody>
+                </table>`;
+        }
+
+        function renderLogsPageNumbers(totalPages) {
+            const container = document.getElementById('logs-page-numbers');
+            const maxVisible = 5;
+            let pages = [];
+
+            if (totalPages <= maxVisible) {
+                pages = Array.from({ length: totalPages }, (_, i) => i + 1);
+            } else {
+                if (logsCurrentPage <= 3) {
+                    pages = [1, 2, 3, 4, '...', totalPages];
+                } else if (logsCurrentPage >= totalPages - 2) {
+                    pages = [1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+                } else {
+                    pages = [1, '...', logsCurrentPage - 1, logsCurrentPage, logsCurrentPage + 1, '...', totalPages];
+                }
+            }
+
+            container.innerHTML = pages.map(p => {
+                if (p === '...') {
+                    return '<span class="px-3 py-1 text-gray-400">...</span>';
+                }
+                const isActive = p === logsCurrentPage;
+                return `<button onclick="goToLogsPage(${p})" class="px-3 py-1 rounded ${isActive ? 'bg-blue-500 text-white' : 'border border-gray-300 hover:bg-gray-50'} text-sm">${p}</button>`;
+            }).join('');
+        }
+
+        function changeLogsPage(direction) {
+            if (direction === 'prev' && logsCurrentPage > 1) {
+                logsCurrentPage--;
+                renderLogsPage();
+            } else if (direction === 'next') {
+                const totalPages = Math.ceil(allLogs.length / logsPageSize);
+                if (logsCurrentPage < totalPages) {
+                    logsCurrentPage++;
+                    renderLogsPage();
+                }
+            }
+        }
+
+        function goToLogsPage(page) {
+            logsCurrentPage = page;
+            renderLogsPage();
+        }
+
+        async function loadStrategy() {
+            try { const data = await fetchApi('/api/strategy'); document.getElementById('strategy').value = data.strategy; }
+            catch (e) { console.error(e); }
+        }
+
+        async function setStrategy(value) {
+            try { await fetchApi('/api/strategy', { method: 'POST', body: JSON.stringify({ strategy: value }) }); showToast('策略已更新', 'success'); }
+            catch (e) { showToast('设置失败: ' + e.message, 'error'); }
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(t => { t.classList.remove('border-blue-500', 'text-blue-600'); t.classList.add('border-transparent', 'text-gray-500'); });
+            document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.remove('border-transparent', 'text-gray-500');
+            document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.add('border-blue-500', 'text-blue-600');
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+            document.getElementById('tab-' + tab).classList.remove('hidden');
+            if (tab === 'users') loadUsers();
+            if (tab === 'accounts') loadAccounts();
+            if (tab === 'logs') {
+                loadLogs();
+                const toggle = document.getElementById('autoRefreshToggle');
+                if (toggle && toggle.checked && !autoRefreshInterval) {
+                    autoRefreshInterval = setInterval(() => { loadLogs(); }, 5000);
+                }
+            } else {
+                if (autoRefreshInterval) {
+                    clearInterval(autoRefreshInterval);
+                    autoRefreshInterval = null;
+                }
+            }
+            if (tab === 'settings') { document.getElementById('baseUrl').textContent = location.origin; }
+        }
+
+        async function loadUsers() {
+            try {
+                const data = await fetchApi('/api/admin/users');
+                allUsers = data.data || [];
+                renderUsersPage();
+            } catch (e) {
+                console.error(e);
+                showToast('加载用户列表失败: ' + e.message, 'error');
+            }
+        }
+
+        function renderUsersPage() {
+            const container = document.getElementById('users-table');
+
+            if (allUsers.length === 0) {
+                container.innerHTML = '<div class="text-center py-12 text-gray-500">暂无用户</div>';
+                document.getElementById('users-pagination').classList.add('hidden');
+                return;
+            }
+
+            document.getElementById('users-pagination').classList.remove('hidden');
+
+            // 分页计算
+            const totalPages = Math.ceil(allUsers.length / usersPageSize);
+            const startIdx = (usersCurrentPage - 1) * usersPageSize;
+            const endIdx = Math.min(startIdx + usersPageSize, allUsers.length);
+            const pageUsers = allUsers.slice(startIdx, endIdx);
+
+            // 更新分页信息
+            document.getElementById('users-page-start').textContent = startIdx + 1;
+            document.getElementById('users-page-end').textContent = endIdx;
+            document.getElementById('total-users').textContent = allUsers.length;
+            document.getElementById('users-prev-btn').disabled = usersCurrentPage === 1;
+            document.getElementById('users-next-btn').disabled = usersCurrentPage === totalPages;
+
+            // 渲染页码
+            renderUsersPageNumbers(totalPages);
+
+            // 渲染表格
+            container.innerHTML = `
+                <table class="w-full">
+                    <thead>
+                        <tr class="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th class="px-4 py-3 rounded-tl-lg">用户名</th>
+                            <th class="px-4 py-3">API Key</th>
+                            <th class="px-4 py-3">余额</th>
+                            <th class="px-4 py-3">请求数</th>
+                            <th class="px-4 py-3">总消费</th>
+                            <th class="px-4 py-3">状态</th>
+                            <th class="px-4 py-3 rounded-tr-lg">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        ${pageUsers.map((u, i) => `
+                            <tr class="hover:bg-gray-50 transition ${i % 2 === 1 ? 'bg-gray-50/50' : ''}">
+                                <td class="px-4 py-4">
+                                    <div class="font-medium text-gray-900">${u.username}</div>
+                                    <div class="text-xs text-gray-500">${u.role === 'admin' ? '管理员' : '普通用户'}</div>
+                                </td>
+                                <td class="px-4 py-4">
+                                    <div class="flex items-center gap-2">
+                                        <code class="text-xs bg-gray-100 px-2 py-1 rounded font-mono">${u.api_key}</code>
+                                        <button onclick="copyText('${u.api_key}')" class="text-blue-500 hover:text-blue-700 text-xs">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </td>
+                                <td class="px-4 py-4">
+                                    <span class="font-medium ${u.balance > 0 ? 'text-green-600' : 'text-red-600'}">$${u.balance.toFixed(4)}</span>
+                                </td>
+                                <td class="px-4 py-4 text-gray-600">${u.total_requests || 0}</td>
+                                <td class="px-4 py-4 text-gray-900">$${(u.total_cost || 0).toFixed(4)}</td>
+                                <td class="px-4 py-4">
+                                    ${u.status === 'active'
+                                        ? '<span class="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">活跃</span>'
+                                        : '<span class="px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs font-medium">停用</span>'}
+                                </td>
+                                <td class="px-4 py-4">
+                                    <div class="flex items-center gap-2">
+                                        <button onclick="showRechargeModal('${u.id}', '${u.username}', ${u.balance})" class="p-1.5 text-green-600 hover:bg-green-50 rounded transition" title="充值">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                            </svg>
+                                        </button>
+                                        <button onclick="refreshUserStats('${u.id}')" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition" title="刷新统计">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                            </svg>
+                                        </button>
+                                        ${u.status === 'active'
+                                            ? `<button onclick="toggleUserStatus('${u.id}', 'suspended')" class="p-1.5 text-orange-600 hover:bg-orange-50 rounded transition" title="禁用">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                                                </svg>
+                                            </button>`
+                                            : `<button onclick="toggleUserStatus('${u.id}', 'active')" class="p-1.5 text-green-600 hover:bg-green-50 rounded transition" title="启用">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                </svg>
+                                            </button>`
+                                        }
+                                        <button onclick="deleteUser('${u.id}')" class="p-1.5 text-red-600 hover:bg-red-50 rounded transition" title="删除">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function renderUsersPageNumbers(totalPages) {
+            const container = document.getElementById('users-page-numbers');
+            const maxVisible = 5;
+            let pages = [];
+
+            if (totalPages <= maxVisible) {
+                pages = Array.from({ length: totalPages }, (_, i) => i + 1);
+            } else {
+                if (usersCurrentPage <= 3) {
+                    pages = [1, 2, 3, 4, '...', totalPages];
+                } else if (usersCurrentPage >= totalPages - 2) {
+                    pages = [1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+                } else {
+                    pages = [1, '...', usersCurrentPage - 1, usersCurrentPage, usersCurrentPage + 1, '...', totalPages];
+                }
+            }
+
+            container.innerHTML = pages.map(p => {
+                if (p === '...') {
+                    return '<span class="px-3 py-1 text-gray-400">...</span>';
+                }
+                const isActive = p === usersCurrentPage;
+                return `<button onclick="goToUsersPage(${p})" class="px-3 py-1 rounded ${isActive ? 'bg-blue-500 text-white' : 'border border-gray-300 hover:bg-gray-50'} text-sm">${p}</button>`;
+            }).join('');
+        }
+
+        function changeUsersPage(direction) {
+            if (direction === 'prev' && usersCurrentPage > 1) {
+                usersCurrentPage--;
+                renderUsersPage();
+            } else if (direction === 'next') {
+                const totalPages = Math.ceil(allUsers.length / usersPageSize);
+                if (usersCurrentPage < totalPages) {
+                    usersCurrentPage++;
+                    renderUsersPage();
+                }
+            }
+        }
+
+        function goToUsersPage(page) {
+            usersCurrentPage = page;
+            renderUsersPage();
+        }
+
+        async function createUser() {
+            const username = document.getElementById('new-username').value.trim();
+            const balance = parseFloat(document.getElementById('new-balance').value) || 0;
+            const priceInput = parseFloat(document.getElementById('new-price-input').value) || 3.0;
+            const priceOutput = parseFloat(document.getElementById('new-price-output').value) || 15.0;
+
+            if (!username) {
+                showToast('请输入用户名', 'warning');
+                return;
+            }
+
+            try {
+                await fetchApi('/api/admin/users', {
+                    method: 'POST',
+                    body: JSON.stringify({ username, balance, price_input: priceInput, price_output: priceOutput })
+                });
+                hideModal('createUserModal');
+                document.getElementById('new-username').value = '';
+                document.getElementById('new-balance').value = '0';
+                loadUsers();
+                showToast('用户创建成功', 'success');
+            } catch (e) {
+                showToast('创建失败: ' + e.message, 'error');
+            }
+        }
+
+        function showRechargeModal(userId, username, balance) {
+            currentRechargeUserId = userId;
+            document.getElementById('recharge-username').textContent = username;
+            document.getElementById('recharge-balance').textContent = '$' + balance.toFixed(4);
+            document.getElementById('recharge-amount').value = '';
+            document.getElementById('recharge-notes').value = '';
+            showModal('rechargeModal');
+        }
+
+        async function doRecharge() {
+            const amount = parseFloat(document.getElementById('recharge-amount').value);
+            const notes = document.getElementById('recharge-notes').value.trim();
+
+            if (!amount || amount <= 0) {
+                showToast('请输入有效的充值金额', 'warning');
+                return;
+            }
+
+            try {
+                await fetchApi(`/api/admin/users/${currentRechargeUserId}/recharge`, {
+                    method: 'POST',
+                    body: JSON.stringify({ amount, notes })
+                });
+                hideModal('rechargeModal');
+                loadUsers();
+                showToast('充值成功', 'success');
+            } catch (e) {
+                showToast('充值失败: ' + e.message, 'error');
+            }
+        }
+
+        async function deleteUser(userId) {
+            if (!confirm('确定删除此用户？此操作不可恢复！')) return;
+            try {
+                await fetchApi(`/api/admin/users/${userId}`, { method: 'DELETE' });
+                loadUsers();
+                showToast('用户已删除', 'error');
+            } catch (e) {
+                showToast('删除失败: ' + e.message, 'error');
+            }
+        }
+
+        async function refreshUserStats(userId) {
+            try {
+                showToast('正在刷新统计...', 'info');
+                await fetchApi(`/api/admin/users/${userId}`);
+                loadUsers();
+                showToast('统计已刷新', 'success');
+            } catch (e) {
+                showToast('刷新失败: ' + e.message, 'error');
+            }
+        }
+
+        async function toggleUserStatus(userId, newStatus) {
+            const action = newStatus === 'active' ? '启用' : '禁用';
+            if (newStatus === 'suspended' && !confirm(`确定禁用此用户？`)) return;
+            try {
+                await fetchApi(`/api/admin/users/${userId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ status: newStatus })
+                });
+                loadUsers();
+                showToast(`用户已${action}`, newStatus === 'active' ? 'success' : 'warning');
+            } catch (e) {
+                showToast(`${action}失败: ` + e.message, 'error');
+            }
+        }
+
+        function showModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        function hideModal(id) { document.getElementById(id).classList.add('hidden'); }
+        function toggleIdcFields() { document.getElementById('idc-fields').classList.toggle('hidden', document.getElementById('acc-auth').value !== 'idc'); }
+
+        async function addAccount() {
+            const data = { name: document.getElementById('acc-name').value || '未命名账号', auth_method: document.getElementById('acc-auth').value, refresh_token: document.getElementById('acc-refresh').value, client_id: document.getElementById('acc-client-id').value || null, client_secret: document.getElementById('acc-client-secret').value || null };
+            if (!data.refresh_token) { showToast('请填写 Refresh Token', 'warning'); return; }
+            try { await fetchApi('/api/accounts', { method: 'POST', body: JSON.stringify(data) }); hideModal('addModal'); refresh(); showToast('添加成功', 'success'); }
+            catch (e) { showToast('添加失败: ' + e.message, 'error'); }
+        }
+
+        async function importAccounts() {
+            let jsonContent = document.getElementById('import-json').value.trim();
+            if (!jsonContent) { showToast('请选择文件或粘贴 JSON 内容', 'warning'); return; }
+            try { JSON.parse(jsonContent); } catch { showToast('JSON 格式错误', 'error'); return; }
+            try {
+                const result = await fetchApi('/api/accounts/import', { method: 'POST', body: JSON.stringify({ raw_json: jsonContent }) });
+                hideModal('importModal'); document.getElementById('import-json').value = ''; document.getElementById('file-name').textContent = ''; refresh();
+                showToast(`导入完成！成功: ${result.success} 个，失败: ${result.failed} 个`, result.failed > 0 ? 'warning' : 'success');
+            } catch (e) { showToast('导入失败: ' + e.message, 'error'); }
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            document.getElementById('file-name').textContent = `已选择: ${file.name}`;
+            const reader = new FileReader();
+            reader.onload = (e) => { document.getElementById('import-json').value = e.target.result; };
+            reader.readAsText(file);
+        }
+
+        function loadTemplate(type) {
+            let template;
+            if (type === 'social') {
+                template = JSON.stringify([{
+                    name: "Google账号示例",
+                    refreshToken: "aor_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                    authMethod: "social",
+                    provider: "Google"
+                }], null, 2);
+            } else if (type === 'builderid') {
+                template = JSON.stringify([{
+                    name: "BuilderId账号示例",
+                    refreshToken: "aor_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                    authMethod: "idc",
+                    clientId: "your-client-id",
+                    clientSecret: "your-client-secret",
+                    region: "us-east-1",
+                    provider: "BuilderId"
+                }], null, 2);
+            } else if (type === 'enterprise') {
+                template = JSON.stringify([{
+                    name: "Enterprise账号示例",
+                    refreshToken: "aor_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                    authMethod: "idc",
+                    clientId: "your-client-id",
+                    clientSecret: "your-client-secret",
+                    region: "us-east-1",
+                    provider: "Enterprise"
+                }], null, 2);
+            }
+            document.getElementById('import-json').value = template;
+            showToast('模板已加载，请替换示例数据', 'info');
+        }
+
+        async function removeAccount(id) {
+            if (!confirm('确定删除此账号？')) return;
+            try { await fetchApi(`/api/admin/accounts/${id}`, { method: 'DELETE' }); refresh(); showToast('账号已删除', 'error'); }
+            catch (e) { showToast('删除失败: ' + e.message, 'error'); }
+        }
+
+        async function enableAccount(id) {
+            try { await fetchApi(`/api/admin/accounts/${id}/enable`, { method: 'POST' }); refresh(); showToast('账号已启用', 'success'); }
+            catch (e) { showToast('启用失败: ' + e.message, 'error'); }
+        }
+
+        async function disableAccount(id) {
+            if (!confirm('确定禁用此账号？')) return;
+            try { await fetchApi(`/api/admin/accounts/${id}/disable`, { method: 'POST' }); refresh(); showToast('账号已禁用', 'warning'); }
+            catch (e) { showToast('禁用失败: ' + e.message, 'error'); }
+        }
+
+        function exportAccountJson(id) {
+            const account = allAccounts.find(a => a.id === id);
+            if (!account) {
+                showToast('账号不存在', 'error');
+                return;
+            }
+
+            // 构建导出的 JSON 对象（与导入格式一致）
+            const exportData = {
+                name: account.name,
+                refreshToken: account.refresh_token,
+                authMethod: account.auth_method
+            };
+
+            // 如果是 IdC 账号，添加额外字段
+            if (account.auth_method === 'idc') {
+                exportData.clientId = account.client_id;
+                exportData.clientSecret = account.client_secret;
+                exportData.region = account.region || 'us-east-1';
+            }
+
+            // 添加 provider 字段（必需）
+            // 根据 authMethod 推断 provider
+            if (account.auth_method === 'social') {
+                // Social 账号默认为 Google，可以根据 user_email 判断
+                exportData.provider = 'Google';
+            } else {
+                // IdC 账号默认为 BuilderId
+                exportData.provider = 'BuilderId';
+            }
+
+            // 复制到剪贴板
+            const jsonStr = JSON.stringify(exportData, null, 2);
+            navigator.clipboard.writeText(jsonStr).then(() => {
+                showToast('账号 JSON 已复制到剪贴板', 'success');
+            }).catch(() => {
+                showToast('复制失败', 'error');
+            });
+        }
+
+        async function changeAdminKey() {
+            const newKey = document.getElementById('new-admin-key').value.trim();
+            if (!newKey) { showToast('请输入新的管理密钥', 'warning'); return; }
+            if (newKey.length < 6) { showToast('密钥长度至少 6 位', 'warning'); return; }
+            if (!confirm('确定修改管理密钥？修改后需要重新登录。')) return;
+            try { await fetchApi('/api/settings/admin-key', { method: 'POST', body: JSON.stringify({ new_key: newKey }) }); showToast('修改成功！请重新登录', 'success'); logout(); }
+            catch (e) { showToast('修改失败: ' + e.message, 'error'); }
+        }
+
+        async function loadApiKeys() {
+            try {
+                const keys = await fetchApi('/api/settings/api-keys');
+                const container = document.getElementById('api-keys-list');
+                if (!keys || keys.length === 0) { container.innerHTML = '<div class="text-gray-500">暂无 API 密钥</div>'; return; }
+                container.innerHTML = `<table class="w-full"><thead><tr class="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"><th class="px-4 py-3 rounded-tl-lg">密钥</th><th class="px-4 py-3 rounded-tr-lg">操作</th></tr></thead><tbody class="divide-y divide-gray-100">${keys.map(k => `<tr class="hover:bg-gray-50 transition"><td class="px-4 py-3 font-mono text-sm text-gray-900">${k.key}</td><td class="px-4 py-3"><button onclick="copyText('${k.key}')" class="text-blue-500 hover:text-blue-700 text-sm font-medium mr-3">复制</button><button onclick="removeApiKey('${k.key}')" class="text-red-500 hover:text-red-700 text-sm font-medium">删除</button></td></tr>`).join('')}</tbody></table>`;
+            } catch (e) { console.error(e); }
+        }
+
+        async function addApiKey() {
+            const newKey = document.getElementById('new-api-key').value.trim();
+            if (!newKey) { showToast('请输入 API 密钥', 'warning'); return; }
+            if (newKey.length < 6) { showToast('密钥长度至少 6 位', 'warning'); return; }
+            try { await fetchApi('/api/settings/api-keys', { method: 'POST', body: JSON.stringify({ key: newKey }) }); document.getElementById('new-api-key').value = ''; loadApiKeys(); showToast('添加成功', 'success'); }
+            catch (e) { showToast('添加失败: ' + e.message, 'error'); }
+        }
+
+        async function removeApiKey(key) {
+            if (!confirm('确定删除此 API 密钥？')) return;
+            try { await fetchApi('/api/settings/api-keys', { method: 'DELETE', body: JSON.stringify({ key }) }); loadApiKeys(); showToast('删除成功', 'success'); }
+            catch (e) { showToast('删除失败: ' + e.message, 'error'); }
+        }
+
+        function copyText(text) {
+            navigator.clipboard.writeText(text).then(() => showToast('已复制到剪贴板', 'success')).catch(() => {
+                // Fallback for older browsers
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                showToast('已复制到剪贴板', 'success');
+            });
+        }
+
+        async function refresh() { loadStatus(); loadUsers(); }
+
+        (async () => {
+            if (!token) {
+                window.location.href = '/login.html';
+                return;
+            }
+
+            document.getElementById('loadingPage').classList.add('hidden');
+            document.getElementById('mainPanel').classList.remove('hidden');
+            refresh();
+        })();
+
+        // 自动刷新统计数据（每30秒）
+        setInterval(() => {
+            if (token && !document.getElementById('mainPanel').classList.contains('hidden')) {
+                loadStatus();
+            }
+        }, 30000);
+    </script>
+</body>
+</html>

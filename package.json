@@ -6,9 +6,11 @@
   "type": "module",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "node --watch src/index.js"
+    "dev": "node --watch src/index.js",
+    "migrate": "node src/migrate.js"
   },
   "dependencies": {
+    "better-sqlite3": "^11.10.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^4.18.2",
