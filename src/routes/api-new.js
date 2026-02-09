@@ -558,7 +558,7 @@ async function handleStreamResponseWithBilling(res, response, toolNameMap, selec
 
     // Record request and charge user (transaction)
     try {
-      state.billing.recordRequestAndCharge({
+      const billingResult = state.billing.recordRequestAndCharge({
         user_id: user.id,
         user_api_key: user.api_key,
         kiro_account_id: selected.id,
@@ -571,7 +571,7 @@ async function handleStreamResponseWithBilling(res, response, toolNameMap, selec
         timestamp: new Date().toISOString()
       });
 
-      console.log(`✓ Billed user ${user.username}: $${((inputTokens / 1000000) * user.price_input + (outputTokens / 1000000) * user.price_output).toFixed(6)}`);
+      console.log(`✓ Billed user ${user.username}: $${billingResult.cost.toFixed(6)} (${model})`);
     } catch (billingError) {
       console.error('Billing error:', billingError);
       // Note: Response already sent, but billing failed
@@ -712,7 +712,7 @@ async function handleNonStreamResponseWithBilling(res, response, toolNameMap, se
 
     // Record request and charge user (transaction)
     try {
-      state.billing.recordRequestAndCharge({
+      const billingResult = state.billing.recordRequestAndCharge({
         user_id: user.id,
         user_api_key: user.api_key,
         kiro_account_id: selected.id,
@@ -725,7 +725,7 @@ async function handleNonStreamResponseWithBilling(res, response, toolNameMap, se
         timestamp: new Date().toISOString()
       });
 
-      console.log(`✓ Billed user ${user.username}: $${((inputTokens / 1000000) * user.price_input + (outputTokens / 1000000) * user.price_output).toFixed(6)}`);
+      console.log(`✓ Billed user ${user.username}: $${billingResult.cost.toFixed(6)} (${model})`);
     } catch (billingError) {
       console.error('Billing error:', billingError);
       // Note: Response already sent, but billing failed

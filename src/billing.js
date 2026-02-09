@@ -1,3 +1,5 @@
+import { getModelPricing } from './model-pricing.js';
+
 /**
  * BillingManager - Handles billing calculations and balance management
  */
@@ -27,20 +29,38 @@ export class BillingManager {
   }
 
   /**
+   * Calculate cost based on model pricing
+   * @param {number} inputTokens - Number of input tokens
+   * @param {number} outputTokens - Number of output tokens
+   * @param {string} model - Model identifier
+   * @returns {object} Cost breakdown
+   */
+  calculateCostByModel(inputTokens, outputTokens, model) {
+    const pricing = getModelPricing(model);
+    return this.calculateCost(inputTokens, outputTokens, pricing.input, pricing.output);
+  }
+
+  /**
    * Check if user has sufficient balance for estimated request
    * @param {object} user - User object
    * @param {number} estimatedInputTokens - Estimated input tokens
    * @param {number} maxOutputTokens - Maximum possible output tokens (default 32K)
+   * @param {string} model - Model identifier (optional, uses model pricing if provided)
    * @returns {object} Balance check result
    */
-  checkBalance(user, estimatedInputTokens, maxOutputTokens = 32000) {
+  checkBalance(user, estimatedInputTokens, maxOutputTokens = 32000, model = null) {
     // Calculate maximum possible cost
-    const maxCost = this.calculateCost(
-      estimatedInputTokens,
-      maxOutputTokens,
-      user.price_input,
-      user.price_output
-    );
+    let maxCost;
+    if (model) {
+      maxCost = this.calculateCostByModel(estimatedInputTokens, maxOutputTokens, model);
+    } else {
+      maxCost = this.calculateCost(
+        estimatedInputTokens,
+        maxOutputTokens,
+        user.price_input,
+        user.price_output
+      );
+    }
 
     const sufficient = user.balance >= maxCost.totalCost;
 
@@ -54,7 +74,7 @@ export class BillingManager {
 
   /**
    * Record request and charge user (transaction)
-   * @param {object} logData - Request log data
+   * @param {object} logData - Request log data (must include model field)
    * @returns {object} Result with updated balance
    */
   recordRequestAndCharge(logData) {
@@ -65,12 +85,11 @@ export class BillingManager {
         throw new Error('User not found');
       }
 
-      // Calculate actual cost
-      const cost = this.calculateCost(
+      // Calculate actual cost using model pricing
+      const cost = this.calculateCostByModel(
         logData.input_tokens,
         logData.output_tokens,
-        user.price_input,
-        user.price_output
+        logData.model
       );
 
       // Check if balance is sufficient
@@ -252,15 +271,10 @@ export class BillingManager {
    * Estimate cost for a request
    * @param {number} inputTokens - Input tokens
    * @param {number} outputTokens - Output tokens
-   * @param {object} user - User object
+   * @param {string} model - Model identifier (uses model pricing)
    * @returns {object} Cost estimate
    */
-  estimateCost(inputTokens, outputTokens, user) {
-    return this.calculateCost(
-      inputTokens,
-      outputTokens,
-      user.price_input,
-      user.price_output
-    );
+  estimateCost(inputTokens, outputTokens, model) {
+    return this.calculateCostByModel(inputTokens, outputTokens, model);
   }
 }

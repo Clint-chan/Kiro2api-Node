@@ -24,7 +24,9 @@
       "Bash(wget:*)",
       "Bash(timeout 3 bash -c 'exec 3<>/dev/tcp/localhost/18964 && echo -e \"\"GET /health HTTP/1.1\\\\r\\\\nHost: localhost\\\\r\\\\n\\\\r\\\\n\"\" >&3 && cat <&3')",
       "Bash(xargs:*)",
-      "Bash(export http_proxy=\"\" https_proxy=\"\" all_proxy=\"\")"
+      "Bash(export http_proxy=\"\" https_proxy=\"\" all_proxy=\"\")",
+      "Bash(ls:*)",
+      "Bash(git restore:*)"
     ]
   }
 }
