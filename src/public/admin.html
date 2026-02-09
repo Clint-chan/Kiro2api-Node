@@ -1545,16 +1545,33 @@
         }
 
         function copyText(text) {
-            navigator.clipboard.writeText(text).then(() => showToast('已复制到剪贴板', 'success')).catch(() => {
-                // Fallback for older browsers
-                const textarea = document.createElement('textarea');
-                textarea.value = text;
-                document.body.appendChild(textarea);
-                textarea.select();
+            // Check if Clipboard API is available (requires HTTPS)
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showToast('已复制到剪贴板', 'success');
+                }).catch(() => {
+                    fallbackCopy(text);
+                });
+            } else {
+                // Fallback for HTTP or older browsers
+                fallbackCopy(text);
+            }
+        }
+
+        function fallbackCopy(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
                 document.execCommand('copy');
-                document.body.removeChild(textarea);
                 showToast('已复制到剪贴板', 'success');
-            });
+            } catch (err) {
+                showToast('复制失败，请手动复制', 'error');
+            }
+            document.body.removeChild(textarea);
         }
 
         async function refresh() { loadStatus(); loadUsers(); }
