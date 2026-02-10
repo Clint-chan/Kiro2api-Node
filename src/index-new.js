@@ -146,7 +146,7 @@ async function startServer() {
       res.status(500).json({
         error: {
           type: 'internal_error',
-          message: 'An unexpected error occurred.'
+          message: '服务器内部错误，请稍后重试'
         }
       });
     });

@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { KiroClient, KiroApiError } from '../kiro-client.js';
-import { EventStreamDecoder, parseKiroEvent } from '../event-parser.js';
+import { ClaudeClient, ClaudeApiError } from '../kiro-client.js';
+import { EventStreamDecoder, parseClaudeEvent } from '../event-parser.js';
 import { countTokens, countMessagesTokens, countToolUseTokens } from '../tokenizer.js';
 import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs/promises';
@@ -40,7 +40,10 @@ export function createApiRouter(state) {
     if (!apiKey) {
       return res.status(401).json({
         type: 'error',
-        error: { type: 'authentication_error', message: 'API key is required' }
+        error: { 
+          type: 'authentication_error', 
+          message: '请提供有效的 API 密钥'
+        }
       });
     }
 
@@ -50,7 +53,10 @@ export function createApiRouter(state) {
     if (!user) {
       return res.status(401).json({
         type: 'error',
-        error: { type: 'authentication_error', message: 'Invalid API key or user is not active' }
+        error: { 
+          type: 'authentication_error', 
+          message: 'API 密钥无效或账户已被停用'
+        }
       });
     }
 
@@ -132,15 +138,18 @@ export function createApiRouter(state) {
       if (!selected) {
         return res.status(503).json({
           type: 'error',
-          error: { type: 'overloaded_error', message: '没有可用的账号' }
+          error: { 
+            type: 'overloaded_error', 
+            message: '服务繁忙，暂无可用资源，请稍后重试'
+          }
         });
       }
 
       const isStream = req.body.stream === true;
-      const kiroClient = new KiroClient(state.config, selected.tokenManager);
+      const claudeClient = new ClaudeClient(state.config, selected.tokenManager);
 
-      // 调用 Kiro API
-      const { response, toolNameMap } = await kiroClient.callApiStream(req.body);
+      // 调用 Claude API
+      const { response, toolNameMap } = await claudeClient.callApiStream(req.body);
 
       if (isStream) {
         // 流式响应 with billing
@@ -173,12 +182,12 @@ export function createApiRouter(state) {
         state.accountPool.recordError(selected.id, isRateLimit);
       }
 
-      if (error instanceof KiroApiError) {
+      if (error instanceof ClaudeApiError) {
         try {
           const debugDir = path.join(state.config.dataDir || './data', 'debug');
           await fs.mkdir(debugDir, { recursive: true });
           const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-          const debugPath = path.join(debugDir, `kiro_error_${stamp}.json`);
+          const debugPath = path.join(debugDir, `claude_error_${stamp}.json`);
           await fs.writeFile(debugPath, JSON.stringify({
             at: new Date().toISOString(),
             status: error.status,
@@ -206,9 +215,9 @@ export function createApiRouter(state) {
 function inferHttpStatus(error) {
   const msg = String(error?.message || '');
 
-  const kiroStatusMatch = msg.match(/Kiro API 错误:\s*(\d{3})\b/);
-  if (kiroStatusMatch) {
-    const code = parseInt(kiroStatusMatch[1], 10);
+  const claudeStatusMatch = msg.match(/Claude API 错误:\s*(\d{3})\b/);
+  if (claudeStatusMatch) {
+    const code = parseInt(claudeStatusMatch[1], 10);
     if (Number.isFinite(code)) return code;
   }
 
@@ -244,8 +253,8 @@ async function handleStreamResponseWithBilling(res, response, toolNameMap, selec
   const messageId = 'msg_' + uuidv4().replace(/-/g, '');
   const decoder = new EventStreamDecoder();
   const toolNameReverse = new Map();
-  for (const [originalName, kiroName] of toolNameMap || []) {
-    toolNameReverse.set(kiroName, originalName);
+  for (const [originalName, claudeName] of toolNameMap || []) {
+    toolNameReverse.set(claudeName, originalName);
   }
   let inputTokens = estimatedInputTokens;
   const modelContextLength = getModelContextLength(model, state.config);
@@ -425,7 +434,7 @@ async function handleStreamResponseWithBilling(res, response, toolNameMap, selec
       decoder.feed(chunk);
 
       for (const frame of decoder.decode()) {
-        const event = parseKiroEvent(frame);
+        const event = parseClaudeEvent(frame);
         if (!event || !event.data) continue;
 
         eventCount++;
@@ -619,7 +628,7 @@ async function handleNonStreamResponseWithBilling(res, response, toolNameMap, se
       decoder.feed(chunk);
 
       for (const frame of decoder.decode()) {
-        const event = parseKiroEvent(frame);
+        const event = parseClaudeEvent(frame);
         if (!event || !event.data) continue;
 
         const eventType = event.type;
