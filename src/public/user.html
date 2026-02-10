@@ -256,11 +256,15 @@ response = client.messages.create(
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                     <div>
                         <h4 class="text-sm font-medium text-gray-700 mb-4">最近 7 天请求趋势</h4>
-                        <canvas id="requestChart" height="200"></canvas>
+                        <div style="height: 250px; position: relative;">
+                            <canvas id="requestChart"></canvas>
+                        </div>
                     </div>
                     <div>
                         <h4 class="text-sm font-medium text-gray-700 mb-4">最近 7 天消费趋势</h4>
-                        <canvas id="costChart" height="200"></canvas>
+                        <div style="height: 250px; position: relative;">
+                            <canvas id="costChart"></canvas>
+                        </div>
                     </div>
                 </div>
 
@@ -413,6 +417,42 @@ response = client.messages.create(
             document.getElementById(`guide-${tab}`).classList.remove('hidden');
         }
 
+        function copyToClipboard(text, successMessage) {
+            // 尝试使用现代 Clipboard API
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showToast(successMessage, 'success');
+                }).catch(err => {
+                    console.error('Clipboard API failed:', err);
+                    fallbackCopy(text, successMessage);
+                });
+            } else {
+                // 降级到旧方法
+                fallbackCopy(text, successMessage);
+            }
+        }
+
+        function fallbackCopy(text, successMessage) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showToast(successMessage, 'success');
+                } else {
+                    showToast('复制失败,请手动复制', 'error');
+                }
+            } catch (err) {
+                console.error('Fallback copy failed:', err);
+                showToast('复制失败,请手动复制', 'error');
+            }
+            document.body.removeChild(textarea);
+        }
+
         function copyClaudeConfig() {
             const config = `{
   "env": {
@@ -420,9 +460,7 @@ response = client.messages.create(
     "ANTHROPIC_AUTH_TOKEN": "${user.api_key || token}"
   }
 }`;
-            navigator.clipboard.writeText(config).then(() => {
-                showToast('Claude Code 配置已复制', 'success');
-            });
+            copyToClipboard(config, 'Claude Code 配置已复制');
         }
 
         function copyPythonCode() {
@@ -440,9 +478,7 @@ response = client.messages.create(
 )
 
 print(response.content[0].text)`;
-            navigator.clipboard.writeText(code).then(() => {
-                showToast('Python 代码已复制', 'success');
-            });
+            copyToClipboard(code, 'Python 代码已复制');
         }
 
         function copyCurlCode() {
@@ -454,14 +490,27 @@ print(response.content[0].text)`;
     "max_tokens": 1024,
     "messages": [{"role": "user", "content": "Hello!"}]
   }'`;
-            navigator.clipboard.writeText(code).then(() => {
-                showToast('cURL 命令已复制', 'success');
-            });
+            copyToClipboard(code, 'cURL 命令已复制');
         }
 
         async function loadStats() {
             try {
-                const data = await fetchApi('/api/user/stats/daily?days=7');
+                // 计算日期范围
+                const endDate = new Date();
+                const startDate = new Date();
+                startDate.setDate(startDate.getDate() - 6); // 7天数据（包括今天）
+
+                const formatDate = (date) => {
+                    const year = date.getFullYear();
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    return `${year}-${month}-${day}`;
+                };
+
+                const startDateStr = formatDate(startDate);
+                const endDateStr = formatDate(endDate);
+
+                const data = await fetchApi(`/api/user/stats/daily?startDate=${startDateStr}&endDate=${endDateStr}`);
                 const dailyStats = data.data || [];
 
                 const labels = dailyStats.map(d => d.date.substring(5));
@@ -481,13 +530,31 @@ print(response.content[0].text)`;
                             data: requests,
                             borderColor: 'rgb(59, 130, 246)',
                             backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                            tension: 0.4
+                            tension: 0.4,
+                            fill: true
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        plugins: { legend: { display: false } }
+                        plugins: { 
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return '请求数: ' + context.parsed.y;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    precision: 0
+                                }
+                            }
+                        }
                     }
                 });
 
@@ -501,13 +568,33 @@ print(response.content[0].text)`;
                             data: costs,
                             borderColor: 'rgb(168, 85, 247)',
                             backgroundColor: 'rgba(168, 85, 247, 0.1)',
-                            tension: 0.4
+                            tension: 0.4,
+                            fill: true
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        plugins: { legend: { display: false } }
+                        plugins: { 
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return '消费: $' + context.parsed.y.toFixed(4);
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return '$' + value.toFixed(2);
+                                    }
+                                }
+                            }
+                        }
                     }
                 });
             } catch (error) {
