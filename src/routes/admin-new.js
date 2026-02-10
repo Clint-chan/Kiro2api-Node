@@ -333,7 +333,7 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
       res.status(500).json({
         error: {
           type: 'internal_error',
-          message: '充值失败，请检查输入并重试'
+          message: error.message || 'Failed to recharge.'
         }
       });
     }
@@ -349,8 +349,8 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
     try {
       const users = db.getAllUsers();
       const activeUsers = users.filter(u => u.status === 'active');
-      const claudeAccounts = db.getAllKiroAccounts();
-      const activeClaudeAccounts = claudeAccounts.filter(a => a.status === 'active');
+      const kiroAccounts = db.getAllKiroAccounts();
+      const activeKiroAccounts = kiroAccounts.filter(a => a.status === 'active');
 
       // Get today's stats
       const today = new Date().toISOString().split('T')[0];
@@ -388,9 +388,9 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
             active: activeUsers.length,
             suspended: users.filter(u => u.status === 'suspended').length
           },
-          claudeAccounts: {
-            total: claudeAccounts.length,
-            active: activeClaudeAccounts.length
+          kiroAccounts: {
+            total: kiroAccounts.length,
+            active: activeKiroAccounts.length
           },
           today: {
             requests: todayStats.request_count || 0,
@@ -514,7 +514,7 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
 
   /**
    * GET /api/admin/stats/accounts
-   * Get Claude account statistics
+   * Get Kiro account statistics
    */
   router.get('/stats/accounts', (req, res) => {
     try {
@@ -743,11 +743,11 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
     }
   });
 
-  // ==================== Claude Accounts Management ====================
+  // ==================== Kiro Accounts Management ====================
 
   /**
    * GET /api/admin/accounts
-   * Get all Claude accounts
+   * Get all Kiro accounts
    */
   router.get('/accounts', (req, res) => {
     try {
@@ -757,11 +757,11 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
         data: accounts
       });
     } catch (error) {
-      console.error('Get Claude accounts error:', error);
+      console.error('Get Kiro accounts error:', error);
       res.status(500).json({
         error: {
           type: 'internal_error',
-          message: '获取账号列表失败，请稍后重试'
+          message: 'Failed to retrieve Kiro accounts.'
         }
       });
     }
@@ -817,7 +817,7 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
       res.status(500).json({
         error: {
           type: 'internal_error',
-          message: '刷新用量失败，请稍后重试'
+          message: error.message || 'Failed to refresh usage.'
         }
       });
     }
@@ -857,7 +857,7 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
       res.status(500).json({
         error: {
           type: 'internal_error',
-          message: '批量刷新用量失败，请稍后重试'
+          message: error.message || 'Failed to refresh all usage.'
         }
       });
     }
@@ -1037,7 +1037,7 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
       res.status(500).json({
         error: {
           type: 'internal_error',
-          message: '设置订阅失败，请检查参数并重试'
+          message: error.message || 'Failed to set subscription.'
         }
       });
     }
@@ -1060,7 +1060,7 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
       res.status(500).json({
         error: {
           type: 'internal_error',
-          message: '取消订阅失败，请稍后重试'
+          message: error.message || 'Failed to cancel subscription.'
         }
       });
     }
@@ -1094,7 +1094,7 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
       res.status(500).json({
         error: {
           type: 'internal_error',
-          message: '续费订阅失败，请稍后重试'
+          message: error.message || 'Failed to renew subscription.'
         }
       });
     }

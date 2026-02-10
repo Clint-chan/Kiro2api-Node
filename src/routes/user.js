@@ -279,7 +279,7 @@ export function createUserRouter(db, billing, subscription) {
       res.status(500).json({
         error: {
           type: 'internal_error',
-          message: '生成账单失败，请稍后重试'
+          message: error.message || 'Failed to generate bill.'
         }
       });
     }
