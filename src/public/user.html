@@ -56,7 +56,7 @@
                     </div>
                 </div>
                 <div class="text-3xl font-bold text-gray-900" id="stat-balance">$0.00</div>
-                <div class="text-xs text-gray-400 mt-1">余额不足请联系管理员充值</div>
+                <div class="text-xs text-gray-400 mt-1" id="subscription-badge">余额不足请联系管理员充值</div>
             </div>
 
             <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition">
@@ -397,9 +397,31 @@ response = client.messages.create(
                 document.getElementById('pythonBaseUrl').textContent = baseUrl;
                 document.getElementById('curlApiKey').textContent = apiKey;
                 document.getElementById('curlBaseUrl').textContent = window.location.origin;
+
+                // 加载订阅信息
+                loadSubscriptionInfo();
             } catch (error) {
                 console.error('Load profile error:', error);
                 showToast('加载用户信息失败', 'error');
+            }
+        }
+
+        async function loadSubscriptionInfo() {
+            try {
+                const data = await fetchApi('/api/user/subscription');
+                const sub = data.data;
+
+                const badge = document.getElementById('subscription-badge');
+                
+                if (sub.subscription_type && sub.subscription_type !== 'none') {
+                    const typeName = sub.subscription_type === 'daily' ? '每日' : '每月';
+                    const nextReset = sub.next_reset ? new Date(sub.next_reset).toLocaleDateString() : '未知';
+                    badge.innerHTML = `<span class="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">${typeName}套餐 · 下次重置: ${nextReset}</span>`;
+                } else {
+                    badge.textContent = '余额不足请联系管理员充值';
+                }
+            } catch (error) {
+                console.error('Load subscription error:', error);
             }
         }
 

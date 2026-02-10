@@ -4,7 +4,7 @@ import express from 'express';
  * User API Routes
  * Handles user-facing operations
  */
-export function createUserRouter(db, billing) {
+export function createUserRouter(db, billing, subscription) {
   const router = express.Router();
 
   // ==================== User Profile ====================
@@ -330,6 +330,77 @@ export function createUserRouter(db, billing) {
         error: {
           type: 'internal_error',
           message: 'Failed to estimate cost.'
+        }
+      });
+    }
+  });
+
+  // ==================== Subscription Info ====================
+
+  /**
+   * GET /api/user/subscription
+   * Get user subscription info
+   */
+  router.get('/subscription', (req, res) => {
+    try {
+      const user = req.user;
+
+      res.json({
+        success: true,
+        data: {
+          subscription_type: user.subscription_type,
+          subscription_quota: user.subscription_quota,
+          subscription_expires_at: user.subscription_expires_at,
+          last_reset_at: user.last_reset_at,
+          period_used: user.period_used,
+          next_reset: subscription.getNextResetTime(user)
+        }
+      });
+    } catch (error) {
+      console.error('Get subscription error:', error);
+      res.status(500).json({
+        error: {
+          type: 'internal_error',
+          message: 'Failed to retrieve subscription.'
+        }
+      });
+    }
+  });
+
+  /**
+   * GET /api/user/subscription/reset-logs
+   * Get user quota reset logs
+   */
+  router.get('/subscription/reset-logs', (req, res) => {
+    try {
+      const { limit = 50, offset = 0 } = req.query;
+
+      const logs = db.db.prepare(`
+        SELECT * FROM quota_reset_logs
+        WHERE user_id = ?
+        ORDER BY reset_at DESC
+        LIMIT ? OFFSET ?
+      `).all(req.user.id, parseInt(limit), parseInt(offset));
+
+      const totalCount = db.db.prepare(`
+        SELECT COUNT(*) as count FROM quota_reset_logs WHERE user_id = ?
+      `).get(req.user.id).count;
+
+      res.json({
+        success: true,
+        data: logs,
+        pagination: {
+          total: totalCount,
+          limit: parseInt(limit),
+          offset: parseInt(offset)
+        }
+      });
+    } catch (error) {
+      console.error('Get reset logs error:', error);
+      res.status(500).json({
+        error: {
+          type: 'internal_error',
+          message: 'Failed to retrieve reset logs.'
         }
       });
     }

@@ -109,6 +109,14 @@ export class BillingManager {
         cost.totalCost
       );
 
+      // Update period_used for subscription users
+      if (user.subscription_type && user.subscription_type !== 'none') {
+        const newPeriodUsed = (user.period_used || 0) + cost.totalCost;
+        this.db.db.prepare(`
+          UPDATE users SET period_used = ? WHERE id = ?
+        `).run(newPeriodUsed, user.id);
+      }
+
       // Insert request log
       const logDataWithCost = {
         ...logData,

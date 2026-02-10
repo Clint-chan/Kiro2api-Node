@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 import { DatabaseManager } from './database.js';
 import { BillingManager } from './billing.js';
 import { AccountPool } from './pool.js';
+import { SubscriptionManager } from './subscription.js';
 import { userAuthMiddleware, adminAuthMiddleware, dualAuthMiddleware } from './middleware/auth.js';
 import { createApiRouter } from './routes/api-new.js';
 import { createAdminRouter } from './routes/admin-new.js';
@@ -49,6 +50,10 @@ async function startServer() {
     const billing = new BillingManager(db);
     console.log('✓ 计费管理器初始化完成');
 
+    // 初始化订阅管理器
+    const subscription = new SubscriptionManager(db);
+    console.log('✓ 订阅管理器初始化完成');
+
     // 初始化账号池 (for Kiro account selection)
     const accountPool = new AccountPool(config, db);
     await accountPool.load();
@@ -62,6 +67,7 @@ async function startServer() {
       config,
       db,
       billing,
+      subscription,
       accountPool,
       startTime
     };
@@ -112,10 +118,10 @@ async function startServer() {
     // ==================== API Routes ====================
 
     // User API routes (requires user authentication)
-    app.use('/api/user', userAuthMiddleware(db), createUserRouter(db, billing));
+    app.use('/api/user', userAuthMiddleware(db), createUserRouter(db, billing, subscription));
 
     // Admin API routes (requires admin authentication)
-    app.use('/api/admin', adminAuthMiddleware(db), createAdminRouter(db, billing, accountPool));
+    app.use('/api/admin', adminAuthMiddleware(db), createAdminRouter(db, billing, subscription, accountPool));
 
     // Claude API routes (requires user authentication with billing)
     app.use('/v1', createApiRouter(state));
@@ -161,6 +167,27 @@ async function startServer() {
       console.log(`     POST /v1/messages - Claude API`);
       console.log(`     GET  /health - 健康检查`);
       console.log('========================================');
+
+      // 启动订阅检查定时任务（每小时检查一次）
+      setInterval(async () => {
+        try {
+          await subscription.checkAndResetQuotas();
+          await subscription.checkExpiredSubscriptions();
+        } catch (error) {
+          console.error('订阅检查任务失败:', error);
+        }
+      }, 60 * 60 * 1000); // 每小时
+
+      // 启动时立即执行一次
+      setTimeout(async () => {
+        try {
+          await subscription.checkAndResetQuotas();
+          await subscription.checkExpiredSubscriptions();
+          console.log('✓ 订阅检查任务已执行');
+        } catch (error) {
+          console.error('订阅检查任务失败:', error);
+        }
+      }, 5000); // 5秒后执行
     });
 
     server.on('error', (error) => {
