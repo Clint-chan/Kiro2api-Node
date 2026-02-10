@@ -346,6 +346,20 @@ export class DatabaseManager {
    * Delete user
    */
   deleteUser(userId) {
+    // 删除用户前，先删除相关的记录
+    // 1. 删除请求日志
+    this.db.prepare('DELETE FROM request_logs WHERE user_id = ?').run(userId);
+    
+    // 2. 删除充值记录
+    this.db.prepare('DELETE FROM recharge_records WHERE user_id = ?').run(userId);
+    
+    // 3. 删除订阅历史
+    this.db.prepare('DELETE FROM subscription_history WHERE user_id = ?').run(userId);
+    
+    // 4. 删除额度重置日志
+    this.db.prepare('DELETE FROM quota_reset_logs WHERE user_id = ?').run(userId);
+    
+    // 5. 最后删除用户
     return this.db.prepare('DELETE FROM users WHERE id = ?').run(userId);
   }
 
