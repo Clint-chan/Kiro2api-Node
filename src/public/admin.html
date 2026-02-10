@@ -1517,7 +1517,14 @@
             if (!newKey) { showToast('请输入新的管理密钥', 'warning'); return; }
             if (newKey.length < 6) { showToast('密钥长度至少 6 位', 'warning'); return; }
             if (!confirm('确定修改管理密钥？修改后需要重新登录。')) return;
-            try { await fetchApi('/api/settings/admin-key', { method: 'POST', body: JSON.stringify({ new_key: newKey }) }); showToast('修改成功！请重新登录', 'success'); logout(); }
+            try { 
+                await fetchApi('/api/admin/settings/admin-key', { 
+                    method: 'PUT', 
+                    body: JSON.stringify({ newKey: newKey }) 
+                }); 
+                showToast('修改成功！请重新登录', 'success'); 
+                setTimeout(() => logout(), 1500);
+            }
             catch (e) { showToast('修改失败: ' + e.message, 'error'); }
         }
 
