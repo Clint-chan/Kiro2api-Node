@@ -6,7 +6,10 @@
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| `GET` | `/health` | 健康检查 |
+| `GET` | `/health` | 健康检查（综合） |
+| `GET` | `/health/live` | Liveness probe |
+| `GET` | `/health/ready` | Readiness probe |
+| `GET` | `/metrics` | Prometheus 指标 |
 | `POST` | `/api/auth/login` | 用户登录 |
 
 ### Claude API 端点
@@ -38,6 +41,9 @@
 | `POST` | `/api/admin/kiro-accounts` | 添加 Kiro 账号 | Admin Key |
 | `DELETE` | `/api/admin/kiro-accounts/:id` | 删除 Kiro 账号 | Admin Key |
 | `POST` | `/api/admin/kiro-accounts/:id/refresh` | 刷新账号额度 | Admin Key |
+| `GET` | `/api/config` | 获取运行时配置 | Admin Key |
+| `PATCH` | `/api/config` | 更新运行时配置 | Admin Key |
+| `POST` | `/api/config/reset` | 重置为默认配置 | Admin Key |
 
 ---
 

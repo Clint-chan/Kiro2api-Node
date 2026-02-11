@@ -6,6 +6,7 @@ import { createFailoverHandler } from '../failover-handler.js';
 import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs/promises';
 import path from 'path';
+import { recordApiStart, recordApiSuccess, recordApiFailure } from './api-new-metrics.js';
 
 // 获取模型上下文长度
 function getModelContextLength(model, config) {
@@ -110,6 +111,14 @@ export function createApiRouter(state) {
     try {
       const user = req.user;
 
+      // 记录请求开始
+      recordApiStart({
+        userId: user.id,
+        username: user.username,
+        model: req.body.model,
+        stream: req.body.stream
+      });
+
       // Estimate input tokens
       try {
         inputTokens = countMessagesTokens(req.body.messages || []);
@@ -167,6 +176,17 @@ export function createApiRouter(state) {
       }
 
     } catch (error) {
+      const duration = Date.now() - startTime;
+
+      // 记录失败指标
+      recordApiFailure({
+        userId: req.user?.id,
+        model: req.body.model,
+        error: error.message,
+        status: error.status,
+        duration
+      });
+
       // 记录错误 (no billing on error)
       if (selected) {
         state.accountPool.addLog({
@@ -330,6 +350,19 @@ async function handleStreamResponseWithBilling(res, response, toolNameMap, selec
     }
   };
   res.write(`event: message_start\ndata: ${JSON.stringify(messageStart)}\n\n`);
+
+  // 辅助函数：记录成功指标
+  function recordMetrics(inputTokens, outputTokens, cost) {
+    recordApiSuccess({
+      userId: user.id,
+      model,
+      inputTokens,
+      outputTokens,
+      duration: Date.now() - startTime,
+      cost,
+      stream: true
+    });
+  }
 
   // 辅助函数：发送 text_delta
   function sendTextDelta(text) {
@@ -620,6 +653,7 @@ async function handleStreamResponseWithBilling(res, response, toolNameMap, selec
       });
 
       console.log(`✓ Billed user ${user.username}: $${billingResult.cost.toFixed(6)} (${model})`);
+      recordMetrics(inputTokens, outputTokens, billingResult.cost);
     } catch (billingError) {
       console.error('Billing error:', billingError);
       // Note: Response already sent, but billing failed
@@ -774,6 +808,18 @@ async function handleNonStreamResponseWithBilling(res, response, toolNameMap, se
       });
 
       console.log(`✓ Billed user ${user.username}: $${billingResult.cost.toFixed(6)} (${model})`);
+      
+      // 记录成功指标
+      recordApiSuccess({
+        userId: user.id,
+        model,
+        inputTokens,
+        outputTokens,
+        duration: Date.now() - startTime,
+        cost: billingResult.cost,
+        stream: false
+      });
+
     } catch (billingError) {
       console.error('Billing error:', billingError);
       // Note: Response already sent, but billing failed

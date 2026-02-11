@@ -13,6 +13,10 @@ import { createApiRouter } from './routes/api-new.js';
 import { createAdminRouter } from './routes/admin-new.js';
 import { createUserRouter } from './routes/user.js';
 import { createUiRouter } from './routes/ui.js';
+import { createObservabilityRouter } from './routes/observability.js';
+import { createConfigRouter } from './routes/config.js';
+import { logger } from './logger.js';
+import { metrics } from './metrics.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -129,21 +133,19 @@ async function startServer() {
     // Admin API routes (requires admin authentication)
     app.use('/api/admin', adminAuthMiddleware(db), createAdminRouter(db, billing, subscription, accountPool));
 
+    // Config API routes (requires admin authentication)
+    app.use('/api/config', createConfigRouter(state));
+
     // Claude API routes (requires user authentication with billing)
     app.use('/v1', createApiRouter(state));
 
     // UI routes - redirect root to login
     app.get('/', (req, res) => res.redirect('/login.html'));
 
-    // ==================== Health Check ====================
+    // ==================== Observability ====================
 
-    app.get('/health', (req, res) => {
-      res.json({
-        status: 'ok',
-        timestamp: new Date().toISOString(),
-        uptime: Math.floor((Date.now() - startTime) / 1000)
-      });
-    });
+    // Metrics and health endpoints
+    app.use('/', createObservabilityRouter(state));
 
     // ==================== Error Handler ====================
 
@@ -217,17 +219,15 @@ async function startServer() {
         process.exit(0);
       });
     });
-      server.close(() => {
-        console.log('服务器已关闭');
-        db.close();
-        process.exit(0);
-      });
-    });
 
     process.on('SIGINT', () => {
       console.log('\n收到 SIGINT 信号，正在关闭服务器...');
+      
+      // 停止余额监控器
+      balanceMonitor.stop();
+      
       server.close(() => {
-        console.log('服务器已关闭');
+        console.log('✓ 服务器已关闭');
         db.close();
         process.exit(0);
       });

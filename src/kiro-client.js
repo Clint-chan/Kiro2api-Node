@@ -512,10 +512,16 @@ export class KiroClient {
     const headers = this.buildHeaders(token);
     const requestDebug = this.summarizeForDebug(kiroReq);
 
+    // 超时控制（防止上游 hang 住）
+    const timeout = parseInt(process.env.REQUEST_TIMEOUT) || 60000; // 默认 60 秒
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+
     const fetchOptions = {
       method: 'POST',
       headers,
-      body: JSON.stringify(kiroReq)
+      body: JSON.stringify(kiroReq),
+      signal: controller.signal
     };
 
     // 代理支持
@@ -528,13 +534,25 @@ export class KiroClient {
       }
     }
 
-    const response = await fetch(url, fetchOptions);
-    
-    if (!response.ok) {
-      const error = await response.text();
-      throw new KiroApiError(response.status, error, requestDebug);
-    }
+    try {
+      const response = await fetch(url, fetchOptions);
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new KiroApiError(response.status, error, requestDebug);
+      }
 
-    return { response, toolNameMap };
+      return { response, toolNameMap };
+    } catch (error) {
+      clearTimeout(timeoutId);
+      
+      // 超时错误
+      if (error.name === 'AbortError') {
+        throw new Error(`Request timeout after ${timeout}ms`);
+      }
+      
+      throw error;
+    }
   }
 }
