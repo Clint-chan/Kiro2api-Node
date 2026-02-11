@@ -1,14 +1,48 @@
+# Dependencies
 node_modules/
-data/accounts.json
-data/request_logs.json
+
+# Environment variables
 .env
-/data/debug
-/data/backup/2026-02-08T13-51-16-704Z
-/data/backup
-/reference-project-kiro-account-manager-main
-data/database.db
-data/database.db-wal
-data/database.db-shm
-/logs
-/reference_project
+
+# Data files
+data/
+!data/.gitkeep
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Database
+*.db
+*.db-wal
+*.db-shm
+
+# Backup files
+backup/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Reference projects
+reference-project-kiro-account-manager-main/
+reference_project/
+
+# Temporary files
+temp_*.html
+test-*.js
+verify-*.js
+
+# Tools
 .ace-tool/
+
+# PM2
+.pm2/

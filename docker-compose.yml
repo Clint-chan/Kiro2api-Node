@@ -4,13 +4,27 @@ services:
   kiro2api-node:
     build: .
     container_name: kiro2api-node
-    ports:
-      - "1088:8080"
-    environment:
-      - PORT=8080
-      - API_KEY=sk-your-api-key
-      - ADMIN_KEY=your-admin-key
-      - REGION=us-east-1
-    volumes:
-      - ./data:/app/data
     restart: unless-stopped
+    ports:
+      - "${PORT:-19864}:19864"
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - PORT=${PORT:-19864}
+      - API_KEY=${API_KEY}
+      - ADMIN_KEY=${ADMIN_KEY}
+      - DATA_DIR=/app/data
+      - REGION=${REGION:-us-east-1}
+      - KIRO_VERSION=${KIRO_VERSION:-0.8.0}
+      - PROXY_URL=${PROXY_URL}
+      - MAX_HISTORY_TURNS=${MAX_HISTORY_TURNS}
+      - MAX_TOOL_RESULT_LENGTH=${MAX_TOOL_RESULT_LENGTH}
+    volumes:
+      # 持久化数据库和日志
+      - ./data:/app/data
+      - ./logs:/app/logs
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:19864/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s

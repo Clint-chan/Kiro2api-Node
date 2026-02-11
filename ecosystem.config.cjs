@@ -1,3 +1,6 @@
+// Load environment variables from .env file
+require('dotenv').config();
+
 module.exports = {
   apps: [{
     name: 'kiro2api-node',
@@ -20,16 +23,16 @@ module.exports = {
     // 资源限制
     max_memory_restart: '1G',
     
-    // 环境变量 - 从 .env 文件读取
+    // 环境变量 - 从 .env 文件自动读取
     env: {
-      NODE_ENV: 'production',
-      PORT: 19864,
-      API_KEY: 'zxc123',
-      ADMIN_KEY: 'zxc123',
-      DATA_DIR: './data',
-      REGION: 'us-east-1',
-      KIRO_VERSION: '0.8.0',
-      PROXY_URL: 'http://127.0.0.1:10808'
+      NODE_ENV: process.env.NODE_ENV || 'production',
+      PORT: process.env.PORT || 19864,
+      API_KEY: process.env.API_KEY,
+      ADMIN_KEY: process.env.ADMIN_KEY,
+      DATA_DIR: process.env.DATA_DIR || './data',
+      REGION: process.env.REGION || 'us-east-1',
+      KIRO_VERSION: process.env.KIRO_VERSION || '0.8.0',
+      PROXY_URL: process.env.PROXY_URL || undefined
     },
     
     // 环境变量 - 开发环境
