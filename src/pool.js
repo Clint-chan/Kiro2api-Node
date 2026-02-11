@@ -285,6 +285,7 @@ export class AccountPool {
   async selectAccount() {
     // 第三道防线：本地软限流 - 余额低于 5 时停止使用
     const minBalance = parseFloat(process.env.MIN_BALANCE_THRESHOLD) || 5;
+    const maxInflight = parseInt(process.env.MAX_INFLIGHT_PER_ACCOUNT) || 5; // 每账号最大并发
     
     const available = Array.from(this.accounts.values())
       .filter(a => {
@@ -297,6 +298,12 @@ export class AccountPool {
           if (available < minBalance) {
             return false;
           }
+        }
+        
+        // 检查并发数（并发闸门）
+        const inflight = a.inflight || 0;
+        if (inflight >= maxInflight) {
+          return false;
         }
         
         return true;
@@ -315,6 +322,10 @@ export class AccountPool {
       case 'least-used':
         selected = available.reduce((a, b) => a.requestCount < b.requestCount ? a : b);
         break;
+      case 'least-inflight':
+        // 选择并发数最少的账号
+        selected = available.reduce((a, b) => (a.inflight || 0) < (b.inflight || 0) ? a : b);
+        break;
       default: // round-robin
         selected = available[this.roundRobinIndex % available.length];
         this.roundRobinIndex++;
@@ -322,6 +333,9 @@ export class AccountPool {
 
     selected.requestCount++;
     selected.lastUsedAt = new Date().toISOString();
+    
+    // 增加并发计数
+    selected.inflight = (selected.inflight || 0) + 1;
 
     // 异步保存，不阻塞请求
     this.save().catch(() => {});
@@ -329,7 +343,11 @@ export class AccountPool {
     return {
       id: selected.id,
       name: selected.name,
-      tokenManager: this.tokenManagers.get(selected.id)
+      tokenManager: this.tokenManagers.get(selected.id),
+      // 返回释放函数
+      release: () => {
+        selected.inflight = Math.max(0, (selected.inflight || 0) - 1);
+      }
     };
   }
 

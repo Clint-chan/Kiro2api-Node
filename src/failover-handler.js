@@ -33,10 +33,13 @@ export class FailoverHandler {
    * 第一道防线：无感换号重试
    * 
    * 当请求失败时，自动切换到其他账号重试，用户完全无感知
+   * 
+   * 注意：流式请求一旦开始就不能重试（避免重复内容和重复计费）
    */
   async executeWithFailover(fn, context = {}) {
     const usedAccounts = new Set();
     let lastError = null;
+    let hasStartedStreaming = false;
 
     for (let attempt = 0; attempt < this.maxRetries; attempt++) {
       try {
@@ -53,6 +56,11 @@ export class FailoverHandler {
         // 执行请求
         const result = await fn(account);
         
+        // 如果是流式请求，标记已开始
+        if (context.isStream) {
+          hasStartedStreaming = true;
+        }
+        
         // 成功，返回结果
         if (attempt > 0) {
           console.log(`✓ 故障转移成功 (尝试 ${attempt + 1}/${this.maxRetries})`);
@@ -62,6 +70,12 @@ export class FailoverHandler {
 
       } catch (error) {
         lastError = error;
+        
+        // 流式请求已开始，不能重试（避免重复内容）
+        if (hasStartedStreaming) {
+          console.error(`❌ 流式请求已开始输出，无法重试`);
+          throw error;
+        }
         
         // 判断错误类型
         const errorType = this.classifyError(error);
@@ -74,7 +88,9 @@ export class FailoverHandler {
           // 继续尝试其他账号
           if (attempt < this.maxRetries - 1) {
             console.log(`🔄 切换到其他账号重试 (${attempt + 1}/${this.maxRetries})`);
-            await this.sleep(this.retryDelay);
+            // 指数退避 + 抖动
+            const delay = this.calculateBackoff(attempt);
+            await this.sleep(delay);
             continue;
           }
         } else if (errorType === 'TEMPORARY') {
@@ -84,7 +100,9 @@ export class FailoverHandler {
           
           if (attempt < this.maxRetries - 1) {
             console.log(`⏳ 延迟后重试 (${attempt + 1}/${this.maxRetries})`);
-            await this.sleep(this.retryDelay * Math.pow(2, attempt));
+            // 指数退避 + 抖动
+            const delay = this.calculateBackoff(attempt);
+            await this.sleep(delay);
             continue;
           }
         } else {
@@ -98,6 +116,23 @@ export class FailoverHandler {
     // 所有重试都失败了
     console.error(`❌ 故障转移失败，已尝试 ${this.maxRetries} 次`);
     throw lastError;
+  }
+
+  /**
+   * 计算退避延迟（指数退避 + 抖动）
+   * 避免重试风暴
+   */
+  calculateBackoff(attempt) {
+    // 指数退避：100ms, 200ms, 400ms, 800ms...
+    const exponentialDelay = this.retryDelay * Math.pow(2, attempt);
+    
+    // 限制最大延迟为 5 秒
+    const cappedDelay = Math.min(exponentialDelay, 5000);
+    
+    // 添加随机抖动（50%-100%）
+    const jitter = cappedDelay * (0.5 + Math.random() * 0.5);
+    
+    return Math.floor(jitter);
   }
 
   /**

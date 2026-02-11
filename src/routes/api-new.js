@@ -131,19 +131,28 @@ export function createApiRouter(state) {
         });
       }
 
+      const isStream = req.body.stream === true;
+
       // 🔥 使用故障转移：自动重试，用户无感知
+      // 注意：流式请求一旦开始输出就不能重试（避免重复内容）
       const result = await failoverHandler.executeWithFailover(async (account) => {
         selected = account;
         const kiroClient = new KiroClient(state.config, account.tokenManager);
-        const apiResult = await kiroClient.callApiStream(req.body);
-        return { ...apiResult, account };
-      }, { accountId: selected?.id });
+        
+        try {
+          const apiResult = await kiroClient.callApiStream(req.body);
+          return { ...apiResult, account, isStream };
+        } finally {
+          // 释放并发计数
+          if (account.release) {
+            account.release();
+          }
+        }
+      }, { accountId: selected?.id, isStream });
 
       // 解构结果
       const { response, toolNameMap, account } = result;
       selected = account;
-
-      const isStream = req.body.stream === true;
 
       if (isStream) {
         // 流式响应 with billing
