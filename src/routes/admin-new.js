@@ -974,48 +974,131 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
 
   /**
    * POST /api/admin/accounts/import
-   * Import accounts from JSON
+   * Import accounts from JSON (supports multiple formats and templates)
+   * Supports: Social, BuilderId, Enterprise templates
    */
   router.post('/accounts/import', async (req, res) => {
     try {
       const { raw_json } = req.body;
+      
+      if (!raw_json) {
+        return res.status(400).json({
+          error: {
+            type: 'validation_error',
+            message: 'raw_json is required'
+          }
+        });
+      }
+      
       const parsed = JSON.parse(raw_json);
+      let accountsToImport = [];
 
-      // 支持数组格式（批量导入）
-      const accounts = Array.isArray(parsed) ? parsed : [parsed];
+      // 支持多种格式
+      if (parsed.accounts && Array.isArray(parsed.accounts)) {
+        // Kiro 导出格式: { accounts: [...] }
+        accountsToImport = parsed.accounts;
+      } else if (Array.isArray(parsed)) {
+        // 数组格式: [...]
+        accountsToImport = parsed;
+      } else {
+        // 单个账号格式: { ... }
+        accountsToImport = [parsed];
+      }
+
       const results = [];
 
-      for (const raw of accounts) {
+      for (const raw of accountsToImport) {
         try {
-          // 判断账号类型
-          const authMethod = (raw.clientId && raw.clientSecret) ? 'idc' : 'social';
-          const accountName = raw.name || raw.label || raw.email || '导入的账号';
+          // 提取账号信息（支持多种格式和模板）
+          let refreshToken, clientId, clientSecret, region, machineId, profileArn, email, nickname, authMethod;
+          
+          // Kiro 导出格式
+          if (raw.credentials) {
+            refreshToken = raw.credentials.refreshToken;
+            clientId = raw.credentials.clientId;
+            clientSecret = raw.credentials.clientSecret;
+            region = raw.credentials.region || 'us-east-1';
+            authMethod = raw.credentials.authMethod; // 可能已经指定了
+            email = raw.email;
+            nickname = raw.nickname;
+            machineId = raw.machineId || null;
+            
+            // 从 IDP 判断模板类型
+            if (raw.idp) {
+              if (raw.idp === 'BuilderId') {
+                authMethod = 'idc'; // BuilderId 使用 IdC
+              } else if (raw.idp === 'AWS') {
+                authMethod = 'idc'; // Enterprise (IAM Identity Center)
+              } else {
+                authMethod = 'social'; // Social login
+              }
+            }
+            
+            // 如果没有 profileArn，尝试从其他字段获取
+            profileArn = raw.credentials.profileArn || null;
+          } else {
+            // 简单格式
+            refreshToken = raw.refreshToken;
+            clientId = raw.clientId;
+            clientSecret = raw.clientSecret;
+            region = raw.region || 'us-east-1';
+            machineId = raw.machineId || null;
+            profileArn = raw.profileArn || null;
+            email = raw.email;
+            nickname = raw.name || raw.label;
+            authMethod = null;
+          }
+
+          if (!refreshToken) {
+            results.push({ 
+              success: false, 
+              name: email || nickname || '未知账号', 
+              error: 'Missing refreshToken' 
+            });
+            continue;
+          }
+
+          // 自动判断账号类型（如果未指定）
+          if (!authMethod) {
+            authMethod = (clientId && clientSecret) ? 'idc' : 'social';
+          }
+          
+          const accountName = nickname || email || '导入的账号';
 
           const accountData = {
             name: accountName,
             credentials: {
-              refreshToken: raw.refreshToken,
+              refreshToken,
               authMethod,
-              clientId: raw.clientId || null,
-              clientSecret: raw.clientSecret || null,
-              region: raw.region || 'us-east-1',
-              machineId: raw.machineId || null,
-              profileArn: raw.profileArn || null
+              clientId: clientId || null,
+              clientSecret: clientSecret || null,
+              region: region || 'us-east-1',
+              machineId: machineId || null,
+              profileArn: profileArn || null
             }
           };
 
           const id = await accountPool.addAccount(accountData, true); // skipValidation = true
-          results.push({ success: true, id, name: accountName });
+          results.push({ 
+            success: true, 
+            id, 
+            name: accountName,
+            type: authMethod === 'idc' ? 'IdC/BuilderId/Enterprise' : 'Social'
+          });
         } catch (e) {
-          results.push({ success: false, name: raw.name || raw.label || raw.email, error: e.message });
+          results.push({ 
+            success: false, 
+            name: raw.email || raw.nickname || raw.name || raw.label || '未知账号', 
+            error: e.message 
+          });
         }
       }
 
       const successCount = results.filter(r => r.success).length;
       res.status(201).json({
-        total: accounts.length,
+        total: accountsToImport.length,
         success: successCount,
-        failed: accounts.length - successCount,
+        failed: accountsToImport.length - successCount,
         results
       });
     } catch (error) {

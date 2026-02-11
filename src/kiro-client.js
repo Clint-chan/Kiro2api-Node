@@ -87,7 +87,13 @@ export class KiroClient {
     if (depth > 6) return '[MaxDepth]';
     if (value === null) return null;
     const t = typeof value;
-    if (t === 'string') return `<string len=${value.length}>`;
+    if (t === 'string') {
+      // 对于字符串，如果太长则截断
+      if (value.length > 500) {
+        return `<string len=${value.length} preview="${value.substring(0, 200)}...${value.substring(value.length - 100)}">`;
+      }
+      return `<string len=${value.length}>`;
+    }
     if (t === 'number' || t === 'boolean') return value;
     if (t !== 'object') return `<${t}>`;
     if (Array.isArray(value)) {
@@ -348,6 +354,12 @@ export class KiroClient {
       kiroRequest.profileArn = this.tokenManager.credentials.profileArn;
     }
 
+    // 检查请求大小
+    const requestSize = JSON.stringify(kiroRequest).length;
+    if (requestSize > 1000000) { // 1MB
+      console.warn(`⚠ 请求体过大: ${(requestSize / 1024).toFixed(2)} KB (history: ${history.length} items, toolResults: ${allToolResults.length})`);
+    }
+
     return { kiroRequest, toolNameMap };
   }
 
@@ -382,16 +394,24 @@ export class KiroClient {
     
     const textParts = [];
     const toolResults = [];
+    const MAX_TOOL_RESULT_LENGTH = parseInt(process.env.MAX_TOOL_RESULT_LENGTH) || 50000; // 限制单个工具结果的最大长度
     
     for (const block of content) {
       if (block.type === 'text') {
         textParts.push(block.text);
       } else if (block.type === 'tool_result') {
-        const resultContent = typeof block.content === 'string' 
+        let resultContent = typeof block.content === 'string' 
           ? block.content 
           : (Array.isArray(block.content) 
               ? block.content.map(c => c.text || '').join('\n')
               : '');
+        
+        // 如果工具结果太长，截断它
+        if (resultContent.length > MAX_TOOL_RESULT_LENGTH) {
+          console.warn(`⚠ 工具结果过长 (${resultContent.length} 字符)，截断到 ${MAX_TOOL_RESULT_LENGTH} 字符`);
+          resultContent = resultContent.substring(0, MAX_TOOL_RESULT_LENGTH) + 
+                         `\n\n[... truncated ${resultContent.length - MAX_TOOL_RESULT_LENGTH} characters ...]`;
+        }
         
         toolResults.push({
           toolUseId: block.tool_use_id,

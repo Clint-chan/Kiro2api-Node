@@ -2025,7 +2025,7 @@
             if (!jsonContent) { showToast('请选择文件或粘贴 JSON 内容', 'warning'); return; }
             try { JSON.parse(jsonContent); } catch { showToast('JSON 格式错误', 'error'); return; }
             try {
-                const result = await fetchApi('/api/accounts/import', { method: 'POST', body: JSON.stringify({ raw_json: jsonContent }) });
+                const result = await fetchApi('/api/admin/accounts/import', { method: 'POST', body: JSON.stringify({ raw_json: jsonContent }) });
                 hideModal('importModal'); document.getElementById('import-json').value = ''; document.getElementById('file-name').textContent = ''; refresh();
                 showToast(`导入完成！成功: ${result.success} 个，失败: ${result.failed} 个`, result.failed > 0 ? 'warning' : 'success');
             } catch (e) { showToast('导入失败: ' + e.message, 'error'); }

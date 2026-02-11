@@ -133,13 +133,28 @@ export class AccountPool {
     this.accounts.set(id, newAccount);
     this.tokenManagers.set(id, new TokenManager(this.config, newAccount.credentials));
     await this.save();
+    
+    // 同步到数据库
+    if (this.db) {
+      this.db.insertKiroAccount(newAccount);
+      console.log(`✓ 账号 ${newAccount.name} (${id}) 已添加到数据库`);
+    }
+    
     return id;
   }
 
   async removeAccount(id) {
     const removed = this.accounts.delete(id);
     this.tokenManagers.delete(id);
-    if (removed) await this.save();
+    if (removed) {
+      await this.save();
+      
+      // 同步到数据库
+      if (this.db) {
+        this.db.deleteKiroAccount(id);
+        console.log(`✓ 账号 ${id} 已从数据库删除`);
+      }
+    }
     return removed;
   }
 
