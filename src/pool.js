@@ -283,10 +283,29 @@ export class AccountPool {
   }
 
   async selectAccount() {
+    // 第三道防线：本地软限流 - 余额低于 5 时停止使用
+    const minBalance = parseFloat(process.env.MIN_BALANCE_THRESHOLD) || 5;
+    
     const available = Array.from(this.accounts.values())
-      .filter(a => a.status === 'active');
+      .filter(a => {
+        // 必须是 active 状态
+        if (a.status !== 'active') return false;
+        
+        // 检查余额
+        if (a.usage) {
+          const available = a.usage.available || 0;
+          if (available < minBalance) {
+            return false;
+          }
+        }
+        
+        return true;
+      });
 
-    if (available.length === 0) return null;
+    if (available.length === 0) {
+      console.error('❌ 没有可用账号');
+      return null;
+    }
 
     let selected;
     switch (this.strategy) {
@@ -360,6 +379,33 @@ export class AccountPool {
       this.db.updateKiroAccountStatus(id, 'error');
     }
     console.log(`✓ 已标记账号 ${account.name} (${id}) 为 error`);
+  }
+
+  /**
+   * 标记账号为 DEPLETED（余额耗尽）
+   * 这是永久性状态，直到外部信号（余额监控器）检测到余额恢复
+   */
+  async markDepleted(id) {
+    const account = this.accounts.get(id);
+    if (!account) {
+      console.error(`❌ 账号 ${id} 不存在于 accountPool 中`);
+      if (this.db) {
+        this.db.updateKiroAccountStatus(id, 'depleted');
+        console.log(`✓ 已在数据库中标记账号 ${id} 为 depleted`);
+        return true;
+      }
+      return false;
+    }
+    
+    account.status = 'depleted';
+    await this.save();
+    
+    // 同步到数据库
+    if (this.db) {
+      this.db.updateKiroAccountStatus(id, 'depleted');
+    }
+    console.log(`💀 已标记账号 ${account.name} (${id}) 为 DEPLETED（余额耗尽）`);
+    return true;
   }
 
   async enableAccount(id) {

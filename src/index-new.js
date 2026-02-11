@@ -7,6 +7,7 @@ import { DatabaseManager } from './database.js';
 import { BillingManager } from './billing.js';
 import { AccountPool } from './pool.js';
 import { SubscriptionManager } from './subscription.js';
+import { createBalanceMonitor } from './balance-monitor.js';
 import { userAuthMiddleware, adminAuthMiddleware, dualAuthMiddleware } from './middleware/auth.js';
 import { createApiRouter } from './routes/api-new.js';
 import { createAdminRouter } from './routes/admin-new.js';
@@ -59,6 +60,10 @@ async function startServer() {
     await accountPool.load();
     console.log('✓ 账号池初始化完成');
 
+    // 初始化余额监控器
+    const balanceMonitor = createBalanceMonitor(accountPool, config);
+    console.log('✓ 余额监控器初始化完成');
+
     // 启动时间
     const startTime = Date.now();
 
@@ -69,6 +74,7 @@ async function startServer() {
       billing,
       subscription,
       accountPool,
+      balanceMonitor,
       startTime
     };
 
@@ -168,6 +174,9 @@ async function startServer() {
       console.log(`     GET  /health - 健康检查`);
       console.log('========================================');
 
+      // 启动余额监控器
+      balanceMonitor.start();
+
       // 启动订阅检查定时任务（每小时检查一次）
       setInterval(async () => {
         try {
@@ -198,6 +207,16 @@ async function startServer() {
     // Graceful shutdown
     process.on('SIGTERM', () => {
       console.log('收到 SIGTERM 信号，正在关闭服务器...');
+      
+      // 停止余额监控器
+      balanceMonitor.stop();
+      
+      server.close(() => {
+        console.log('✓ 服务器已关闭');
+        db.close();
+        process.exit(0);
+      });
+    });
       server.close(() => {
         console.log('服务器已关闭');
         db.close();

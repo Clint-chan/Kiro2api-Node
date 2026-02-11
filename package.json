@@ -19,7 +19,12 @@
     "pm2:monit": "pm2 monit",
     "pm2:status": "pm2 status",
     "pm2:save": "pm2 save",
-    "pm2:dev": "pm2 start ecosystem.config.cjs --env development"
+    "pm2:dev": "pm2 start ecosystem.config.cjs --env development",
+    "test:quick": "node benchmark/quick-test.js",
+    "test:load": "node benchmark/load-test.js",
+    "test:load:light": "node benchmark/load-test.js --c 5 --d 10",
+    "test:load:medium": "node benchmark/load-test.js --c 20 --d 30",
+    "test:load:heavy": "node benchmark/load-test.js --c 50 --d 60"
   },
   "dependencies": {
     "better-sqlite3": "^11.10.0",

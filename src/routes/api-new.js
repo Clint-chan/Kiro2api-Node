@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { KiroClient, KiroApiError } from '../kiro-client.js';
 import { EventStreamDecoder, parseKiroEvent } from '../event-parser.js';
 import { countTokens, countMessagesTokens, countToolUseTokens } from '../tokenizer.js';
+import { createFailoverHandler } from '../failover-handler.js';
 import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs/promises';
 import path from 'path';
@@ -31,6 +32,9 @@ function normalizeContextUsagePercentage(value) {
 
 export function createApiRouter(state) {
   const router = Router();
+  
+  // 创建故障转移处理器
+  const failoverHandler = createFailoverHandler(state.accountPool);
 
   // User authentication middleware (replaces old API key check)
   const authMiddleware = (req, res, next) => {
@@ -127,20 +131,19 @@ export function createApiRouter(state) {
         });
       }
 
-      // 选择账号
-      selected = await state.accountPool.selectAccount();
-      if (!selected) {
-        return res.status(503).json({
-          type: 'error',
-          error: { type: 'overloaded_error', message: '没有可用的账号' }
-        });
-      }
+      // 🔥 使用故障转移：自动重试，用户无感知
+      const result = await failoverHandler.executeWithFailover(async (account) => {
+        selected = account;
+        const kiroClient = new KiroClient(state.config, account.tokenManager);
+        const apiResult = await kiroClient.callApiStream(req.body);
+        return { ...apiResult, account };
+      }, { accountId: selected?.id });
+
+      // 解构结果
+      const { response, toolNameMap, account } = result;
+      selected = account;
 
       const isStream = req.body.stream === true;
-      const kiroClient = new KiroClient(state.config, selected.tokenManager);
-
-      // 调用 Kiro API
-      const { response, toolNameMap } = await kiroClient.callApiStream(req.body);
 
       if (isStream) {
         // 流式响应 with billing
@@ -168,15 +171,21 @@ export function createApiRouter(state) {
           error: error.message
         });
 
-        // 检查是否是月度请求数达到上限
+        // 检查是否是月度请求数达到上限或余额不足
         const isMonthlyLimit = error.status === 402 && 
           (error.message?.includes('MONTHLY_REQUEST_COUNT') || 
-           error.message?.includes('reached the limit'));
+           error.message?.includes('reached the limit') ||
+           error.message?.includes('insufficient_balance'));
         
         if (isMonthlyLimit) {
           // 将账号标记为不可用
-          console.log(`⚠ 账号 ${selected.name} (${selected.id}) 已达月度请求上限，标记为不可用`);
+          console.log(`⚠ 账号 ${selected.name} (${selected.id}) 已达月度请求上限或余额不足，标记为不可用`);
           await state.accountPool.markInvalid(selected.id);
+          
+          // 异步刷新该账号的余额信息，以便下次启动时能正确识别
+          state.accountPool.refreshAccountUsage(selected.id).catch(err => {
+            console.error(`刷新账号 ${selected.id} 余额失败:`, err.message);
+          });
         } else {
           // 增加账号错误计数
           const isRateLimit = error.status === 429 || error.message?.includes('rate') || error.message?.includes('limit');
