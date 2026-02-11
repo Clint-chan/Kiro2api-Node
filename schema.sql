@@ -132,7 +132,7 @@ CREATE TABLE IF NOT EXISTS recharge_records (
     created_at TEXT NOT NULL,
 
     FOREIGN KEY (user_id) REFERENCES users(id),
-    CHECK (amount > 0)
+    CHECK (amount != 0)
 );
 
 CREATE INDEX IF NOT EXISTS idx_recharge_records_user_id ON recharge_records(user_id);

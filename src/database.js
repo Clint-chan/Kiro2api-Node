@@ -33,12 +33,68 @@ export class DatabaseManager {
       // Enable foreign keys
       this.db.pragma('foreign_keys = ON');
 
+      this.migrateRechargeRecordsConstraint();
+
       // Prepare commonly used statements
       this.prepareStatements();
 
       console.log('✓ Database initialized successfully');
     } catch (error) {
       console.error('Failed to initialize database:', error);
+      throw error;
+    }
+  }
+
+  migrateRechargeRecordsConstraint() {
+    const tableMeta = this.db.prepare(`
+      SELECT sql FROM sqlite_master
+      WHERE type = 'table' AND name = 'recharge_records'
+    `).get();
+
+    if (!tableMeta || typeof tableMeta.sql !== 'string') {
+      return;
+    }
+
+    const normalizedSql = tableMeta.sql.toLowerCase().replace(/\s+/g, ' ');
+    if (!normalizedSql.includes('check (amount > 0)')) {
+      return;
+    }
+
+    this.db.exec('BEGIN');
+    try {
+      this.db.exec('ALTER TABLE recharge_records RENAME TO recharge_records_legacy');
+      this.db.exec(`
+        CREATE TABLE recharge_records (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id TEXT NOT NULL,
+          amount REAL NOT NULL,
+          balance_before REAL NOT NULL,
+          balance_after REAL NOT NULL,
+          operator_id TEXT,
+          notes TEXT,
+          created_at TEXT NOT NULL,
+
+          FOREIGN KEY (user_id) REFERENCES users(id),
+          CHECK (amount != 0)
+        )
+      `);
+      this.db.exec(`
+        INSERT INTO recharge_records (
+          id, user_id, amount, balance_before, balance_after,
+          operator_id, notes, created_at
+        )
+        SELECT
+          id, user_id, amount, balance_before, balance_after,
+          operator_id, notes, created_at
+        FROM recharge_records_legacy
+      `);
+      this.db.exec('DROP TABLE recharge_records_legacy');
+      this.db.exec('CREATE INDEX IF NOT EXISTS idx_recharge_records_user_id ON recharge_records(user_id)');
+      this.db.exec('CREATE INDEX IF NOT EXISTS idx_recharge_records_created_at ON recharge_records(created_at)');
+      this.db.exec('COMMIT');
+      console.log('✓ Migrated recharge_records amount constraint to support balance adjustments');
+    } catch (error) {
+      this.db.exec('ROLLBACK');
       throw error;
     }
   }
