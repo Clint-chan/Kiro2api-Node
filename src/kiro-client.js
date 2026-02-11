@@ -161,15 +161,16 @@ export class KiroClient {
       throw new Error('消息数组不能为空');
     }
 
-    // 限制历史消息数量，避免请求过大
-    const MAX_HISTORY_TURNS = parseInt(process.env.MAX_HISTORY_TURNS) || 40; // 最多保留 40 轮对话（80 条消息）
+    // 限制历史消息数量（仅在配置了 MAX_HISTORY_TURNS 时生效）
     let limitedMessages = messages;
-    if (messages.length > MAX_HISTORY_TURNS * 2) {
-      console.warn(`⚠ 对话历史过长 (${messages.length} 条消息)，截取最近 ${MAX_HISTORY_TURNS * 2} 条`);
+    const maxHistoryTurns = process.env.MAX_HISTORY_TURNS ? parseInt(process.env.MAX_HISTORY_TURNS) : null;
+    
+    if (maxHistoryTurns && messages.length > maxHistoryTurns * 2) {
+      console.warn(`⚠ 对话历史过长 (${messages.length} 条消息)，截取最近 ${maxHistoryTurns * 2} 条`);
       // 保留系统消息（如果有）和最近的消息
       const systemMessages = messages.filter(m => m.role === 'system');
       const nonSystemMessages = messages.filter(m => m.role !== 'system');
-      const recentMessages = nonSystemMessages.slice(-MAX_HISTORY_TURNS * 2);
+      const recentMessages = nonSystemMessages.slice(-maxHistoryTurns * 2);
       limitedMessages = [...systemMessages, ...recentMessages];
     }
 
