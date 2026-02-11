@@ -4,8 +4,19 @@ import { v4 as uuidv4 } from 'uuid';
 
 export class KiroApiError extends Error {
   constructor(status, responseText, requestDebug) {
-    super(`Kiro API 错误: ${status} - ${responseText}`);
-    this.name = 'KiroApiError';
+    // 解析响应文本，提取实际错误信息
+    let errorMessage = responseText;
+    try {
+      const parsed = JSON.parse(responseText);
+      if (parsed.message) {
+        errorMessage = parsed.message;
+      }
+    } catch {
+      // 保持原始文本
+    }
+    
+    super(`API Error (${status}): ${errorMessage}`);
+    this.name = 'ApiError';
     this.status = status;
     this.responseText = responseText;
     this.requestDebug = requestDebug;
@@ -150,20 +161,32 @@ export class KiroClient {
       throw new Error('消息数组不能为空');
     }
 
+    // 限制历史消息数量，避免请求过大
+    const MAX_HISTORY_TURNS = parseInt(process.env.MAX_HISTORY_TURNS) || 40; // 最多保留 40 轮对话（80 条消息）
+    let limitedMessages = messages;
+    if (messages.length > MAX_HISTORY_TURNS * 2) {
+      console.warn(`⚠ 对话历史过长 (${messages.length} 条消息)，截取最近 ${MAX_HISTORY_TURNS * 2} 条`);
+      // 保留系统消息（如果有）和最近的消息
+      const systemMessages = messages.filter(m => m.role === 'system');
+      const nonSystemMessages = messages.filter(m => m.role !== 'system');
+      const recentMessages = nonSystemMessages.slice(-MAX_HISTORY_TURNS * 2);
+      limitedMessages = [...systemMessages, ...recentMessages];
+    }
+
     const conversationId = uuidv4();
     const agentContinuationId = uuidv4();
 
     // 合并末尾连续的 user 消息
-    let currentStart = messages.length;
-    while (currentStart > 0 && messages[currentStart - 1].role === 'user') {
+    let currentStart = limitedMessages.length;
+    while (currentStart > 0 && limitedMessages[currentStart - 1].role === 'user') {
       currentStart--;
     }
-    const currentUserMessages = messages.slice(currentStart);
+    const currentUserMessages = limitedMessages.slice(currentStart);
 
     // 检查是否末尾是 assistant 消息
     const endsWithAssistant = currentUserMessages.length === 0 && 
-                              messages.length > 0 && 
-                              messages[messages.length - 1].role === 'assistant';
+                              limitedMessages.length > 0 && 
+                              limitedMessages[limitedMessages.length - 1].role === 'assistant';
 
     // 生成 thinking 前缀
     let thinkingPrefix = null;
@@ -218,11 +241,11 @@ export class KiroClient {
     }
 
     // 处理历史消息
-    const historyEnd = endsWithAssistant ? messages.length : currentStart;
+    const historyEnd = endsWithAssistant ? limitedMessages.length : currentStart;
     let userBuffer = [];
     
     for (let i = 0; i < historyEnd; i++) {
-      const msg = messages[i];
+      const msg = limitedMessages[i];
       if (msg.role === 'user') {
         userBuffer.push(msg);
       } else if (msg.role === 'assistant') {

@@ -203,10 +203,21 @@ export function createApiRouter(state) {
 
       const status = inferHttpStatus(error);
       const errorType = inferAnthropicErrorType(status);
+      
+      // 提取友好的错误消息
+      let errorMessage = error.message;
+      
+      // 如果是 400 错误且包含 "Improperly formed request"，提供更友好的提示
+      if (status === 400 && errorMessage.includes('Improperly formed request')) {
+        errorMessage = 'Invalid request format. The conversation may be too long or contain unsupported content.';
+      }
+      
+      // 移除技术细节前缀
+      errorMessage = errorMessage.replace(/^API Error \(\d+\):\s*/, '');
 
       res.status(status).json({
         type: 'error',
-        error: { type: errorType, message: error.message }
+        error: { type: errorType, message: errorMessage }
       });
     }
   });
@@ -217,6 +228,14 @@ export function createApiRouter(state) {
 function inferHttpStatus(error) {
   const msg = String(error?.message || '');
 
+  // 提取状态码
+  const statusMatch = msg.match(/API Error \((\d{3})\):/);
+  if (statusMatch) {
+    const code = parseInt(statusMatch[1], 10);
+    if (Number.isFinite(code)) return code;
+  }
+
+  // 兼容旧格式
   const kiroStatusMatch = msg.match(/Kiro API 错误:\s*(\d{3})\b/);
   if (kiroStatusMatch) {
     const code = parseInt(kiroStatusMatch[1], 10);
