@@ -10,3 +10,5 @@ data/database.db
 data/database.db-wal
 data/database.db-shm
 /logs
+/reference_project
+.ace-tool/

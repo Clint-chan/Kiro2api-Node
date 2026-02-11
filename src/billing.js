@@ -151,8 +151,9 @@ export class BillingManager {
    * @returns {object} Result with new balance
    */
   recharge(userId, amount, operatorId = null, notes = null) {
-    if (amount <= 0) {
-      throw new Error('Recharge amount must be positive');
+    const numericAmount = Number(amount);
+    if (!Number.isFinite(numericAmount) || numericAmount === 0) {
+      throw new Error('Adjustment amount must be a non-zero number');
     }
 
     // Get current user
@@ -162,7 +163,11 @@ export class BillingManager {
     }
 
     const balanceBefore = user.balance;
-    const balanceAfter = balanceBefore + amount;
+    const balanceAfter = balanceBefore + numericAmount;
+
+    if (balanceAfter < 0) {
+      throw new Error('Adjustment would make balance negative');
+    }
 
     // Manual transaction
     this.db.db.prepare('BEGIN').run();
@@ -173,7 +178,7 @@ export class BillingManager {
       // Insert recharge record
       this.db.insertRechargeRecord({
         user_id: userId,
-        amount,
+        amount: numericAmount,
         balance_before: balanceBefore,
         balance_after: balanceAfter,
         operator_id: operatorId,
@@ -184,7 +189,7 @@ export class BillingManager {
 
       return {
         success: true,
-        amount,
+        amount: numericAmount,
         balanceBefore,
         balanceAfter
       };

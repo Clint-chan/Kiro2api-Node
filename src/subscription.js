@@ -32,7 +32,14 @@ export class SubscriptionManager {
       throw new Error('订阅额度必须大于 0');
     }
 
+    if (!durationMonths || durationMonths <= 0) {
+      throw new Error('订阅时长必须大于 0');
+    }
+
     const now = new Date();
+    const hadActiveSubscription = user.subscription_type && user.subscription_type !== 'none';
+    const previousQuota = hadActiveSubscription ? (user.subscription_quota || 0) : 0;
+
     // 使用自然月计算到期日期
     const expiresAt = new Date(now);
     expiresAt.setMonth(expiresAt.getMonth() + durationMonths);
@@ -56,9 +63,11 @@ export class SubscriptionManager {
       userId
     );
 
-    // 立即充值一次额度
     const balanceBefore = user.balance;
-    const balanceAfter = balanceBefore + quota;
+    const adjustedBalanceBase = hadActiveSubscription
+      ? Math.max(0, balanceBefore - previousQuota)
+      : balanceBefore;
+    const balanceAfter = adjustedBalanceBase + quota;
     
     this.db.db.prepare(`
       UPDATE users SET balance = ? WHERE id = ?
@@ -93,7 +102,7 @@ export class SubscriptionManager {
       userId,
       type,
       quota,
-      'initial',
+      hadActiveSubscription ? 'subscription_change' : 'initial',
       balanceBefore,
       balanceAfter,
       now.toISOString()

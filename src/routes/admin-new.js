@@ -288,17 +288,18 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
 
   /**
    * POST /api/admin/users/:id/recharge
-   * Recharge user balance
+   * Adjust user balance (increase or decrease)
    */
   router.post('/users/:id/recharge', (req, res) => {
     try {
       const { amount, notes } = req.body;
+      const numericAmount = Number(amount);
 
-      if (!amount || amount <= 0) {
+      if (!Number.isFinite(numericAmount) || numericAmount === 0) {
         return res.status(400).json({
           error: {
             type: 'validation_error',
-            message: 'Valid amount is required.'
+            message: 'Valid non-zero amount is required.'
           }
         });
       }
@@ -315,7 +316,7 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
 
       const result = billing.recharge(
         req.params.id,
-        amount,
+        numericAmount,
         req.admin.id,
         notes
       );
@@ -329,6 +330,15 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
         }
       });
     } catch (error) {
+      if (error.message === 'Adjustment would make balance negative') {
+        return res.status(400).json({
+          error: {
+            type: 'validation_error',
+            message: '调整后余额不能小于 0'
+          }
+        });
+      }
+
       console.error('Recharge error:', error);
       res.status(500).json({
         error: {
