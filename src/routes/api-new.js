@@ -168,9 +168,20 @@ export function createApiRouter(state) {
           error: error.message
         });
 
-        // 增加账号错误计数
-        const isRateLimit = error.status === 429 || error.message?.includes('rate') || error.message?.includes('limit');
-        state.accountPool.recordError(selected.id, isRateLimit);
+        // 检查是否是月度请求数达到上限
+        const isMonthlyLimit = error.status === 402 && 
+          (error.message?.includes('MONTHLY_REQUEST_COUNT') || 
+           error.message?.includes('reached the limit'));
+        
+        if (isMonthlyLimit) {
+          // 将账号标记为不可用
+          console.log(`⚠ 账号 ${selected.name} (${selected.id}) 已达月度请求上限，标记为不可用`);
+          await state.accountPool.markInvalid(selected.id);
+        } else {
+          // 增加账号错误计数
+          const isRateLimit = error.status === 429 || error.message?.includes('rate') || error.message?.includes('limit');
+          state.accountPool.recordError(selected.id, isRateLimit);
+        }
       }
 
       if (error instanceof KiroApiError) {

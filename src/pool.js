@@ -309,38 +309,90 @@ export class AccountPool {
       setTimeout(() => {
         if (account.status === 'cooldown') {
           account.status = 'active';
+          // 同步到数据库
+          if (this.db) {
+            this.db.updateKiroAccountStatus(id, 'active');
+          }
         }
       }, 5 * 60 * 1000); // 5分钟冷却
+      
+      // 同步到数据库
+      if (this.db) {
+        this.db.updateKiroAccountStatus(id, 'cooldown');
+      }
     }
     await this.save();
   }
 
   async markInvalid(id) {
     const account = this.accounts.get(id);
-    if (account) {
-      account.status = 'error';
-      await this.save();
+    if (!account) {
+      console.error(`❌ 账号 ${id} 不存在于 accountPool 中`);
+      // 即使内存中没有，也尝试更新数据库
+      if (this.db) {
+        this.db.updateKiroAccountStatus(id, 'error');
+        console.log(`✓ 已在数据库中标记账号 ${id} 为 error`);
+        return true;
+      }
+      return false;
     }
+    
+    account.status = 'error';
+    await this.save();
+    
+    // 同步到数据库
+    if (this.db) {
+      this.db.updateKiroAccountStatus(id, 'error');
+    }
+    console.log(`✓ 已标记账号 ${account.name} (${id}) 为 error`);
   }
 
   async enableAccount(id) {
     const account = this.accounts.get(id);
-    if (account) {
-      account.status = 'active';
-      await this.save();
-      return true;
+    if (!account) {
+      console.error(`❌ 账号 ${id} 不存在于 accountPool 中`);
+      // 即使内存中没有，也尝试更新数据库
+      if (this.db) {
+        this.db.updateKiroAccountStatus(id, 'active');
+        console.log(`✓ 已在数据库中启用账号 ${id}`);
+        return true;
+      }
+      return false;
     }
-    return false;
+    
+    account.status = 'active';
+    await this.save();
+    
+    // 同步到数据库
+    if (this.db) {
+      this.db.updateKiroAccountStatus(id, 'active');
+    }
+    console.log(`✓ 已启用账号 ${account.name} (${id})`);
+    return true;
   }
 
   async disableAccount(id) {
     const account = this.accounts.get(id);
-    if (account) {
-      account.status = 'disabled';
-      await this.save();
-      return true;
+    if (!account) {
+      console.error(`❌ 账号 ${id} 不存在于 accountPool 中`);
+      // 即使内存中没有，也尝试更新数据库
+      if (this.db) {
+        this.db.updateKiroAccountStatus(id, 'disabled');
+        console.log(`✓ 已在数据库中禁用账号 ${id}`);
+        return true;
+      }
+      return false;
     }
-    return false;
+    
+    account.status = 'disabled';
+    await this.save();
+    
+    // 同步到数据库
+    if (this.db) {
+      this.db.updateKiroAccountStatus(id, 'disabled');
+    }
+    console.log(`✓ 已禁用账号 ${account.name} (${id})`);
+    return true;
   }
 
   setStrategy(strategy) {

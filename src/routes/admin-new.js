@@ -870,7 +870,27 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
   router.post('/accounts/:id/enable', async (req, res) => {
     try {
       const { id } = req.params;
+      
+      // Check if account exists in database
+      const account = db.db.prepare('SELECT * FROM kiro_accounts WHERE id = ?').get(id);
+      if (!account) {
+        return res.status(404).json({
+          error: {
+            type: 'not_found',
+            message: 'Account not found in database.'
+          }
+        });
+      }
+      
+      // Update database
       db.updateKiroAccountStatus(id, 'active');
+      
+      // Update accountPool if available
+      if (accountPool) {
+        const result = await accountPool.enableAccount(id);
+        console.log(`AccountPool enable result for ${id}:`, result);
+      }
+      
       res.json({
         success: true,
         message: 'Account enabled successfully'
@@ -880,7 +900,7 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
       res.status(500).json({
         error: {
           type: 'internal_error',
-          message: 'Failed to enable account.'
+          message: `Failed to enable account: ${error.message}`
         }
       });
     }
@@ -893,7 +913,27 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
   router.post('/accounts/:id/disable', async (req, res) => {
     try {
       const { id } = req.params;
+      
+      // Check if account exists in database
+      const account = db.db.prepare('SELECT * FROM kiro_accounts WHERE id = ?').get(id);
+      if (!account) {
+        return res.status(404).json({
+          error: {
+            type: 'not_found',
+            message: 'Account not found in database.'
+          }
+        });
+      }
+      
+      // Update database
       db.updateKiroAccountStatus(id, 'disabled');
+      
+      // Update accountPool if available
+      if (accountPool) {
+        const result = await accountPool.disableAccount(id);
+        console.log(`AccountPool disable result for ${id}:`, result);
+      }
+      
       res.json({
         success: true,
         message: 'Account disabled successfully'
@@ -903,7 +943,7 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
       res.status(500).json({
         error: {
           type: 'internal_error',
-          message: 'Failed to disable account.'
+          message: `Failed to disable account: ${error.message}`
         }
       });
     }
