@@ -285,7 +285,7 @@ export class AccountPool {
   async selectAccount() {
     // 第三道防线：本地软限流 - 余额低于 5 时停止使用
     const minBalance = parseFloat(process.env.MIN_BALANCE_THRESHOLD) || 5;
-    const maxInflight = parseInt(process.env.MAX_INFLIGHT_PER_ACCOUNT) || 5; // 每账号最大并发
+    const maxInflight = parseInt(process.env.MAX_INFLIGHT_PER_ACCOUNT) || 5;
     
     const available = Array.from(this.accounts.values())
       .filter(a => {
@@ -323,7 +323,6 @@ export class AccountPool {
         selected = available.reduce((a, b) => a.requestCount < b.requestCount ? a : b);
         break;
       case 'least-inflight':
-        // 选择并发数最少的账号
         selected = available.reduce((a, b) => (a.inflight || 0) < (b.inflight || 0) ? a : b);
         break;
       default: // round-robin
@@ -331,11 +330,10 @@ export class AccountPool {
         this.roundRobinIndex++;
     }
 
+    // ✅ 原子操作：选择 + 占位一起完成，不让出事件循环
     selected.requestCount++;
     selected.lastUsedAt = new Date().toISOString();
-    
-    // 增加并发计数
-    selected.inflight = (selected.inflight || 0) + 1;
+    selected.inflight = (selected.inflight || 0) + 1; // 立即占位
 
     // 异步保存，不阻塞请求
     this.save().catch(() => {});

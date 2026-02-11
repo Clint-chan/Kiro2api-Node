@@ -178,7 +178,7 @@ export class FailoverHandler {
   /**
    * 处理永久性错误
    * 
-   * 策略：判"死刑"，永久移出轮询列表
+   * 策略：判"死刑"，永久移出轮询列表，并立即更新缓存
    */
   async handlePermanentError(error, accountId) {
     if (!accountId) return;
@@ -187,12 +187,19 @@ export class FailoverHandler {
       // 标记为 DEPLETED（耗尽）状态
       await this.accountPool.markDepleted(accountId);
       
+      // ✅ 立即更新内存缓存（被动刷新）
+      const account = this.accountPool.accounts.get(accountId);
+      if (account && account.usage) {
+        account.usage.available = 0;
+        account.usage.updatedAt = new Date().toISOString();
+      }
+      
       // 异步刷新余额（不阻塞）
       this.accountPool.refreshAccountUsage(accountId).catch(err => {
         console.error(`刷新账号 ${accountId} 余额失败:`, err.message);
       });
       
-      console.log(`💀 账号 ${accountId} 已标记为 DEPLETED，移出轮询列表`);
+      console.log(`💀 账号 ${accountId} 已标记为 DEPLETED，缓存已更新`);
     } catch (err) {
       console.error(`处理永久性错误失败:`, err);
     }
