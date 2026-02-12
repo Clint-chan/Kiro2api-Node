@@ -22,6 +22,48 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
     }
   }
 
+  function toStringArray(value) {
+    if (Array.isArray(value)) {
+      return value
+        .map((item) => String(item || '').trim())
+        .filter(Boolean);
+    }
+    if (typeof value === 'string' && value.trim()) {
+      try {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed)) {
+          return parsed
+            .map((item) => String(item || '').trim())
+            .filter(Boolean);
+        }
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  }
+
+  function normalizeUserPermissions(channelsRaw, modelsRaw) {
+    const allowedChannels = toStringArray(channelsRaw);
+    const validChannels = ['kiro', 'agt'];
+    const normalizedChannels = allowedChannels.filter((channel) => validChannels.includes(channel));
+    const nextChannels = normalizedChannels.length > 0 ? normalizedChannels : ['kiro'];
+
+    const allowedModels = toStringArray(modelsRaw);
+    return {
+      allowed_channels: JSON.stringify(Array.from(new Set(nextChannels))),
+      allowed_models: allowedModels.length > 0 ? JSON.stringify(Array.from(new Set(allowedModels))) : null
+    };
+  }
+
+  function serializeUser(user) {
+    return {
+      ...user,
+      allowed_channels: toStringArray(user.allowed_channels).length > 0 ? toStringArray(user.allowed_channels) : ['kiro'],
+      allowed_models: toStringArray(user.allowed_models)
+    };
+  }
+
   function normalizeAgtTier(usage) {
     const paidTier = usage?.paidTier?.id || usage?.paidTier || null;
     const currentTier = usage?.currentTier?.id || usage?.currentTier || null;
@@ -80,23 +122,25 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
       }
 
       // Remove sensitive data
-      const sanitizedUsers = users.map(u => ({
-        id: u.id,
-        username: u.username,
-        api_key: u.api_key,
-        role: u.role,
-        balance: u.balance,
-        status: u.status,
-        price_input: u.price_input,
-        price_output: u.price_output,
-        total_requests: u.total_requests,
-        total_input_tokens: u.total_input_tokens,
-        total_output_tokens: u.total_output_tokens,
-        total_cost: u.total_cost,
-        created_at: u.created_at,
-        updated_at: u.updated_at,
-        last_used_at: u.last_used_at,
-        notes: u.notes
+      const sanitizedUsers = users.map((user) => serializeUser({
+        id: user.id,
+        username: user.username,
+        api_key: user.api_key,
+        role: user.role,
+        balance: user.balance,
+        status: user.status,
+        price_input: user.price_input,
+        price_output: user.price_output,
+        total_requests: user.total_requests,
+        total_input_tokens: user.total_input_tokens,
+        total_output_tokens: user.total_output_tokens,
+        total_cost: user.total_cost,
+        created_at: user.created_at,
+        updated_at: user.updated_at,
+        last_used_at: user.last_used_at,
+        notes: user.notes,
+        allowed_channels: user.allowed_channels,
+        allowed_models: user.allowed_models
       }));
 
       res.json({
@@ -122,6 +166,7 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
   router.post('/users', (req, res) => {
     try {
       let { username, api_key, role, balance, price_input, price_output, notes } = req.body;
+      const permissions = normalizeUserPermissions(req.body.allowed_channels, req.body.allowed_models);
 
       // 如果没有提供用户名，自动生成
       if (!username) {
@@ -153,7 +198,9 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
         status: 'active',
         price_input: price_input || 3.0,
         price_output: price_output || 15.0,
-        notes: notes || null
+        notes: notes || null,
+        allowed_channels: parseJsonSafe(permissions.allowed_channels),
+        allowed_models: parseJsonSafe(permissions.allowed_models)
       };
 
       db.createUser(userData);
@@ -162,7 +209,7 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
 
       res.status(201).json({
         success: true,
-        data: {
+        data: serializeUser({
           id: user.id,
           username: user.username,
           api_key: user.api_key,
@@ -171,8 +218,10 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
           status: user.status,
           price_input: user.price_input,
           price_output: user.price_output,
+          allowed_channels: user.allowed_channels,
+          allowed_models: user.allowed_models,
           created_at: user.created_at
-        }
+        })
       });
     } catch (error) {
       console.error('Create user error:', error);
@@ -204,7 +253,7 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
 
       res.json({
         success: true,
-        data: {
+        data: serializeUser({
           id: user.id,
           username: user.username,
           api_key: user.api_key,
@@ -220,8 +269,10 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
           created_at: user.created_at,
           updated_at: user.updated_at,
           last_used_at: user.last_used_at,
-          notes: user.notes
-        }
+          notes: user.notes,
+          allowed_channels: user.allowed_channels,
+          allowed_models: user.allowed_models
+        })
       });
     } catch (error) {
       console.error('Get user error:', error);
@@ -261,6 +312,12 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
         notes: req.body.notes
       };
 
+      if (req.body.allowed_channels !== undefined || req.body.allowed_models !== undefined) {
+        const permissions = normalizeUserPermissions(req.body.allowed_channels, req.body.allowed_models);
+        allowedUpdates.allowed_channels = permissions.allowed_channels;
+        allowedUpdates.allowed_models = permissions.allowed_models;
+      }
+
       // Remove undefined values
       const updates = {};
       for (const [key, value] of Object.entries(allowedUpdates)) {
@@ -284,7 +341,7 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
 
       res.json({
         success: true,
-        data: {
+        data: serializeUser({
           id: updatedUser.id,
           username: updatedUser.username,
           api_key: updatedUser.api_key,
@@ -293,8 +350,10 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
           status: updatedUser.status,
           price_input: updatedUser.price_input,
           price_output: updatedUser.price_output,
+          allowed_channels: updatedUser.allowed_channels,
+          allowed_models: updatedUser.allowed_models,
           updated_at: updatedUser.updated_at
-        }
+        })
       });
     } catch (error) {
       console.error('Update user error:', error);
@@ -1475,6 +1534,10 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
 
       const projectId = usage?.cloudaicompanionProject?.id || usage?.cloudaicompanionProject || account.project_id || null;
       const tierMeta = normalizeAgtTier(usage);
+      
+      const modelMap = await fetchAntigravityModelsWithMeta(db, account);
+      const quotaMeta = extractQuotaMeta(modelMap);
+      
       db.updateAgtAccountTokens(id, {
         access_token: account.access_token,
         refresh_token: account.refresh_token,
@@ -1488,12 +1551,12 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
       db.updateAgtAccountUsageMeta(id, {
         plan_tier: tierMeta.plan_tier,
         paid_tier: tierMeta.paid_tier,
-        next_reset: account.next_reset,
-        model_quotas: account.model_quotas
+        next_reset: quotaMeta.next_reset,
+        model_quotas: quotaMeta.model_quotas
       });
 
       db.updateAgtAccountStats(id, false);
-      res.json({ success: true, data: { usage, project_id: projectId, ...tierMeta } });
+      res.json({ success: true, data: { usage, project_id: projectId, ...tierMeta, ...quotaMeta } });
     } catch (error) {
       console.error('Refresh AGT usage error:', error);
       db.updateAgtAccountStats(req.params.id, true);
