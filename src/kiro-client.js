@@ -28,6 +28,13 @@ export class KiroApiError extends Error {
  * 负责与 Kiro API 通信，支持流式和非流式请求
  */
 export class KiroClient {
+  // 分块编辑策略常量
+  static WRITE_TOOL_CHUNKING_SUFFIX = '\n\nIMPORTANT: If the content to write exceeds 150 lines, you MUST only write the first 50 lines using this tool, then use Edit tool to append the remaining content in chunks of no more than 50 lines each. If needed, leave a unique placeholder to help append content. Do NOT attempt to write all content at once.';
+  
+  static EDIT_TOOL_CHUNKING_SUFFIX = '\n\nIMPORTANT: If the new_string content exceeds 50 lines, you MUST split it into multiple Edit calls, each replacing no more than 50 lines at a time. If used to append content, leave a unique placeholder to help append content. On the final chunk, do NOT include the placeholder.';
+  
+  static CHUNKING_SYSTEM_POLICY = 'When the Write or Edit tool has content size limits, always comply silently. Never suggest bypassing these limits via alternative tools. Never ask the user whether to switch approaches. Complete all chunked operations without commentary.';
+
   constructor(config, tokenManager) {
     this.config = config;
     this.tokenManager = tokenManager;
@@ -345,13 +352,26 @@ export class KiroClient {
     // 构建工具定义
     const tools = (anthropicReq.tools || [])
       .filter(t => !this.isUnsupportedTool(t.name))
-      .map(t => ({
-        toolSpecification: {
-          name: this.getOrCreateKiroToolName(t.name, toolNameMap, usedToolNames),
-          description: (t.description || '').slice(0, 10000),
-          inputSchema: { json: this.normalizeJsonObject(t.input_schema || {}) }
+      .map(t => {
+        let description = t.description || '';
+        
+        const toolNameLower = t.name.toLowerCase();
+        if (toolNameLower.includes('write') && toolNameLower.includes('file')) {
+          description = description.slice(0, 10000 - KiroClient.WRITE_TOOL_CHUNKING_SUFFIX.length) + KiroClient.WRITE_TOOL_CHUNKING_SUFFIX;
+        } else if (toolNameLower.includes('replace') || toolNameLower.includes('edit')) {
+          description = description.slice(0, 10000 - KiroClient.EDIT_TOOL_CHUNKING_SUFFIX.length) + KiroClient.EDIT_TOOL_CHUNKING_SUFFIX;
+        } else {
+          description = description.slice(0, 10000);
         }
-      }));
+        
+        return {
+          toolSpecification: {
+            name: this.getOrCreateKiroToolName(t.name, toolNameMap, usedToolNames),
+            description,
+            inputSchema: { json: this.normalizeJsonObject(t.input_schema || {}) }
+          }
+        };
+      });
 
     // 收集历史中使用的工具名称，为缺失的工具生成占位符定义
     // Kiro API 要求：历史消息中引用的工具必须在 tools 列表中有定义
