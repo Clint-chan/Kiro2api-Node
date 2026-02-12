@@ -360,9 +360,7 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
       const users = db.getAllUsers();
       const activeUsers = users.filter(u => u.status === 'active');
       const kiroAccounts = db.getAllKiroAccounts();
-      const activeKiroAccounts = kiroAccounts.filter(a => a.status === 'active');
 
-      // Get today's stats
       const today = new Date().toISOString().split('T')[0];
       const todayStart = `${today}T00:00:00.000Z`;
       const todayEnd = `${today}T23:59:59.999Z`;
@@ -377,7 +375,6 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
         WHERE timestamp >= ? AND timestamp <= ?
       `).get(todayStart, todayEnd);
 
-      // Get all-time stats
       const allTimeStats = db.db.prepare(`
         SELECT
           COUNT(*) as request_count,
@@ -387,8 +384,16 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
         FROM request_logs
       `).get();
 
-      // Calculate total balance
       const totalBalance = users.reduce((sum, u) => sum + u.balance, 0);
+
+      const accountStatusCounts = {
+        active: kiroAccounts.filter(a => a.status === 'active').length,
+        cooldown: kiroAccounts.filter(a => a.status === 'cooldown').length,
+        error: kiroAccounts.filter(a => a.status === 'error').length,
+        depleted: kiroAccounts.filter(a => a.status === 'depleted').length,
+        disabled: kiroAccounts.filter(a => a.status === 'disabled').length,
+        inactive: kiroAccounts.filter(a => a.status === 'inactive').length
+      };
 
       res.json({
         success: true,
@@ -400,7 +405,12 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
           },
           kiroAccounts: {
             total: kiroAccounts.length,
-            active: activeKiroAccounts.length
+            active: accountStatusCounts.active,
+            cooldown: accountStatusCounts.cooldown,
+            error: accountStatusCounts.error,
+            depleted: accountStatusCounts.depleted,
+            disabled: accountStatusCounts.disabled,
+            inactive: accountStatusCounts.inactive
           },
           today: {
             requests: todayStats.request_count || 0,
@@ -762,9 +772,29 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
   router.get('/accounts', (req, res) => {
     try {
       const accounts = db.getAllKiroAccounts();
+
+      const dependencyRows = db.db.prepare(`
+        SELECT kiro_account_id, COUNT(*) as count
+        FROM request_logs
+        GROUP BY kiro_account_id
+      `).all();
+
+      const dependencyMap = new Map(
+        dependencyRows.map(row => [row.kiro_account_id, row.count])
+      );
+
+      const accountsWithDependencies = accounts.map(account => {
+        const requestLogCount = dependencyMap.get(account.id) || 0;
+        return {
+          ...account,
+          request_log_count: requestLogCount,
+          has_dependencies: requestLogCount > 0
+        };
+      });
+
       res.json({
         success: true,
-        data: accounts
+        data: accountsWithDependencies
       });
     } catch (error) {
       console.error('Get Kiro accounts error:', error);
@@ -961,7 +991,39 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
   router.delete('/accounts/:id', async (req, res) => {
     try {
       const { id } = req.params;
-      db.deleteKiroAccount(id);
+      
+      const account = db.getKiroAccountById(id);
+      if (!account) {
+        return res.status(404).json({
+          error: {
+            type: 'not_found',
+            message: 'Account not found.'
+          }
+        });
+      }
+      
+      const logCount = db.db.prepare(
+        'SELECT COUNT(*) as count FROM request_logs WHERE kiro_account_id = ?'
+      ).get(id);
+      
+      if (logCount && logCount.count > 0) {
+        return res.status(409).json({
+          error: {
+            type: 'conflict',
+            message: `Cannot delete account with ${logCount.count} request log(s). Consider disabling the account instead using POST /api/admin/accounts/${id}/disable`,
+            dependencyCount: logCount.count,
+            dependencyType: 'request_logs',
+            suggestedAction: 'disable'
+          }
+        });
+      }
+      
+      if (accountPool) {
+        await accountPool.removeAccount(id);
+      } else {
+        db.deleteKiroAccount(id);
+      }
+      
       res.json({
         success: true,
         message: 'Account deleted successfully'

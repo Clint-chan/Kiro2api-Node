@@ -1064,7 +1064,10 @@
             if (res.status === 401) { logout(); throw new Error('认证失败'); }
             if (!res.ok && res.status !== 204) {
                 const error = await res.json().catch(() => ({}));
-                throw new Error(error.error?.message || res.statusText);
+                const err = new Error(error.error?.message || res.statusText);
+                err.status = res.status;
+                err.payload = error;
+                throw err;
             }
             return res.status === 204 ? null : res.json();
         }
@@ -1101,8 +1104,9 @@
 
                 // Kiro accounts stats
                 document.getElementById('stat-active').textContent = stats.kiroAccounts?.active || 0;
-                document.getElementById('stat-cooldown').textContent = 0; // Not tracked in new system
-                document.getElementById('stat-invalid').textContent = stats.kiroAccounts?.total - stats.kiroAccounts?.active || 0;
+                document.getElementById('stat-cooldown').textContent = stats.kiroAccounts?.cooldown || 0;
+                const invalidCount = (stats.kiroAccounts?.error || 0) + (stats.kiroAccounts?.depleted || 0) + (stats.kiroAccounts?.disabled || 0) + (stats.kiroAccounts?.inactive || 0);
+                document.getElementById('stat-invalid').textContent = invalidCount;
 
                 // Request stats
                 document.getElementById('stat-requests').textContent = formatNumber(stats.allTime?.requests || 0);
@@ -1346,7 +1350,7 @@
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
                                                 </svg>
                                             </button>`}
-                                        <button onclick="removeAccount('${a.id}')" class="p-1.5 text-red-600 hover:bg-red-50 rounded transition" title="删除">
+                                        <button onclick="removeAccount('${a.id}', ${a.request_log_count || 0})" ${a.has_dependencies ? 'disabled' : ''} class="p-1.5 rounded transition ${a.has_dependencies ? 'text-gray-400 cursor-not-allowed bg-gray-50' : 'text-red-600 hover:bg-red-50'}" title="${a.has_dependencies ? `不可删除：存在${a.request_log_count || 0}条请求日志，请改用禁用` : '删除'}">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                             </svg>
@@ -2256,10 +2260,29 @@
             showToast('模板已加载，请替换示例数据', 'info');
         }
 
-        async function removeAccount(id) {
+        async function removeAccount(id, dependencyCount = 0) {
+            if (dependencyCount > 0) {
+                showToast(`无法删除：存在 ${dependencyCount} 条请求日志，请改用“禁用”`, 'warning');
+                return;
+            }
             if (!confirm('确定删除此账号？')) return;
-            try { await fetchApi(`/api/admin/accounts/${id}`, { method: 'DELETE' }); refresh(); showToast('账号已删除', 'error'); }
-            catch (e) { showToast('删除失败: ' + e.message, 'error'); }
+            try {
+                await fetchApi(`/api/admin/accounts/${id}`, { method: 'DELETE' });
+                refresh();
+                showToast('账号已删除', 'success');
+            }
+            catch (e) {
+                if (e.status === 409) {
+                    const depCount = e.payload?.error?.dependencyCount;
+                    if (depCount !== undefined) {
+                        showToast(`无法删除：存在 ${depCount} 条请求日志，请改用“禁用”`, 'warning');
+                    } else {
+                        showToast('无法删除：账号存在关联数据，请改用“禁用”', 'warning');
+                    }
+                    return;
+                }
+                showToast('删除失败: ' + e.message, 'error');
+            }
         }
 
         async function enableAccount(id) {
