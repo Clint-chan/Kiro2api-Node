@@ -151,6 +151,47 @@ export class KiroClient {
   }
 
   /**
+   * 收集历史消息中使用的所有工具名称
+   */
+  collectHistoryToolNames(history) {
+    const toolNames = [];
+    
+    for (const msg of history) {
+      if (msg.assistantResponseMessage && msg.assistantResponseMessage.toolUses) {
+        for (const toolUse of msg.assistantResponseMessage.toolUses) {
+          if (!toolNames.includes(toolUse.name)) {
+            toolNames.push(toolUse.name);
+          }
+        }
+      }
+    }
+    
+    return toolNames;
+  }
+
+  /**
+   * 为历史中使用但不在 tools 列表中的工具创建占位符定义
+   * Kiro API 要求：历史消息中引用的工具必须在 currentMessage.tools 中有定义
+   */
+  createPlaceholderTool(name) {
+    return {
+      toolSpecification: {
+        name,
+        description: 'Tool used in conversation history',
+        inputSchema: {
+          json: {
+            $schema: 'http://json-schema.org/draft-07/schema#',
+            type: 'object',
+            properties: {},
+            required: [],
+            additionalProperties: true
+          }
+        }
+      }
+    };
+  }
+
+  /**
    * 将 Anthropic 请求转换为 Kiro 请求
    */
   convertRequest(anthropicReq) {
@@ -311,6 +352,19 @@ export class KiroClient {
           inputSchema: { json: this.normalizeJsonObject(t.input_schema || {}) }
         }
       }));
+
+    // 收集历史中使用的工具名称，为缺失的工具生成占位符定义
+    // Kiro API 要求：历史消息中引用的工具必须在 tools 列表中有定义
+    const historyToolNames = this.collectHistoryToolNames(history);
+    const existingToolNames = new Set(
+      tools.map(t => t.toolSpecification.name.toLowerCase())
+    );
+
+    for (const toolName of historyToolNames) {
+      if (!existingToolNames.has(toolName.toLowerCase())) {
+        tools.push(this.createPlaceholderTool(toolName));
+      }
+    }
 
     // 构建 userInputMessageContext
     const userInputMessageContext = {};
