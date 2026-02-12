@@ -35,6 +35,7 @@ export class DatabaseManager {
 
       this.migrateRechargeRecordsConstraint();
       this.migrateRequestLogsForeignKey();
+      this.ensureUserPermissionColumns();
       this.ensureAgtAccountsTable();
 
       // Prepare commonly used statements
@@ -231,8 +232,9 @@ export class DatabaseManager {
       INSERT INTO users (
         id, username, api_key, role, balance, status,
         price_input, price_output,
+        allowed_channels, allowed_models,
         created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     // Request log queries
@@ -275,6 +277,27 @@ export class DatabaseManager {
     `);
   }
 
+  ensureUserPermissionColumns() {
+    const existingColumns = this.db.prepare('PRAGMA table_info(users)').all();
+    const columnNames = new Set(existingColumns.map((column) => column.name));
+
+    if (!columnNames.has('allowed_channels')) {
+      this.db.exec(`ALTER TABLE users ADD COLUMN allowed_channels TEXT NOT NULL DEFAULT '["kiro"]'`);
+    }
+
+    if (!columnNames.has('allowed_models')) {
+      this.db.exec('ALTER TABLE users ADD COLUMN allowed_models TEXT');
+    }
+
+    this.db.prepare(`
+      UPDATE users
+      SET allowed_channels = '["kiro"]'
+      WHERE allowed_channels IS NULL
+         OR TRIM(allowed_channels) = ''
+         OR TRIM(allowed_channels) = '["kiro","agt"]'
+    `).run();
+  }
+
   /**
    * Get user by API key
    */
@@ -294,6 +317,13 @@ export class DatabaseManager {
    */
   createUser(userData) {
     const now = new Date().toISOString();
+    const allowedChannels = Array.isArray(userData.allowed_channels)
+      ? JSON.stringify(userData.allowed_channels)
+      : '["kiro"]';
+    const allowedModels = Array.isArray(userData.allowed_models) && userData.allowed_models.length > 0
+      ? JSON.stringify(userData.allowed_models)
+      : null;
+
     return this.statements.insertUser.run(
       userData.id,
       userData.username,
@@ -303,6 +333,8 @@ export class DatabaseManager {
       userData.status || 'active',
       userData.price_input || 3.0,
       userData.price_output || 15.0,
+      allowedChannels,
+      allowedModels,
       now,
       now
     );
@@ -473,7 +505,8 @@ export class DatabaseManager {
   updateUser(userId, updates) {
     const allowedFields = [
       'username', 'balance', 'status', 'role',
-      'price_input', 'price_output', 'notes'
+      'price_input', 'price_output', 'notes',
+      'allowed_channels', 'allowed_models'
     ];
 
     const fields = [];

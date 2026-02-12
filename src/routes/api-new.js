@@ -17,6 +17,10 @@ import {
   fetchAntigravityModels,
   isAntigravityModel
 } from '../antigravity.js';
+import {
+  canAccessModel,
+  filterModelsByPermission
+} from '../user-permissions.js';
 
 // 获取模型上下文长度
 function getModelContextLength(model, config) {
@@ -109,6 +113,21 @@ export function createApiRouter(state) {
     return res.json(response);
   }
 
+  function resolveModelChannel(modelId) {
+    return isAntigravityModel(modelId) ? 'agt' : 'kiro';
+  }
+
+  function checkModelPermission(req, res, modelId) {
+    const channel = resolveModelChannel(modelId);
+    const permission = canAccessModel(req.user, modelId, channel);
+    if (permission.allowed) return true;
+
+    return res.status(403).json({
+      type: 'error',
+      error: permission.error
+    });
+  }
+
   // GET /v1/models
   router.get('/models', (req, res) => {
     const agtModels = AGT_STATIC_MODELS.map((model) => ({
@@ -121,38 +140,42 @@ export function createApiRouter(state) {
       max_tokens: 64000
     }));
 
+    const allModels = [
+      ...agtModels,
+      {
+        id: 'claude-sonnet-4-5-20250929',
+        object: 'model',
+        created: 1727568000,
+        owned_by: 'anthropic',
+        display_name: 'Claude Sonnet 4.5',
+        model_type: 'chat',
+        max_tokens: 32000
+      },
+      {
+        id: 'claude-opus-4-5-20251101',
+        object: 'model',
+        created: 1730419200,
+        owned_by: 'anthropic',
+        display_name: 'Claude Opus 4.5',
+        model_type: 'chat',
+        max_tokens: 32000
+      },
+      {
+        id: 'claude-haiku-4-5-20251001',
+        object: 'model',
+        created: 1727740800,
+        owned_by: 'anthropic',
+        display_name: 'Claude Haiku 4.5',
+        model_type: 'chat',
+        max_tokens: 32000
+      }
+    ];
+
+    const visibleModels = filterModelsByPermission(req.user, allModels, resolveModelChannel);
+
     res.json({
       object: 'list',
-      data: [
-        ...agtModels,
-        {
-          id: 'claude-sonnet-4-5-20250929',
-          object: 'model',
-          created: 1727568000,
-          owned_by: 'anthropic',
-          display_name: 'Claude Sonnet 4.5',
-          model_type: 'chat',
-          max_tokens: 32000
-        },
-        {
-          id: 'claude-opus-4-5-20251101',
-          object: 'model',
-          created: 1730419200,
-          owned_by: 'anthropic',
-          display_name: 'Claude Opus 4.5',
-          model_type: 'chat',
-          max_tokens: 32000
-        },
-        {
-          id: 'claude-haiku-4-5-20251001',
-          object: 'model',
-          created: 1727740800,
-          owned_by: 'anthropic',
-          display_name: 'Claude Haiku 4.5',
-          model_type: 'chat',
-          max_tokens: 32000
-        }
-      ]
+      data: visibleModels
     });
   });
 
@@ -174,6 +197,13 @@ export function createApiRouter(state) {
             message: 'Only antigravity models are supported on /v1/chat/completions currently.'
           }
         });
+      }
+
+      if (req.body.model) {
+        const permissionError = checkModelPermission(req, res, req.body.model);
+        if (permissionError !== true) {
+          return permissionError;
+        }
       }
 
       return await handleAgtOpenAIRequest(req, res);
@@ -201,6 +231,13 @@ export function createApiRouter(state) {
     let inputTokens = 0;
 
     try {
+      if (req.body.model) {
+        const permissionError = checkModelPermission(req, res, req.body.model);
+        if (permissionError !== true) {
+          return permissionError;
+        }
+      }
+
       if (isAntigravityModel(req.body.model)) {
         if (req.body.stream === true) {
           return res.status(400).json({

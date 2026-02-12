@@ -1,8 +1,17 @@
 import { Router } from 'express';
 import { callAntigravity, callAntigravityStream } from '../antigravity.js';
+import { isChannelAllowed } from '../user-permissions.js';
+import { userAuthMiddleware } from '../middleware/auth.js';
 
 export function createAgtNativeRouter(state) {
   const router = Router();
+
+  router.use([
+    '/v1internal:generateContent',
+    '/v1internal:countTokens',
+    '/v1internal:fetchAvailableModels',
+    '/v1internal:streamGenerateContent'
+  ], userAuthMiddleware(state.db));
 
   async function selectAgtAccount() {
     const accounts = state.db.getAllAgtAccounts('active');
@@ -20,6 +29,15 @@ export function createAgtNativeRouter(state) {
   }
 
   async function executeNative(path, req, res) {
+    if (!isChannelAllowed(req.user, 'agt')) {
+      return res.status(403).json({
+        error: {
+          type: 'permission_error',
+          message: "Channel 'agt' is not enabled for this API key."
+        }
+      });
+    }
+
     const account = await selectAgtAccount();
     const response = await callAntigravity(state.db, account, path, req.body || {});
     state.db.updateAgtAccountStats(account.id, false);
@@ -53,6 +71,15 @@ export function createAgtNativeRouter(state) {
   router.post('/v1internal:streamGenerateContent', async (req, res) => {
     let selectedAccount = null;
     try {
+      if (!isChannelAllowed(req.user, 'agt')) {
+        return res.status(403).json({
+          error: {
+            type: 'permission_error',
+            message: "Channel 'agt' is not enabled for this API key."
+          }
+        });
+      }
+
       selectedAccount = await selectAgtAccount();
       const upstream = await callAntigravityStream(state.db, selectedAccount, '/v1internal:streamGenerateContent', req.body || {});
 

@@ -170,7 +170,7 @@ async function startServer() {
     // Claude API routes (requires user authentication with billing)
     app.use('/v1', createApiRouter(state));
 
-    app.use('/', userAuthMiddleware(db), createAgtNativeRouter(state));
+    app.use('/', createAgtNativeRouter(state));
 
     // UI routes - redirect root to login
     app.get('/', (req, res) => res.redirect('/login.html'));

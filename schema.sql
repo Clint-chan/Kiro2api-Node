@@ -14,6 +14,9 @@ CREATE TABLE IF NOT EXISTS users (
     price_input REAL NOT NULL DEFAULT 3.0,
     price_output REAL NOT NULL DEFAULT 15.0,
 
+    allowed_channels TEXT NOT NULL DEFAULT '["kiro"]',
+    allowed_models TEXT,
+
     -- Statistics
     total_requests INTEGER DEFAULT 0,
     total_input_tokens INTEGER DEFAULT 0,
