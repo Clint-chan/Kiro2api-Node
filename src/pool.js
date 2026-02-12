@@ -44,7 +44,10 @@ export class AccountPool {
                 clientId: acc.client_id || null,
                 clientSecret: acc.client_secret || null,
                 region: acc.region || null,
-                machineId: acc.machine_id || null,
+                machineId: TokenManager.resolveMachineId({
+                  machineId: acc.machine_id || null,
+                  refreshToken: acc.refresh_token
+                }, this.config),
                 profileArn: acc.profile_arn || null
               },
               status: acc.status,
@@ -65,6 +68,10 @@ export class AccountPool {
 
             this.accounts.set(account.id, account);
 
+            if (!acc.machine_id && account.credentials.machineId) {
+              this.db.updateKiroAccountMachineId(account.id, account.credentials.machineId);
+            }
+
             try {
               this.tokenManagers.set(account.id, new TokenManager(this.config, account.credentials));
             } catch (e) {
@@ -81,9 +88,19 @@ export class AccountPool {
         try {
           const content = await fs.readFile(accountsPath, 'utf-8');
           const accounts = JSON.parse(content);
+          let changed = false;
           for (const acc of accounts) {
+            acc.credentials = acc.credentials || {};
+            const resolvedMachineId = TokenManager.resolveMachineId(acc.credentials, this.config);
+            if (resolvedMachineId && acc.credentials.machineId !== resolvedMachineId) {
+              acc.credentials.machineId = resolvedMachineId;
+              changed = true;
+            }
             this.accounts.set(acc.id, acc);
             this.tokenManagers.set(acc.id, new TokenManager(this.config, acc.credentials));
+          }
+          if (changed) {
+            await fs.writeFile(accountsPath, JSON.stringify(accounts, null, 2));
           }
           console.log(`✓ 加载了 ${accounts.length} 个账号`);
         } catch { }
@@ -113,10 +130,19 @@ export class AccountPool {
 
   async addAccount(account, skipValidation = false) {
     const id = account.id || uuidv4();
+    const credentials = {
+      ...account.credentials,
+      machineId: TokenManager.resolveMachineId(account.credentials || {}, this.config)
+    };
+
+    if (!credentials.machineId) {
+      throw new Error('无法生成 machineId，请检查 refreshToken 或 machineId 配置');
+    }
+
     const newAccount = {
       id,
       name: account.name || '未命名账号',
-      credentials: account.credentials,
+      credentials,
       status: 'active',
       requestCount: 0,
       errorCount: 0,

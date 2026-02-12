@@ -62,6 +62,15 @@ async function startServer() {
     // 初始化账号池 (for Kiro account selection)
     const accountPool = new AccountPool(config, db);
     await accountPool.load();
+
+    const persistedStrategy = db.getSetting('load_balance_strategy');
+    if (persistedStrategy) {
+      const validStrategies = ['round-robin', 'random', 'least-used', 'least-inflight'];
+      if (validStrategies.includes(persistedStrategy)) {
+        accountPool.setStrategy(persistedStrategy);
+      }
+    }
+
     console.log('✓ 账号池初始化完成');
 
     // 初始化余额监控器
@@ -123,6 +132,27 @@ async function startServer() {
           isSystemAdmin: user.isSystemAdmin
         }
       });
+    });
+
+    app.get('/api/strategy', adminAuthMiddleware(db), (req, res) => {
+      res.json({ strategy: accountPool.getStrategy() });
+    });
+
+    app.post('/api/strategy', adminAuthMiddleware(db), (req, res) => {
+      const { strategy } = req.body || {};
+      const validStrategies = ['round-robin', 'random', 'least-used', 'least-inflight'];
+      if (!validStrategies.includes(strategy)) {
+        return res.status(400).json({
+          error: {
+            type: 'validation_error',
+            message: `Invalid strategy: ${strategy}`
+          }
+        });
+      }
+
+      accountPool.setStrategy(strategy);
+      db.setSetting('load_balance_strategy', strategy);
+      return res.json({ success: true, strategy });
     });
 
     // ==================== API Routes ====================

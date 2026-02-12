@@ -135,7 +135,10 @@ export class KiroClient {
   buildHeaders(token) {
     const region = this.config.region || 'us-east-1';
     const kiroVersion = this.config.kiroVersion || '0.8.0';
-    const machineId = this.tokenManager.credentials.machineId || crypto.randomBytes(32).toString('hex');
+    const machineId = this.tokenManager.credentials.machineId;
+    if (!machineId) {
+      throw new Error('缺少 machineId，请先为账号配置或生成稳定 machineId');
+    }
     
     const osName = 'windows';
     const nodeVersion = '20.0.0';

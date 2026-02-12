@@ -1,5 +1,6 @@
 import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
+import { TokenManager } from '../token.js';
 
 /**
  * Admin API Routes
@@ -785,8 +786,15 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
 
       const accountsWithDependencies = accounts.map(account => {
         const requestLogCount = dependencyMap.get(account.id) || 0;
+        const machineIdSource = TokenManager.inferPersistedMachineIdSource(
+          account.machine_id,
+          account.refresh_token,
+          accountPool?.config || {}
+        );
+
         return {
           ...account,
+          machine_id_source: machineIdSource,
           request_log_count: requestLogCount,
           has_dependencies: requestLogCount > 0
         };

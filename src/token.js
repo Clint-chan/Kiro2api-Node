@@ -4,7 +4,10 @@ import crypto from 'crypto';
 export class TokenManager {
   constructor(config, credentials) {
     this.config = config;
-    this.credentials = credentials;
+    this.credentials = {
+      ...credentials,
+      machineId: TokenManager.resolveMachineId(credentials, config)
+    };
     this.accessToken = credentials.accessToken || null;
     this.expiresAt = credentials.expiresAt ? new Date(credentials.expiresAt) : new Date(0);
   }
@@ -32,7 +35,11 @@ export class TokenManager {
   async refreshSocialToken() {
     const region = this.config.region || 'us-east-1';
     const tokenUrl = `https://prod.${region}.auth.desktop.kiro.dev/refreshToken`;
-    const machineId = this.credentials.machineId || TokenManager.generateMachineId();
+    const machineId = TokenManager.resolveMachineId(this.credentials, this.config);
+    if (!machineId) {
+      throw new Error('缺少可用的 machineId，无法刷新 Social Token');
+    }
+    this.credentials.machineId = machineId;
     const kiroVersion = this.config.kiroVersion || '1.6.0';
 
     console.log(`[Token] 刷新 Social Token, refreshToken前缀: ${this.credentials.refreshToken?.substring(0, 20)}...`);
@@ -134,7 +141,57 @@ export class TokenManager {
     return this.accessToken;
   }
 
-  static generateMachineId() {
-    return crypto.randomBytes(32).toString('hex');
+  static normalizeMachineId(machineId) {
+    const raw = String(machineId || '').trim();
+    if (!raw) return null;
+
+    const hex64 = raw.toLowerCase();
+    if (/^[0-9a-f]{64}$/.test(hex64)) {
+      return hex64;
+    }
+
+    const withoutDashes = raw.replace(/-/g, '').toLowerCase();
+    if (/^[0-9a-f]{32}$/.test(withoutDashes)) {
+      return `${withoutDashes}${withoutDashes}`;
+    }
+
+    return null;
+  }
+
+  static generateMachineIdFromRefreshToken(refreshToken) {
+    if (!refreshToken) return null;
+    return crypto
+      .createHash('sha256')
+      .update(`KotlinNativeAPI/${refreshToken}`)
+      .digest('hex');
+  }
+
+  static resolveMachineId(credentials = {}, config = {}) {
+    const credentialMachineId = TokenManager.normalizeMachineId(credentials.machineId);
+    if (credentialMachineId) return credentialMachineId;
+
+    const configMachineId = TokenManager.normalizeMachineId(config.machineId);
+    if (configMachineId) return configMachineId;
+
+    return TokenManager.generateMachineIdFromRefreshToken(credentials.refreshToken);
+  }
+
+  static inferPersistedMachineIdSource(machineId, refreshToken, config = {}) {
+    const normalizedMachineId = TokenManager.normalizeMachineId(machineId);
+    if (!normalizedMachineId) {
+      return 'unavailable';
+    }
+
+    const configMachineId = TokenManager.normalizeMachineId(config.machineId);
+    if (configMachineId && normalizedMachineId === configMachineId) {
+      return 'config';
+    }
+
+    const derivedMachineId = TokenManager.generateMachineIdFromRefreshToken(refreshToken);
+    if (derivedMachineId && normalizedMachineId === derivedMachineId) {
+      return 'derived';
+    }
+
+    return 'explicit';
   }
 }

@@ -95,7 +95,8 @@ function updateRuntimeConfig(state, updates) {
         if (!validStrategies.includes(strategy)) {
           errors.push(`Invalid strategy: ${strategy}. Must be one of: ${validStrategies.join(', ')}`);
         } else {
-          state.accountPool.strategy = strategy;
+          state.accountPool.setStrategy(strategy);
+          state.db.setSetting('load_balance_strategy', strategy);
         }
       }
       
@@ -213,7 +214,8 @@ function updateRuntimeConfig(state, updates) {
  */
 function resetToDefaults(state) {
   // 账号池
-  state.accountPool.strategy = 'least-inflight';
+  state.accountPool.setStrategy('least-inflight');
+  state.db.setSetting('load_balance_strategy', 'least-inflight');
   state.accountPool.maxConcurrentPerAccount = 5;
   state.accountPool.balanceThreshold = 0.1;
 

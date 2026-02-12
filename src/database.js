@@ -648,6 +648,15 @@ export class DatabaseManager {
     return stmt.run(status, accountId);
   }
 
+  updateKiroAccountMachineId(accountId, machineId) {
+    const stmt = this.db.prepare(`
+      UPDATE kiro_accounts
+      SET machine_id = ?
+      WHERE id = ?
+    `);
+    return stmt.run(machineId, accountId);
+  }
+
   /**
    * Update Kiro account usage information
    */
