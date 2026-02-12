@@ -199,7 +199,7 @@
                         </select>
                         <button onclick="refresh()" class="border border-gray-200 hover:bg-gray-50 px-4 py-2 rounded-lg text-sm font-medium text-gray-600 transition">刷新</button>
                     </div>
-                    <div id="accounts-table" class="overflow-x-auto"></div>
+                    <div id="accounts-table"></div>
 
                     <!-- 分页控件 -->
                     <div id="accounts-pagination" class="flex items-center justify-between mt-6 pt-4 border-t border-gray-100">
@@ -227,7 +227,7 @@
 
                         <button onclick="loadAgtAccounts()" class="border border-gray-200 hover:bg-gray-50 px-4 py-2 rounded-lg text-sm font-medium text-gray-600 transition">刷新列表</button>
                     </div>
-                    <div id="agt-accounts-table" class="overflow-x-auto"></div>
+                    <div id="agt-accounts-table"></div>
                 </div>
 
                 <!-- 请求记录 -->
@@ -1064,11 +1064,11 @@
                     <div class="text-sm font-medium text-gray-700 mb-2">渠道权限</div>
                     <div class="flex items-center gap-4">
                         <label class="inline-flex items-center gap-2 text-sm text-gray-700">
-                            <input type="checkbox" id="perm-channel-kiro" class="rounded border-gray-300 text-blue-500 focus:ring-blue-500">
+                            <input type="radio" name="perm-channel" value="kiro" id="perm-channel-kiro" class="border-gray-300 text-blue-500 focus:ring-blue-500" checked>
                             <span>Kiro</span>
                         </label>
                         <label class="inline-flex items-center gap-2 text-sm text-gray-700">
-                            <input type="checkbox" id="perm-channel-agt" class="rounded border-gray-300 text-indigo-500 focus:ring-indigo-500">
+                            <input type="radio" name="perm-channel" value="agt" id="perm-channel-agt" class="border-gray-300 text-indigo-500 focus:ring-indigo-500">
                             <span>AGT</span>
                         </label>
                     </div>
@@ -1084,7 +1084,7 @@
                     </div>
                 </div>
                 <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 text-xs text-gray-600">
-                    留空模型白名单 = 渠道内所有模型可用；勾选渠道为空时将自动保留 Kiro。
+                    留空模型白名单 = 渠道内所有模型可用；默认渠道为 Kiro。
                 </div>
             </div>
             <div class="flex justify-end gap-3 p-6 border-t border-gray-100">
@@ -2015,33 +2015,27 @@
             const diffMs = resetDate - now;
             const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
             
-            let label, color, icon;
+            let label, color;
             
             if (diffDays < 0) {
                 label = '已过期';
                 color = 'bg-red-50 text-red-700 border-red-200';
-                icon = '⚠️';
             } else if (diffDays === 0) {
                 label = '今天重置';
                 color = 'bg-orange-50 text-orange-700 border-orange-200';
-                icon = '⏰';
             } else if (diffDays === 1) {
                 label = '明天重置';
                 color = 'bg-yellow-50 text-yellow-700 border-yellow-200';
-                icon = '📅';
             } else if (diffDays <= 7) {
                 label = `${diffDays}天后`;
                 color = 'bg-green-50 text-green-700 border-green-200';
-                icon = '📅';
             } else {
                 label = `${diffDays}天后`;
                 color = 'bg-gray-50 text-gray-700 border-gray-200';
-                icon = '📅';
             }
             
             return `
                 <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium border ${color}" title="重置时间: ${resetDate.toLocaleString('zh-CN')}">
-                    <span>${icon}</span>
                     <span>${label}</span>
                 </span>
             `;
@@ -3096,7 +3090,6 @@
             currentPermissionUserId = userId;
             document.getElementById('permission-username').textContent = `用户：${username}`;
             document.getElementById('perm-channel-kiro').checked = true;
-            document.getElementById('perm-channel-agt').checked = false;
 
             try {
                 const response = await fetchApi(`/api/admin/users/${userId}`);
@@ -3105,8 +3098,8 @@
                     ? user.allowed_channels
                     : ['kiro'];
 
-                document.getElementById('perm-channel-kiro').checked = channels.includes('kiro');
-                document.getElementById('perm-channel-agt').checked = channels.includes('agt');
+                const selectedChannel = channels[0] || 'kiro';
+                document.getElementById(`perm-channel-${selectedChannel}`).checked = true;
 
                 window.currentUserModels = Array.isArray(user.allowed_models) ? user.allowed_models : [];
                 updateModelCheckboxes();
@@ -3121,16 +3114,13 @@
         }
 
         function updateModelCheckboxes() {
-            const kiroChecked = document.getElementById('perm-channel-kiro').checked;
-            const agtChecked = document.getElementById('perm-channel-agt').checked;
+            const selectedChannel = document.querySelector('input[name="perm-channel"]:checked')?.value || 'kiro';
             const userModels = window.currentUserModels || [];
 
-            let modelsToShow = [];
-            if (kiroChecked) modelsToShow = modelsToShow.concat(ALL_MODELS.kiro);
-            if (agtChecked) modelsToShow = modelsToShow.concat(ALL_MODELS.agt);
+            const modelsToShow = ALL_MODELS[selectedChannel] || [];
 
             if (modelsToShow.length === 0) {
-                document.getElementById('perm-models-checkboxes').innerHTML = '<div class="text-sm text-gray-500 text-center py-4">请先选择渠道</div>';
+                document.getElementById('perm-models-checkboxes').innerHTML = '<div class="text-sm text-gray-500 text-center py-4">该渠道暂无可用模型</div>';
                 return;
             }
 
@@ -3150,13 +3140,8 @@
         async function saveUserPermissions() {
             if (!currentPermissionUserId) return;
 
-            const channels = [];
-            if (document.getElementById('perm-channel-kiro').checked) channels.push('kiro');
-            if (document.getElementById('perm-channel-agt').checked) channels.push('agt');
-
-            if (channels.length === 0) {
-                channels.push('kiro');
-            }
+            const selectedChannel = document.querySelector('input[name="perm-channel"]:checked')?.value || 'kiro';
+            const channels = [selectedChannel];
 
             const modelCheckboxes = document.querySelectorAll('.model-checkbox:checked');
             const models = Array.from(modelCheckboxes).map(cb => cb.value);
