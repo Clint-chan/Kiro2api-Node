@@ -34,6 +34,7 @@ export class DatabaseManager {
       this.db.pragma('foreign_keys = ON');
 
       this.migrateRechargeRecordsConstraint();
+      this.migrateRequestLogsForeignKey();
 
       // Prepare commonly used statements
       this.prepareStatements();
@@ -95,6 +96,104 @@ export class DatabaseManager {
       console.log('✓ Migrated recharge_records amount constraint to support balance adjustments');
     } catch (error) {
       this.db.exec('ROLLBACK');
+      throw error;
+    }
+  }
+
+  migrateRequestLogsForeignKey() {
+    // Check if request_logs table has the wrong foreign key reference
+    const tableMeta = this.db.prepare(`
+      SELECT sql FROM sqlite_master
+      WHERE type = 'table' AND name = 'request_logs'
+    `).get();
+
+    if (!tableMeta || typeof tableMeta.sql !== 'string') {
+      return;
+    }
+
+    // Check if it references kiro_accounts_old
+    if (!tableMeta.sql.includes('kiro_accounts_old')) {
+      return;
+    }
+
+    console.log('🔧 Migrating request_logs foreign key from kiro_accounts_old to kiro_accounts...');
+
+    // Disable foreign keys temporarily for migration
+    this.db.pragma('foreign_keys = OFF');
+    
+    this.db.exec('BEGIN');
+    try {
+      // Rename old table
+      this.db.exec('ALTER TABLE request_logs RENAME TO request_logs_old');
+      
+      // Create new table with correct foreign key
+      this.db.exec(`
+        CREATE TABLE request_logs (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+          -- User information
+          user_id TEXT NOT NULL,
+          user_api_key TEXT NOT NULL,
+
+          -- Kiro account information
+          kiro_account_id TEXT NOT NULL,
+          kiro_account_name TEXT NOT NULL,
+
+          -- Request information
+          model TEXT NOT NULL,
+          input_tokens INTEGER NOT NULL,
+          output_tokens INTEGER NOT NULL,
+          duration_ms INTEGER NOT NULL,
+
+          -- Billing information
+          input_cost REAL NOT NULL,
+          output_cost REAL NOT NULL,
+          total_cost REAL NOT NULL,
+
+          -- Status
+          success INTEGER NOT NULL,
+          error_message TEXT,
+          timestamp TEXT NOT NULL,
+
+          FOREIGN KEY (user_id) REFERENCES users(id),
+          FOREIGN KEY (kiro_account_id) REFERENCES kiro_accounts(id)
+        )
+      `);
+      
+      // Copy data from old table
+      this.db.exec(`
+        INSERT INTO request_logs (
+          id, user_id, user_api_key, kiro_account_id, kiro_account_name,
+          model, input_tokens, output_tokens, duration_ms,
+          input_cost, output_cost, total_cost,
+          success, error_message, timestamp
+        )
+        SELECT
+          id, user_id, user_api_key, kiro_account_id, kiro_account_name,
+          model, input_tokens, output_tokens, duration_ms,
+          input_cost, output_cost, total_cost,
+          success, error_message, timestamp
+        FROM request_logs_old
+      `);
+      
+      // Drop old table
+      this.db.exec('DROP TABLE request_logs_old');
+      
+      // Recreate indexes
+      this.db.exec('CREATE INDEX IF NOT EXISTS idx_request_logs_user_id ON request_logs(user_id)');
+      this.db.exec('CREATE INDEX IF NOT EXISTS idx_request_logs_kiro_account_id ON request_logs(kiro_account_id)');
+      this.db.exec('CREATE INDEX IF NOT EXISTS idx_request_logs_timestamp ON request_logs(timestamp)');
+      
+      this.db.exec('COMMIT');
+      
+      // Re-enable foreign keys
+      this.db.pragma('foreign_keys = ON');
+      
+      console.log('✓ Successfully migrated request_logs foreign key');
+    } catch (error) {
+      this.db.exec('ROLLBACK');
+      this.db.pragma('foreign_keys = ON');
+      console.error('Failed to migrate request_logs foreign key:', error);
       throw error;
     }
   }

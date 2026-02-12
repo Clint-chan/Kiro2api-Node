@@ -203,9 +203,28 @@ export class AccountPool {
         updatedAt: new Date().toISOString()
       };
 
-      // 如果刷新成功，确保状态为 active
-      if (account.status === 'error') {
-        account.status = 'active';
+      const minBalance = parseFloat(process.env.MIN_BALANCE_THRESHOLD) || 5;
+      const available = usage.available || 0;
+      
+      if (available < minBalance) {
+        if (account.status === 'active' || account.status === 'error') {
+          account.status = 'depleted';
+          console.log(`💀 账号 ${account.name} 余额不足 (${available}/${minBalance})，已标记为 depleted`);
+        }
+      } else {
+        if (account.status === 'depleted') {
+          const nextReset = usage.nextReset ? new Date(usage.nextReset) : null;
+          const now = new Date();
+          const canRecover = !nextReset || now >= nextReset;
+
+          if (canRecover) {
+            account.status = 'active';
+            console.log(`✓ 账号 ${account.name} 余额充足 (${available}/${minBalance})，已恢复为 active`);
+          }
+        } else if (account.status === 'error') {
+          account.status = 'active';
+          console.log(`✓ 账号 ${account.name} 状态从 error 恢复为 active`);
+        }
       }
 
       await this.save();

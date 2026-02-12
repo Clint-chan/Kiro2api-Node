@@ -794,33 +794,28 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
         });
       }
 
-      // Call the real refresh method from accountPool
-      const usage = await accountPool.refreshAccountUsage(id);
-
-      if (!usage) {
-        return res.status(404).json({
+      const accountId = req.params.id;
+      
+      const usage = await accountPool.refreshAccountUsage(accountId);
+      
+      if (usage?.error) {
+        return res.status(400).json({
           error: {
-            type: 'not_found',
-            message: 'Account not found.'
-          }
-        });
-      }
-
-      if (usage.error) {
-        return res.status(500).json({
-          error: {
-            type: 'api_error',
+            type: 'refresh_error',
             message: usage.error
           }
         });
       }
 
-      // Update database with the new usage info
-      db.updateKiroAccountUsage(id, usage);
-
+      const account = accountPool.listAccounts().find(a => a.id === accountId);
+      
       res.json({
         success: true,
-        data: usage
+        data: {
+          usage,
+          status: account?.status,
+          message: '余额刷新成功'
+        }
       });
     } catch (error) {
       console.error('Refresh usage error:', error);

@@ -1445,7 +1445,7 @@
         }
 
         function formatStatus(status) {
-            const styles = { active: 'bg-green-100 text-green-700', cooldown: 'bg-yellow-100 text-yellow-700', error: 'bg-red-100 text-red-700', inactive: 'bg-gray-100 text-gray-700', disabled: 'bg-gray-100 text-gray-700' };
+            const styles = { active: 'bg-green-100 text-green-700', cooldown: 'bg-yellow-100 text-yellow-700', error: 'bg-red-100 text-red-700', depleted: 'bg-orange-100 text-orange-700', inactive: 'bg-gray-100 text-gray-700', disabled: 'bg-gray-100 text-gray-700' };
             return `<span class="px-2 py-1 rounded-full text-xs font-medium ${styles[status] || styles.disabled}">${status}</span>`;
         }
 
@@ -1493,8 +1493,34 @@
         }
 
         async function refreshUsage(id) {
-            try { await fetchApi(`/api/admin/accounts/${id}/refresh-usage`, { method: 'POST' }); loadAccounts(); showToast('刷新成功', 'success'); }
-            catch (e) { showToast('刷新失败: ' + e.message, 'error'); }
+            try {
+                const response = await fetchApi(`/api/admin/accounts/${id}/refresh-usage`, { method: 'POST' });
+                
+                if (response.data) {
+                    const { usage, status } = response.data;
+                    const available = usage?.available || 0;
+                    const usageLimit = usage?.usageLimit || 0;
+                    
+                    let message = '刷新成功';
+                    let type = 'success';
+                    
+                    if (status === 'depleted') {
+                        message = `余额不足 (${available}/${usageLimit})，账号已标记为 depleted`;
+                        type = 'warning';
+                    } else if (status === 'error') {
+                        message = `账号异常，已标记为 error`;
+                        type = 'error';
+                    } else if (available >= 5) {
+                        message = `余额充足 (${available}/${usageLimit})`;
+                    }
+                    
+                    showToast(message, type);
+                    await loadAccounts();
+                    await loadStatus();
+                }
+            } catch (e) {
+                showToast('刷新失败: ' + e.message, 'error');
+            }
         }
 
         async function refreshAllUsage() {
