@@ -40,11 +40,13 @@ export class FailoverHandler {
     const usedAccounts = new Set();
     let lastError = null;
     let hasStartedStreaming = false;
+    let currentAccount = null;
 
     for (let attempt = 0; attempt < this.maxRetries; attempt++) {
       try {
         // 选择账号（排除已使用的）
-        const account = await this.accountPool.selectAccount();
+        const account = await this.accountPool.selectAccount({ excludeIds: usedAccounts });
+        currentAccount = account;
         
         if (!account) {
           throw new Error('没有可用的账号');
@@ -83,7 +85,7 @@ export class FailoverHandler {
         if (errorType === 'PERMANENT') {
           // 第二道防线：永久性错误，判"死刑"
           console.log(`⚠ 检测到永久性错误: ${error.message}`);
-          await this.handlePermanentError(error, context.accountId);
+          await this.handlePermanentError(error, currentAccount?.id || context.accountId);
           
           // 继续尝试其他账号
           if (attempt < this.maxRetries - 1) {
@@ -96,7 +98,7 @@ export class FailoverHandler {
         } else if (errorType === 'TEMPORARY') {
           // 临时性错误，短暂延迟后重试
           console.log(`⚠ 检测到临时性错误: ${error.message}`);
-          await this.handleTemporaryError(error, context.accountId);
+          await this.handleTemporaryError(error, currentAccount?.id || context.accountId);
           
           if (attempt < this.maxRetries - 1) {
             console.log(`⏳ 延迟后重试 (${attempt + 1}/${this.maxRetries})`);

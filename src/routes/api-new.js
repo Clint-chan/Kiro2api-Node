@@ -157,7 +157,7 @@ export function createApiRouter(state) {
             account.release();
           }
         }
-      }, { accountId: selected?.id, isStream });
+      }, { isStream });
 
       // 解构结果
       const { response, toolNameMap, account } = result;

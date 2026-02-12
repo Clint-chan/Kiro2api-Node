@@ -46,3 +46,5 @@ verify-*.js
 
 # PM2
 .pm2/
+/.sisyphus/plans
+/.sisyphus

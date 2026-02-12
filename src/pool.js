@@ -282,13 +282,17 @@ export class AccountPool {
     return results;
   }
 
-  async selectAccount() {
+  async selectAccount(options = {}) {
+    const excludedIds = options.excludeIds instanceof Set ? options.excludeIds : new Set();
+
     // 第三道防线：本地软限流 - 余额低于 5 时停止使用
     const minBalance = parseFloat(process.env.MIN_BALANCE_THRESHOLD) || 5;
     const maxInflight = parseInt(process.env.MAX_INFLIGHT_PER_ACCOUNT) || 5;
     
     const available = Array.from(this.accounts.values())
       .filter(a => {
+        if (excludedIds.has(a.id)) return false;
+
         // 必须是 active 状态
         if (a.status !== 'active') return false;
         

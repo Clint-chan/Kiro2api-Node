@@ -70,7 +70,7 @@ function updateMetrics(state) {
 
   for (const account of accounts) {
     statusCounts[account.status] = (statusCounts[account.status] || 0) + 1;
-    totalBalance += account.balance || 0;
+    totalBalance += getAccountAvailableBalance(account);
     totalRequests += account.requestCount || 0;
     totalInflight += account.inflight || 0;
   }
@@ -105,7 +105,7 @@ function updateMetrics(state) {
 function checkHealth(state) {
   const accounts = state.accountPool.listAccounts();
   const activeAccounts = accounts.filter(a => a.status === 'active');
-  const totalBalance = accounts.reduce((sum, a) => sum + (a.balance || 0), 0);
+  const totalBalance = accounts.reduce((sum, a) => sum + getAccountAvailableBalance(a), 0);
   
   const uptime = Math.floor((Date.now() - state.startTime) / 1000);
   
@@ -140,4 +140,8 @@ function isReady(state) {
   
   // 就绪条件：数据库可用 + 至少一个活跃账号
   return state.db && activeAccounts.length > 0;
+}
+
+function getAccountAvailableBalance(account) {
+  return account?.usage?.available || 0;
 }
