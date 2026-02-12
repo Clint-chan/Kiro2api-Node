@@ -23,6 +23,11 @@ const AGT_PATHS = {
   onboardUser: '/v1internal:onboardUser'
 };
 
+const AGT_SKIP_INJECTION_PATHS = [
+  '/v1internal:loadCodeAssist',
+  '/v1internal:onboardUser'
+];
+
 const AGT_MAX_RETRY = Math.max(Number.parseInt(process.env.AGT_REQUEST_RETRY || '1', 10) || 0, 0);
 
 const MODEL_ALIAS = {
@@ -109,8 +114,14 @@ function generateSessionIdFallback() {
   return `-${n}`;
 }
 
-function buildAgtRequestBody(body, projectId) {
+function buildAgtRequestBody(body, projectId, skipInjection = false) {
   const nextBody = body && typeof body === 'object' ? JSON.parse(JSON.stringify(body)) : {};
+
+  // Skip field injection for specific endpoints
+  if (skipInjection) {
+    return nextBody;
+  }
+
   const normalizedProject = String(projectId || '').trim() || generateProjectIdFallback();
 
   if (!nextBody.project) {
@@ -365,14 +376,16 @@ async function requestJsonWithFallback(token, path, body) {
 export async function callAntigravity(db, account, path, body) {
   const token = await ensureAntigravityAccessToken(db, account);
   const latest = db.getAgtAccountById(account.id) || account;
-  const payload = buildAgtRequestBody(body || {}, latest.project_id);
+  const skipInjection = AGT_SKIP_INJECTION_PATHS.includes(path);
+  const payload = buildAgtRequestBody(body || {}, latest.project_id, skipInjection);
   return requestJsonWithFallback(token, path, payload);
 }
 
 export async function callAntigravityStream(db, account, path, body) {
   const token = await ensureAntigravityAccessToken(db, account);
   const latest = db.getAgtAccountById(account.id) || account;
-  const payload = buildAgtRequestBody(body || {}, latest.project_id);
+  const skipInjection = AGT_SKIP_INJECTION_PATHS.includes(path);
+  const payload = buildAgtRequestBody(body || {}, latest.project_id, skipInjection);
   return requestWithFallback(token, path, payload, { stream: true, accept: 'text/event-stream' });
 }
 
