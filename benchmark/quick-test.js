@@ -26,7 +26,7 @@ async function test(name, fn) {
 async function testHealth() {
   const response = await fetch(`${BASE_URL}/health`);
   const data = await response.json();
-  if (!data.status || !['healthy', 'unhealthy'].includes(data.status)) throw new Error('Invalid health status');
+  if (data.status !== 'healthy') throw new Error(`Expected status 'healthy', got '${data.status}'`);
 }
 
 async function testModels() {
