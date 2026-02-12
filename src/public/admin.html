@@ -3086,51 +3086,75 @@
                 .filter(Boolean);
         }
 
+        const ALL_MODELS = {
+            kiro: [
+                { id: 'claude-sonnet-4-5', name: 'Claude Sonnet 4.5' },
+                { id: 'claude-opus-4-5', name: 'Claude Opus 4.5' },
+                { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet' }
+            ],
+            agt: [
+                { id: 'antigravity-gemini-3-pro', name: 'Gemini 3 Pro' },
+                { id: 'antigravity-gemini-3-flash', name: 'Gemini 3 Flash' },
+                { id: 'antigravity-claude-sonnet-4-5', name: 'Claude Sonnet 4.5' },
+                { id: 'antigravity-claude-sonnet-4-5-thinking', name: 'Claude Sonnet 4.5 Thinking' },
+                { id: 'antigravity-claude-opus-4-5-thinking', name: 'Claude Opus 4.5 Thinking' },
+                { id: 'antigravity-claude-opus-4-6-thinking', name: 'Claude Opus 4.6 Thinking' }
+            ]
+        };
+
         async function showPermissionModal(userId, username) {
             currentPermissionUserId = userId;
             document.getElementById('permission-username').textContent = `用户：${username}`;
             document.getElementById('perm-channel-kiro').checked = true;
-            document.getElementById('perm-channel-agt').checked = true;
+            document.getElementById('perm-channel-agt').checked = false;
 
             try {
                 const response = await fetchApi(`/api/admin/users/${userId}`);
                 const user = response?.data || {};
                 const channels = Array.isArray(user.allowed_channels) && user.allowed_channels.length > 0
                     ? user.allowed_channels
-                    : ['kiro', 'agt'];
+                    : ['kiro'];
 
                 document.getElementById('perm-channel-kiro').checked = channels.includes('kiro');
                 document.getElementById('perm-channel-agt').checked = channels.includes('agt');
 
-                const allModels = [
-                    { id: 'claude-sonnet-4-5', name: 'Claude Sonnet 4.5 (Kiro)' },
-                    { id: 'claude-opus-4-5', name: 'Claude Opus 4.5 (Kiro)' },
-                    { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet (Kiro)' },
-                    { id: 'antigravity-gemini-3-pro', name: 'Gemini 3 Pro (AGT)' },
-                    { id: 'antigravity-gemini-3-flash', name: 'Gemini 3 Flash (AGT)' },
-                    { id: 'antigravity-claude-sonnet-4-5', name: 'Claude Sonnet 4.5 (AGT)' },
-                    { id: 'antigravity-claude-sonnet-4-5-thinking', name: 'Claude Sonnet 4.5 Thinking (AGT)' },
-                    { id: 'antigravity-claude-opus-4-5-thinking', name: 'Claude Opus 4.5 Thinking (AGT)' },
-                    { id: 'antigravity-claude-opus-4-6-thinking', name: 'Claude Opus 4.6 Thinking (AGT)' }
-                ];
+                window.currentUserModels = Array.isArray(user.allowed_models) ? user.allowed_models : [];
+                updateModelCheckboxes();
 
-                const userModels = Array.isArray(user.allowed_models) ? user.allowed_models : [];
-                const checkboxesHtml = allModels.map(m => {
-                    const checked = userModels.length === 0 || userModels.includes(m.id) ? 'checked' : '';
-                    return `
-                        <label class="inline-flex items-center gap-2 text-sm text-gray-700 hover:bg-gray-50 px-2 py-1 rounded">
-                            <input type="checkbox" value="${m.id}" ${checked} class="rounded border-gray-300 text-indigo-500 focus:ring-indigo-500 model-checkbox">
-                            <span>${m.name}</span>
-                        </label>
-                    `;
-                }).join('');
-
-                document.getElementById('perm-models-checkboxes').innerHTML = checkboxesHtml;
+                document.getElementById('perm-channel-kiro').addEventListener('change', updateModelCheckboxes);
+                document.getElementById('perm-channel-agt').addEventListener('change', updateModelCheckboxes);
             } catch (e) {
                 showToast('加载权限失败: ' + e.message, 'error');
             }
 
             showModal('permissionModal');
+        }
+
+        function updateModelCheckboxes() {
+            const kiroChecked = document.getElementById('perm-channel-kiro').checked;
+            const agtChecked = document.getElementById('perm-channel-agt').checked;
+            const userModels = window.currentUserModels || [];
+
+            let modelsToShow = [];
+            if (kiroChecked) modelsToShow = modelsToShow.concat(ALL_MODELS.kiro);
+            if (agtChecked) modelsToShow = modelsToShow.concat(ALL_MODELS.agt);
+
+            if (modelsToShow.length === 0) {
+                document.getElementById('perm-models-checkboxes').innerHTML = '<div class="text-sm text-gray-500 text-center py-4">请先选择渠道</div>';
+                return;
+            }
+
+            const checkboxesHtml = modelsToShow.map(m => {
+                const checked = userModels.length === 0 || userModels.includes(m.id) ? 'checked' : '';
+                return `
+                    <label class="inline-flex items-center gap-2 text-sm text-gray-700 hover:bg-gray-50 px-2 py-1 rounded">
+                        <input type="checkbox" value="${m.id}" ${checked} class="rounded border-gray-300 text-indigo-500 focus:ring-indigo-500 model-checkbox">
+                        <span>${m.name}</span>
+                    </label>
+                `;
+            }).join('');
+
+            document.getElementById('perm-models-checkboxes').innerHTML = checkboxesHtml;
         }
 
         async function saveUserPermissions() {
