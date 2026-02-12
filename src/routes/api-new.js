@@ -7,6 +7,16 @@ import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs/promises';
 import path from 'path';
 import { recordApiStart, recordApiSuccess, recordApiFailure } from './api-new-metrics.js';
+import {
+  AGT_STATIC_MODELS,
+  callAntigravity,
+  convertAgtToClaude,
+  convertAgtToOpenAI,
+  convertClaudeToAgtPayload,
+  convertOpenAIToAgtPayload,
+  fetchAntigravityModels,
+  isAntigravityModel
+} from '../antigravity.js';
 
 // 获取模型上下文长度
 function getModelContextLength(model, config) {
@@ -66,11 +76,55 @@ export function createApiRouter(state) {
 
   router.use(authMiddleware);
 
+  async function selectAgtAccount() {
+    const accounts = state.db.getAllAgtAccounts('active');
+    if (!accounts || accounts.length === 0) {
+      throw new Error('No active AGT accounts available');
+    }
+
+    accounts.sort((a, b) => {
+      const scoreA = (a.error_count || 0) * 5 + (a.request_count || 0);
+      const scoreB = (b.error_count || 0) * 5 + (b.request_count || 0);
+      return scoreA - scoreB;
+    });
+
+    return accounts[0];
+  }
+
+  async function handleAgtClaudeRequest(req, res) {
+    const account = await selectAgtAccount();
+    const payload = convertClaudeToAgtPayload(req.body, req.body.model);
+    const upstream = await callAntigravity(state.db, account, '/v1internal:generateContent', payload);
+    const response = convertAgtToClaude(upstream, req.body.model);
+    state.db.updateAgtAccountStats(account.id, false);
+    return res.json(response);
+  }
+
+  async function handleAgtOpenAIRequest(req, res) {
+    const account = await selectAgtAccount();
+    const payload = convertOpenAIToAgtPayload(req.body, req.body.model);
+    const upstream = await callAntigravity(state.db, account, '/v1internal:generateContent', payload);
+    const response = convertAgtToOpenAI(upstream, req.body.model);
+    state.db.updateAgtAccountStats(account.id, false);
+    return res.json(response);
+  }
+
   // GET /v1/models
   router.get('/models', (req, res) => {
+    const agtModels = AGT_STATIC_MODELS.map((model) => ({
+      id: model.id,
+      object: 'model',
+      created: 1737158400,
+      owned_by: model.owned_by,
+      display_name: model.display_name,
+      model_type: 'chat',
+      max_tokens: 64000
+    }));
+
     res.json({
       object: 'list',
       data: [
+        ...agtModels,
         {
           id: 'claude-sonnet-4-5-20250929',
           object: 'model',
@@ -102,6 +156,44 @@ export function createApiRouter(state) {
     });
   });
 
+  router.post('/chat/completions', async (req, res) => {
+    try {
+      if (req.body.stream === true) {
+        return res.status(400).json({
+          error: {
+            type: 'invalid_request_error',
+            message: 'AGT stream via /v1/chat/completions is not enabled yet. Use non-stream mode.'
+          }
+        });
+      }
+
+      if (!isAntigravityModel(req.body.model)) {
+        return res.status(400).json({
+          error: {
+            type: 'invalid_request_error',
+            message: 'Only antigravity models are supported on /v1/chat/completions currently.'
+          }
+        });
+      }
+
+      return await handleAgtOpenAIRequest(req, res);
+    } catch (error) {
+      if (error?.message?.includes('AGT')) {
+        try {
+          const account = state.db.getAllAgtAccounts('active')[0];
+          if (account) state.db.updateAgtAccountStats(account.id, true);
+        } catch {}
+      }
+
+      return res.status(500).json({
+        error: {
+          type: 'api_error',
+          message: error.message || 'AGT request failed'
+        }
+      });
+    }
+  });
+
   // POST /v1/messages (Anthropic 格式 with billing)
   router.post('/messages', async (req, res) => {
     const startTime = Date.now();
@@ -109,6 +201,19 @@ export function createApiRouter(state) {
     let inputTokens = 0;
 
     try {
+      if (isAntigravityModel(req.body.model)) {
+        if (req.body.stream === true) {
+          return res.status(400).json({
+            type: 'error',
+            error: {
+              type: 'invalid_request_error',
+              message: 'AGT stream via /v1/messages is not enabled yet. Use non-stream mode.'
+            }
+          });
+        }
+        return await handleAgtClaudeRequest(req, res);
+      }
+
       const user = req.user;
 
       // 记录请求开始
@@ -256,6 +361,21 @@ export function createApiRouter(state) {
       res.status(status).json({
         type: 'error',
         error: { type: errorType, message: errorMessage }
+      });
+    }
+  });
+
+  router.post('/agt/models/refresh', async (req, res) => {
+    try {
+      const account = await selectAgtAccount();
+      const models = await fetchAntigravityModels(state.db, account);
+      return res.json({ success: true, data: models });
+    } catch (error) {
+      return res.status(500).json({
+        error: {
+          type: 'api_error',
+          message: error.message || 'Failed to fetch AGT models'
+        }
       });
     }
   });

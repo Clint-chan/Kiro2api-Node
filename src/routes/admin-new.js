@@ -1,6 +1,11 @@
 import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { TokenManager } from '../token.js';
+import {
+  callAntigravity,
+  fetchAntigravityModelsWithMeta,
+  normalizeImportedAgtAccount
+} from '../antigravity.js';
 
 /**
  * Admin API Routes
@@ -8,6 +13,55 @@ import { TokenManager } from '../token.js';
  */
 export function createAdminRouter(db, billing, subscription, accountPool) {
   const router = express.Router();
+
+  function parseJsonSafe(text) {
+    try {
+      return JSON.parse(text);
+    } catch {
+      return null;
+    }
+  }
+
+  function normalizeAgtTier(usage) {
+    const paidTier = usage?.paidTier?.id || usage?.paidTier || null;
+    const currentTier = usage?.currentTier?.id || usage?.currentTier || null;
+    return {
+      paid_tier: typeof paidTier === 'string' ? paidTier : null,
+      plan_tier: typeof currentTier === 'string' ? currentTier : null
+    };
+  }
+
+  function extractQuotaMeta(modelsMap) {
+    const quotaByModel = {};
+    let nextReset = null;
+    let nextResetTs = Number.POSITIVE_INFINITY;
+
+    for (const [model, modelData] of Object.entries(modelsMap || {})) {
+      const info = modelData?.quotaInfo;
+      if (!info) continue;
+
+      const remainingFraction = typeof info.remainingFraction === 'number' ? info.remainingFraction : null;
+      const resetTime = typeof info.resetTime === 'string' ? info.resetTime : null;
+
+      quotaByModel[model] = {
+        remaining_fraction: remainingFraction,
+        reset_time: resetTime
+      };
+
+      if (resetTime) {
+        const ts = Date.parse(resetTime);
+        if (Number.isFinite(ts) && ts < nextResetTs) {
+          nextResetTs = ts;
+          nextReset = resetTime;
+        }
+      }
+    }
+
+    return {
+      model_quotas: Object.keys(quotaByModel).length > 0 ? JSON.stringify(quotaByModel) : null,
+      next_reset: nextReset
+    };
+  }
 
   // ==================== User Management ====================
 
@@ -1210,6 +1264,243 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
         error: {
           type: 'validation_error',
           message: `导入失败: ${error.message}`
+        }
+      });
+    }
+  });
+
+  router.get('/agt-accounts', (req, res) => {
+    try {
+      const accounts = db.getAllAgtAccounts().map((account) => ({
+        ...account,
+        model_quotas: parseJsonSafe(account.model_quotas)
+      }));
+      res.json({ success: true, data: accounts });
+    } catch (error) {
+      console.error('Get AGT accounts error:', error);
+      res.status(500).json({
+        error: {
+          type: 'internal_error',
+          message: 'Failed to retrieve AGT accounts.'
+        }
+      });
+    }
+  });
+
+  router.post('/agt-accounts/import', async (req, res) => {
+    try {
+      const { raw_json } = req.body;
+      if (!raw_json) {
+        return res.status(400).json({
+          error: {
+            type: 'validation_error',
+            message: 'raw_json is required'
+          }
+        });
+      }
+
+      const parsed = JSON.parse(raw_json);
+      let records = [];
+      if (Array.isArray(parsed)) {
+        records = parsed;
+      } else if (Array.isArray(parsed.accounts)) {
+        records = parsed.accounts;
+      } else {
+        records = [parsed];
+      }
+
+      const results = [];
+      for (let i = 0; i < records.length; i++) {
+        const raw = records[i];
+        try {
+          const normalized = normalizeImportedAgtAccount(raw, i);
+          db.insertAgtAccount(normalized);
+          results.push({ success: true, id: normalized.id, name: normalized.name });
+        } catch (e) {
+          results.push({
+            success: false,
+            name: raw?.email || raw?.name || `antigravity-${i + 1}`,
+            error: e.message
+          });
+        }
+      }
+
+      const successCount = results.filter((item) => item.success).length;
+      res.status(201).json({
+        total: records.length,
+        success: successCount,
+        failed: records.length - successCount,
+        results
+      });
+    } catch (error) {
+      console.error('Import AGT accounts error:', error);
+      res.status(400).json({
+        error: {
+          type: 'validation_error',
+          message: `导入失败: ${error.message}`
+        }
+      });
+    }
+  });
+
+  router.post('/agt-accounts/:id/enable', (req, res) => {
+    try {
+      const { id } = req.params;
+      const account = db.getAgtAccountById(id);
+      if (!account) {
+        return res.status(404).json({
+          error: {
+            type: 'not_found',
+            message: 'AGT account not found.'
+          }
+        });
+      }
+      db.updateAgtAccountStatus(id, 'active');
+      res.json({ success: true, message: 'AGT account enabled successfully' });
+    } catch (error) {
+      console.error('Enable AGT account error:', error);
+      res.status(500).json({
+        error: {
+          type: 'internal_error',
+          message: `Failed to enable AGT account: ${error.message}`
+        }
+      });
+    }
+  });
+
+  router.post('/agt-accounts/:id/disable', (req, res) => {
+    try {
+      const { id } = req.params;
+      const account = db.getAgtAccountById(id);
+      if (!account) {
+        return res.status(404).json({
+          error: {
+            type: 'not_found',
+            message: 'AGT account not found.'
+          }
+        });
+      }
+      db.updateAgtAccountStatus(id, 'disabled');
+      res.json({ success: true, message: 'AGT account disabled successfully' });
+    } catch (error) {
+      console.error('Disable AGT account error:', error);
+      res.status(500).json({
+        error: {
+          type: 'internal_error',
+          message: `Failed to disable AGT account: ${error.message}`
+        }
+      });
+    }
+  });
+
+  router.delete('/agt-accounts/:id', (req, res) => {
+    try {
+      const { id } = req.params;
+      const account = db.getAgtAccountById(id);
+      if (!account) {
+        return res.status(404).json({
+          error: {
+            type: 'not_found',
+            message: 'AGT account not found.'
+          }
+        });
+      }
+      db.deleteAgtAccount(id);
+      res.json({ success: true, message: 'AGT account deleted successfully' });
+    } catch (error) {
+      console.error('Delete AGT account error:', error);
+      res.status(500).json({
+        error: {
+          type: 'internal_error',
+          message: 'Failed to delete AGT account.'
+        }
+      });
+    }
+  });
+
+  router.post('/agt-accounts/:id/refresh-models', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const account = db.getAgtAccountById(id);
+      if (!account) {
+        return res.status(404).json({
+          error: {
+            type: 'not_found',
+            message: 'AGT account not found.'
+          }
+        });
+      }
+
+      const modelMap = await fetchAntigravityModelsWithMeta(db, account);
+      const models = Object.keys(modelMap || {});
+      const quotaMeta = extractQuotaMeta(modelMap);
+      db.updateAgtAccountUsageMeta(id, {
+        model_quotas: quotaMeta.model_quotas,
+        next_reset: quotaMeta.next_reset
+      });
+      db.updateAgtAccountStats(id, false);
+      res.json({ success: true, data: { models, next_reset: quotaMeta.next_reset } });
+    } catch (error) {
+      console.error('Refresh AGT models error:', error);
+      db.updateAgtAccountStats(req.params.id, true);
+      res.status(500).json({
+        error: {
+          type: 'internal_error',
+          message: error.message || 'Failed to refresh AGT models.'
+        }
+      });
+    }
+  });
+
+  router.post('/agt-accounts/:id/refresh-usage', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const account = db.getAgtAccountById(id);
+      if (!account) {
+        return res.status(404).json({
+          error: {
+            type: 'not_found',
+            message: 'AGT account not found.'
+          }
+        });
+      }
+
+      const usage = await callAntigravity(db, account, '/v1internal:loadCodeAssist', {
+        metadata: {
+          ideType: 'ANTIGRAVITY',
+          platform: 'PLATFORM_UNSPECIFIED',
+          pluginType: 'GEMINI'
+        }
+      });
+
+      const projectId = usage?.cloudaicompanionProject?.id || usage?.cloudaicompanionProject || account.project_id || null;
+      const tierMeta = normalizeAgtTier(usage);
+      db.updateAgtAccountTokens(id, {
+        access_token: account.access_token,
+        refresh_token: account.refresh_token,
+        expires_in: account.expires_in,
+        expired: account.expired,
+        timestamp: account.timestamp,
+        project_id: projectId,
+        email: account.email
+      });
+
+      db.updateAgtAccountUsageMeta(id, {
+        plan_tier: tierMeta.plan_tier,
+        paid_tier: tierMeta.paid_tier,
+        next_reset: account.next_reset,
+        model_quotas: account.model_quotas
+      });
+
+      db.updateAgtAccountStats(id, false);
+      res.json({ success: true, data: { usage, project_id: projectId, ...tierMeta } });
+    } catch (error) {
+      console.error('Refresh AGT usage error:', error);
+      db.updateAgtAccountStats(req.params.id, true);
+      res.status(500).json({
+        error: {
+          type: 'internal_error',
+          message: error.message || 'Failed to refresh AGT usage.'
         }
       });
     }

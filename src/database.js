@@ -35,6 +35,7 @@ export class DatabaseManager {
 
       this.migrateRechargeRecordsConstraint();
       this.migrateRequestLogsForeignKey();
+      this.ensureAgtAccountsTable();
 
       // Prepare commonly used statements
       this.prepareStatements();
@@ -648,6 +649,55 @@ export class DatabaseManager {
     return stmt.run(status, accountId);
   }
 
+  ensureAgtAccountsTable() {
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS agt_accounts (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        email TEXT,
+        project_id TEXT,
+        access_token TEXT,
+        refresh_token TEXT NOT NULL,
+        expires_in INTEGER,
+        expired TEXT,
+        timestamp INTEGER,
+        type TEXT NOT NULL DEFAULT 'antigravity',
+        status TEXT NOT NULL DEFAULT 'active',
+        plan_tier TEXT,
+        paid_tier TEXT,
+        next_reset TEXT,
+        model_quotas TEXT,
+        last_usage_sync_at TEXT,
+        request_count INTEGER DEFAULT 0,
+        error_count INTEGER DEFAULT 0,
+        created_at TEXT NOT NULL,
+        last_used_at TEXT,
+        updated_at TEXT NOT NULL,
+        CHECK (status IN ('active', 'inactive', 'error', 'disabled'))
+      )
+    `);
+
+    this.db.exec('CREATE INDEX IF NOT EXISTS idx_agt_accounts_status ON agt_accounts(status)');
+    this.db.exec('CREATE INDEX IF NOT EXISTS idx_agt_accounts_email ON agt_accounts(email)');
+    this.db.exec('CREATE INDEX IF NOT EXISTS idx_agt_accounts_project_id ON agt_accounts(project_id)');
+
+    const existingColumns = this.db.prepare('PRAGMA table_info(agt_accounts)').all();
+    const columnNames = new Set(existingColumns.map((column) => column.name));
+    const migrations = [
+      ['plan_tier', 'ALTER TABLE agt_accounts ADD COLUMN plan_tier TEXT'],
+      ['paid_tier', 'ALTER TABLE agt_accounts ADD COLUMN paid_tier TEXT'],
+      ['next_reset', 'ALTER TABLE agt_accounts ADD COLUMN next_reset TEXT'],
+      ['model_quotas', 'ALTER TABLE agt_accounts ADD COLUMN model_quotas TEXT'],
+      ['last_usage_sync_at', 'ALTER TABLE agt_accounts ADD COLUMN last_usage_sync_at TEXT']
+    ];
+
+    for (const [column, migration] of migrations) {
+      if (!columnNames.has(column)) {
+        this.db.exec(migration);
+      }
+    }
+  }
+
   updateKiroAccountMachineId(accountId, machineId) {
     const stmt = this.db.prepare(`
       UPDATE kiro_accounts
@@ -702,6 +752,139 @@ export class DatabaseManager {
       DELETE FROM kiro_accounts
       WHERE id = ?
     `);
+    return stmt.run(accountId);
+  }
+
+  getAgtAccountById(id) {
+    const stmt = this.db.prepare('SELECT * FROM agt_accounts WHERE id = ?');
+    return stmt.get(id);
+  }
+
+  getAllAgtAccounts(status = null) {
+    let query = 'SELECT * FROM agt_accounts';
+    const params = [];
+
+    if (status) {
+      query += ' WHERE status = ?';
+      params.push(status);
+    }
+
+    query += ' ORDER BY created_at DESC';
+    return this.db.prepare(query).all(...params);
+  }
+
+  insertAgtAccount(accountData) {
+    const query = `
+      INSERT INTO agt_accounts (
+        id, name, email, project_id,
+        access_token, refresh_token,
+        expires_in, expired, timestamp,
+        type, status, plan_tier, paid_tier, next_reset, model_quotas, last_usage_sync_at,
+        request_count, error_count,
+        created_at, last_used_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    const now = new Date().toISOString();
+    return this.db.prepare(query).run(
+      accountData.id,
+      accountData.name,
+      accountData.email || null,
+      accountData.project_id || null,
+      accountData.access_token || null,
+      accountData.refresh_token,
+      accountData.expires_in || null,
+      accountData.expired || null,
+      accountData.timestamp || null,
+      accountData.type || 'antigravity',
+      accountData.status || 'active',
+      accountData.plan_tier || null,
+      accountData.paid_tier || null,
+      accountData.next_reset || null,
+      accountData.model_quotas || null,
+      accountData.last_usage_sync_at || null,
+      accountData.request_count || 0,
+      accountData.error_count || 0,
+      accountData.created_at || now,
+      accountData.last_used_at || null,
+      accountData.updated_at || now
+    );
+  }
+
+  updateAgtAccountStatus(accountId, status) {
+    const stmt = this.db.prepare(`
+      UPDATE agt_accounts
+      SET status = ?, updated_at = ?
+      WHERE id = ?
+    `);
+    return stmt.run(status, new Date().toISOString(), accountId);
+  }
+
+  updateAgtAccountStats(accountId, isError = false) {
+    const now = new Date().toISOString();
+    const stmt = this.db.prepare(`
+      UPDATE agt_accounts
+      SET request_count = request_count + 1,
+          error_count = error_count + ?,
+          last_used_at = ?,
+          updated_at = ?
+      WHERE id = ?
+    `);
+    return stmt.run(isError ? 1 : 0, now, now, accountId);
+  }
+
+  updateAgtAccountTokens(accountId, updates) {
+    const stmt = this.db.prepare(`
+      UPDATE agt_accounts
+      SET access_token = ?,
+          refresh_token = ?,
+          expires_in = ?,
+          expired = ?,
+          timestamp = ?,
+          project_id = ?,
+          email = ?,
+          updated_at = ?
+      WHERE id = ?
+    `);
+
+    return stmt.run(
+      updates.access_token || null,
+      updates.refresh_token || null,
+      updates.expires_in || null,
+      updates.expired || null,
+      updates.timestamp || null,
+      updates.project_id || null,
+      updates.email || null,
+      new Date().toISOString(),
+      accountId
+    );
+  }
+
+  updateAgtAccountUsageMeta(accountId, updates) {
+    const stmt = this.db.prepare(`
+      UPDATE agt_accounts
+      SET plan_tier = ?,
+          paid_tier = ?,
+          next_reset = ?,
+          model_quotas = ?,
+          last_usage_sync_at = ?,
+          updated_at = ?
+      WHERE id = ?
+    `);
+
+    return stmt.run(
+      updates.plan_tier || null,
+      updates.paid_tier || null,
+      updates.next_reset || null,
+      updates.model_quotas || null,
+      updates.last_usage_sync_at || new Date().toISOString(),
+      new Date().toISOString(),
+      accountId
+    );
+  }
+
+  deleteAgtAccount(accountId) {
+    const stmt = this.db.prepare('DELETE FROM agt_accounts WHERE id = ?');
     return stmt.run(accountId);
   }
 

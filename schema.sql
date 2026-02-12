@@ -82,6 +82,36 @@ CREATE TABLE IF NOT EXISTS kiro_accounts (
 CREATE INDEX IF NOT EXISTS idx_kiro_accounts_status ON kiro_accounts(status);
 CREATE INDEX IF NOT EXISTS idx_kiro_accounts_user_email ON kiro_accounts(user_email);
 
+CREATE TABLE IF NOT EXISTS agt_accounts (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT,
+    project_id TEXT,
+    access_token TEXT,
+    refresh_token TEXT NOT NULL,
+    expires_in INTEGER,
+    expired TEXT,
+    timestamp INTEGER,
+    type TEXT NOT NULL DEFAULT 'antigravity',
+    status TEXT NOT NULL DEFAULT 'active',
+    plan_tier TEXT,
+    paid_tier TEXT,
+    next_reset TEXT,
+    model_quotas TEXT,
+    last_usage_sync_at TEXT,
+    request_count INTEGER DEFAULT 0,
+    error_count INTEGER DEFAULT 0,
+    created_at TEXT NOT NULL,
+    last_used_at TEXT,
+    updated_at TEXT NOT NULL,
+
+    CHECK (status IN ('active', 'inactive', 'error', 'disabled'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_agt_accounts_status ON agt_accounts(status);
+CREATE INDEX IF NOT EXISTS idx_agt_accounts_email ON agt_accounts(email);
+CREATE INDEX IF NOT EXISTS idx_agt_accounts_project_id ON agt_accounts(project_id);
+
 -- Request logs table
 CREATE TABLE IF NOT EXISTS request_logs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

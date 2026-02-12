@@ -10,6 +10,7 @@ import { SubscriptionManager } from './subscription.js';
 import { createBalanceMonitor } from './balance-monitor.js';
 import { userAuthMiddleware, adminAuthMiddleware, dualAuthMiddleware } from './middleware/auth.js';
 import { createApiRouter } from './routes/api-new.js';
+import { createAgtNativeRouter } from './routes/agt-native.js';
 import { createAdminRouter } from './routes/admin-new.js';
 import { createUserRouter } from './routes/user.js';
 import { createUiRouter } from './routes/ui.js';
@@ -168,6 +169,8 @@ async function startServer() {
 
     // Claude API routes (requires user authentication with billing)
     app.use('/v1', createApiRouter(state));
+
+    app.use('/', userAuthMiddleware(db), createAgtNativeRouter(state));
 
     // UI routes - redirect root to login
     app.get('/', (req, res) => res.redirect('/login.html'));

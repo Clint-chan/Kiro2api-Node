@@ -144,6 +144,7 @@
                     <nav class="flex space-x-8 px-6">
                         <button onclick="switchTab('users')" class="tab-btn border-b-2 border-blue-500 text-blue-600 py-4 px-1 text-sm font-medium" data-tab="users">用户管理</button>
                         <button onclick="switchTab('accounts')" class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1 text-sm font-medium" data-tab="accounts">Kiro账号池</button>
+                        <button onclick="switchTab('agt-accounts')" class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1 text-sm font-medium" data-tab="agt-accounts">AGT账号池</button>
                         <button onclick="switchTab('logs')" class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1 text-sm font-medium" data-tab="logs">请求记录</button>
                         <button onclick="switchTab('settings')" class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1 text-sm font-medium" data-tab="settings">系统设置</button>
                     </nav>
@@ -263,6 +264,16 @@
                                         <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">POST</span>
                                         <span class="text-gray-700">/v1/messages</span>
                                         <button onclick="copyText(location.origin + '/v1/messages')" class="text-blue-500 hover:text-blue-700 text-xs">复制</button>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">POST</span>
+                                        <span class="text-gray-700">/v1/chat/completions</span>
+                                        <button onclick="copyText(location.origin + '/v1/chat/completions')" class="text-blue-500 hover:text-blue-700 text-xs">复制</button>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-medium">POST</span>
+                                        <span class="text-gray-700">/v1internal:generateContent</span>
+                                        <button onclick="copyText(location.origin + '/v1internal:generateContent')" class="text-blue-500 hover:text-blue-700 text-xs">复制</button>
                                     </div>
                                 </div>
                             </div>
@@ -1014,6 +1025,7 @@
         let usersCurrentPage = 1;
         let usersPageSize = 15;
         let allUsers = [];
+        let allAgtAccounts = [];
         let logsCurrentPage = 1;
         let logsPageSize = 20;
         let allLogs = [];
@@ -1255,21 +1267,216 @@
             }
         }
 
-        function startUptimeCounter() {
-            if (uptimeInterval) clearInterval(uptimeInterval);
-
-            uptimeInterval = setInterval(() => {
-                const uptime = Math.floor((Date.now() - serverStartTime) / 1000);
-                document.getElementById('stat-uptime').textContent = formatUptime(uptime);
-            }, 1000);
-        }
-
         async function loadAccounts() {
             try {
                 const data = await fetchApi('/api/admin/accounts');
                 allAccounts = data.data || [];
                 renderAccountsPage();
             } catch (e) { console.error(e); }
+        }
+
+        async function loadAgtAccounts() {
+            try {
+                const data = await fetchApi('/api/admin/agt-accounts');
+                allAgtAccounts = data.data || [];
+                renderAgtAccounts();
+            } catch (e) {
+                showToast('加载 AGT 账号失败: ' + e.message, 'error');
+            }
+        }
+
+        function renderAgtAccounts() {
+            const container = document.getElementById('agt-accounts-table');
+            if (!container) return;
+            if (!allAgtAccounts.length) {
+                container.innerHTML = '<div class="text-center py-10 text-gray-500">暂无 AGT 账号</div>';
+                return;
+            }
+
+            container.innerHTML = `
+                <table class="w-full">
+                    <thead>
+                        <tr class="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th class="px-4 py-3 rounded-tl-lg">账号</th>
+                            <th class="px-4 py-3">Project</th>
+                            <th class="px-4 py-3">额度</th>
+                            <th class="px-4 py-3">状态</th>
+                            <th class="px-4 py-3">请求</th>
+                            <th class="px-4 py-3">错误</th>
+                            <th class="px-4 py-3 rounded-tr-lg">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        ${allAgtAccounts.map((a, i) => `
+                            <tr class="hover:bg-gray-50 transition ${i % 2 === 1 ? 'bg-gray-50/50' : ''}">
+                                <td class="px-4 py-3">
+                                    <div class="font-medium text-gray-900">${a.name || '-'}</div>
+                                    <div class="text-xs text-gray-500">${a.email || '-'}</div>
+                                    <div class="mt-1.5 flex items-center gap-1.5 flex-wrap">
+                                        ${formatAgtTierBadge(a.paid_tier || a.plan_tier)}
+                                        ${formatAgtNextResetBadge(a.next_reset)}
+                                    </div>
+                                </td>
+                                <td class="px-4 py-3 text-sm text-gray-600">${a.project_id || '-'}</td>
+                                <td class="px-4 py-3 text-xs text-gray-600">${formatAgtQuotaSummary(a.model_quotas)}</td>
+                                <td class="px-4 py-3">${formatStatus(a.status)}</td>
+                                <td class="px-4 py-3 text-sm text-gray-600">${a.request_count || 0}</td>
+                                <td class="px-4 py-3 text-sm text-gray-600">${a.error_count || 0}</td>
+                                <td class="px-4 py-3">
+                                    <div class="flex items-center gap-2">
+                                        <button onclick="refreshAgtUsage('${a.id}')" class="p-1.5 text-green-600 hover:bg-green-50 rounded transition" title="刷新额度信息">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                        </button>
+                                        <button onclick="refreshAgtModels('${a.id}')" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition" title="刷新模型">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                        </button>
+                                        ${a.status === 'disabled'
+                                            ? `<button onclick="toggleAgtAccount('${a.id}', true)" class="p-1.5 text-green-600 hover:bg-green-50 rounded transition" title="启用">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                              </button>`
+                                            : `<button onclick="toggleAgtAccount('${a.id}', false)" class="p-1.5 text-orange-600 hover:bg-orange-50 rounded transition" title="禁用">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                                              </button>`}
+                                        <button onclick="removeAgtAccount('${a.id}')" class="p-1.5 text-red-600 hover:bg-red-50 rounded transition" title="删除">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>`;
+        }
+
+        function formatAgtTierBadge(tier) {
+            if (!tier) return '';
+            const normalized = String(tier).toLowerCase();
+            let label = tier;
+            let color = 'bg-gray-100 text-gray-700 border-gray-200';
+
+            if (normalized.includes('ultra') || normalized.includes('power')) {
+                label = 'Power';
+                color = 'bg-amber-100 text-amber-700 border-amber-300';
+            } else if (normalized.includes('proplus') || normalized.includes('pro+')) {
+                label = 'Pro+';
+                color = 'bg-purple-100 text-purple-700 border-purple-300';
+            } else if (normalized.includes('pro') || normalized.includes('standard')) {
+                label = 'Pro';
+                color = 'bg-blue-100 text-blue-700 border-blue-300';
+            } else if (normalized.includes('free')) {
+                label = 'Free';
+                color = 'bg-gray-100 text-gray-700 border-gray-300';
+            }
+
+            return `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border ${color}" title="来源: ${tier}">${label}</span>`;
+        }
+
+        function formatAgtNextResetBadge(nextReset) {
+            if (!nextReset) return '';
+            return formatResetTimeBadge(nextReset);
+        }
+
+        function formatAgtQuotaSummary(modelQuotas) {
+            const quotas = modelQuotas && typeof modelQuotas === 'object' ? modelQuotas : null;
+            if (!quotas) return '<span class="text-gray-400">未同步</span>';
+
+            const entries = Object.entries(quotas);
+            if (!entries.length) return '<span class="text-gray-400">无模型配额</span>';
+
+            let availableCount = 0;
+            let exhaustedCount = 0;
+            for (const [, quota] of entries) {
+                const remaining = Number(quota?.remaining_fraction);
+                if (Number.isFinite(remaining) && remaining > 0) {
+                    availableCount += 1;
+                } else {
+                    exhaustedCount += 1;
+                }
+            }
+
+            return `<div class="space-y-0.5"><div>模型: ${entries.length}</div><div class="text-green-600">可用: ${availableCount}</div><div class="text-red-500">耗尽: ${exhaustedCount}</div></div>`;
+        }
+
+        function loadAgtTemplate() {
+            const template = JSON.stringify({
+                type: 'antigravity',
+                email: 'user@example.com',
+                project_id: 'your-project-id',
+                access_token: 'ya29.xxxxx',
+                refresh_token: '1//0gxxxxx',
+                expires_in: 3599,
+                expired: new Date(Date.now() + 3600 * 1000).toISOString(),
+                timestamp: Date.now()
+            }, null, 2);
+            document.getElementById('agt-import-json').value = template;
+        }
+
+        async function importAgtAccounts() {
+            const jsonContent = document.getElementById('agt-import-json').value.trim();
+            if (!jsonContent) {
+                showToast('请输入 AGT JSON 内容', 'warning');
+                return;
+            }
+            try {
+                JSON.parse(jsonContent);
+            } catch {
+                showToast('JSON 格式错误', 'error');
+                return;
+            }
+
+            try {
+                const result = await fetchApi('/api/admin/agt-accounts/import', {
+                    method: 'POST',
+                    body: JSON.stringify({ raw_json: jsonContent })
+                });
+                await loadAgtAccounts();
+                showToast(`AGT 导入完成：成功 ${result.success}，失败 ${result.failed}`, result.failed > 0 ? 'warning' : 'success');
+            } catch (e) {
+                showToast('AGT 导入失败: ' + e.message, 'error');
+            }
+        }
+
+        async function refreshAgtModels(id) {
+            try {
+                const result = await fetchApi(`/api/admin/agt-accounts/${id}/refresh-models`, { method: 'POST' });
+                const count = Array.isArray(result?.data?.models) ? result.data.models.length : 0;
+                showToast(`已刷新模型，数量: ${count}`, 'success');
+                await loadAgtAccounts();
+            } catch (e) {
+                showToast('刷新 AGT 模型失败: ' + e.message, 'error');
+            }
+        }
+
+        async function refreshAgtUsage(id) {
+            try {
+                const result = await fetchApi(`/api/admin/agt-accounts/${id}/refresh-usage`, { method: 'POST' });
+                const projectId = result?.data?.project_id || '-';
+                showToast(`AGT 额度信息已刷新，Project: ${projectId}`, 'success');
+                await loadAgtAccounts();
+            } catch (e) {
+                showToast('刷新 AGT 额度失败: ' + e.message, 'error');
+            }
+        }
+
+        async function toggleAgtAccount(id, enable) {
+            try {
+                await fetchApi(`/api/admin/agt-accounts/${id}/${enable ? 'enable' : 'disable'}`, { method: 'POST' });
+                showToast(enable ? 'AGT 账号已启用' : 'AGT 账号已禁用', enable ? 'success' : 'warning');
+                await loadAgtAccounts();
+            } catch (e) {
+                showToast((enable ? '启用' : '禁用') + '失败: ' + e.message, 'error');
+            }
+        }
+
+        async function removeAgtAccount(id) {
+            if (!confirm('确定删除此 AGT 账号？')) return;
+            try {
+                await fetchApi(`/api/admin/agt-accounts/${id}`, { method: 'DELETE' });
+                showToast('AGT 账号已删除', 'success');
+                await loadAgtAccounts();
+            } catch (e) {
+                showToast('删除失败: ' + e.message, 'error');
+            }
         }
 
         function renderAccountsPage() {
@@ -1562,6 +1769,33 @@
                             ${badge.desc}
                         </div>
                     </div>
+                </div>
+
+                <div id="tab-agt-accounts" class="p-6 tab-content hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                        <div class="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                            <div class="flex items-center justify-between mb-3">
+                                <h4 class="text-sm font-semibold text-gray-900">批量导入 Antigravity JSON</h4>
+                                <button onclick="loadAgtTemplate()" class="text-xs text-blue-600 hover:text-blue-700">加载模板</button>
+                            </div>
+                            <textarea id="agt-import-json" rows="8" class="w-full px-3 py-2 border border-gray-200 rounded-lg font-mono text-xs resize-y focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="粘贴 ~/.cli-proxy-api/antigravity-*.json 内容（支持单对象或数组）"></textarea>
+                            <div class="flex items-center gap-2 mt-3">
+                                <button onclick="importAgtAccounts()" class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition">导入 AGT 账号</button>
+                                <button onclick="loadAgtAccounts()" class="border border-gray-200 hover:bg-gray-100 px-4 py-2 rounded-lg text-sm font-medium text-gray-700 transition">刷新列表</button>
+                            </div>
+                        </div>
+                        <div class="bg-white border border-gray-200 rounded-xl p-4">
+                            <h4 class="text-sm font-semibold text-gray-900 mb-3">协议端点</h4>
+                            <div class="space-y-2 font-mono text-xs text-gray-600">
+                                <div><span class="text-blue-600">POST</span> /v1/chat/completions</div>
+                                <div><span class="text-blue-600">POST</span> /v1/messages</div>
+                                <div><span class="text-purple-600">POST</span> /v1internal:generateContent</div>
+                                <div><span class="text-purple-600">POST</span> /v1internal:countTokens</div>
+                                <div><span class="text-purple-600">POST</span> /v1internal:fetchAvailableModels</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="agt-accounts-table" class="overflow-x-auto"></div>
                 </div>
             `;
         }
@@ -1869,10 +2103,13 @@
             document.querySelectorAll('.tab-btn').forEach(t => { t.classList.remove('border-blue-500', 'text-blue-600'); t.classList.add('border-transparent', 'text-gray-500'); });
             document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.remove('border-transparent', 'text-gray-500');
             document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.add('border-blue-500', 'text-blue-600');
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+            document.querySelectorAll('.tab-content').forEach((c) => {
+                c.classList.add('hidden');
+            });
             document.getElementById('tab-' + tab).classList.remove('hidden');
             if (tab === 'users') loadUsers();
             if (tab === 'accounts') loadAccounts();
+            if (tab === 'agt-accounts') loadAgtAccounts();
             if (tab === 'logs') {
                 loadLogs();
                 const toggle = document.getElementById('autoRefreshToggle');
@@ -2659,7 +2896,9 @@
             document.getElementById('sub-type').value = '';
             document.getElementById('sub-quota').value = '';
             document.getElementById('sub-duration').value = '';
-            document.querySelectorAll('input[name="sub-type-radio"]').forEach(r => r.checked = false);
+            document.querySelectorAll('input[name="sub-type-radio"]').forEach((r) => {
+                r.checked = false;
+            });
             document.getElementById('subscription-preview').classList.add('hidden');
             
             // Load current subscription info
@@ -2829,7 +3068,7 @@
             }
         }
 
-        async function refresh() { loadStatus(); loadUsers(); loadAccounts(); }
+        async function refresh() { loadStatus(); loadUsers(); loadAccounts(); loadAgtAccounts(); }
 
         (async () => {
             if (!token) {
