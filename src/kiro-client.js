@@ -296,6 +296,11 @@ export class KiroClient {
       currentText = textParts.join('\n') || 'continue';
     }
 
+    // 配对验证逻辑
+    const { validatedResults, orphanedToolUseIds } = this.validateToolPairing(history, allToolResults);
+    this.removeOrphanedToolUses(history, orphanedToolUseIds);
+    allToolResults = validatedResults;
+
     // 构建工具定义
     const tools = (anthropicReq.tools || [])
       .filter(t => !this.isUnsupportedTool(t.name))
@@ -500,10 +505,118 @@ export class KiroClient {
     return userMsg;
   }
 
-  /**
-   * 发送 API 请求（流式）
-   */
-  async callApiStream(anthropicReq) {
+   /**
+    * 验证并过滤 tool_use/tool_result 配对
+    * 
+    * 收集所有 tool_use_id，验证 tool_result 是否匹配
+    * 静默跳过孤立的 tool_use 和 tool_result，输出警告日志
+    * 
+    * @param {Array} history - 历史消息数组
+    * @param {Array} toolResults - 当前消息中的 tool_result 列表
+    * @returns {Object} { validatedResults: Array, orphanedToolUseIds: Set }
+    */
+   validateToolPairing(history, toolResults) {
+     // 1. 收集所有历史中的 tool_use_id
+     const allToolUseIds = new Set();
+     // 2. 收集历史中已经有 tool_result 的 tool_use_id
+     const historyToolResultIds = new Set();
+
+     for (const msg of history) {
+       if (msg.assistantResponseMessage?.toolUses) {
+         for (const toolUse of msg.assistantResponseMessage.toolUses) {
+           allToolUseIds.add(toolUse.toolUseId);
+         }
+       }
+       if (msg.userInputMessage?.userInputMessageContext?.toolResults) {
+         for (const result of msg.userInputMessage.userInputMessageContext.toolResults) {
+           historyToolResultIds.add(result.toolUseId);
+         }
+       }
+     }
+
+     // 3. 计算真正未配对的 tool_use_ids（排除历史中已配对的）
+     const unpairedToolUseIds = new Set();
+     for (const id of allToolUseIds) {
+       if (!historyToolResultIds.has(id)) {
+         unpairedToolUseIds.add(id);
+       }
+     }
+
+     // 4. 过滤并验证当前消息的 tool_results
+     const filteredResults = [];
+     const orphanedResults = [];
+
+     for (const result of toolResults) {
+       if (unpairedToolUseIds.has(result.toolUseId)) {
+         // 配对成功
+         filteredResults.push(result);
+         unpairedToolUseIds.delete(result.toolUseId);
+       } else if (allToolUseIds.has(result.toolUseId)) {
+         // tool_use 存在但已经在历史中配对过了，这是重复的 tool_result
+         console.warn(
+           `⚠ 跳过重复的 tool_result：该 tool_use 已在历史中配对，tool_use_id=${result.toolUseId}`
+         );
+       } else {
+         // 孤立 tool_result - 找不到对应的 tool_use
+         console.warn(
+           `⚠ 跳过孤立的 tool_result：找不到对应的 tool_use，tool_use_id=${result.toolUseId}`
+         );
+         orphanedResults.push(result.toolUseId);
+       }
+     }
+
+     // 5. 检测真正孤立的 tool_use（有 tool_use 但在历史和当前消息中都没有 tool_result）
+     for (const orphanedId of unpairedToolUseIds) {
+       console.warn(
+         `⚠ 检测到孤立的 tool_use：找不到对应的 tool_result，将从历史中移除，tool_use_id=${orphanedId}`
+       );
+     }
+
+      return { validatedResults: filteredResults, orphanedToolUseIds: unpairedToolUseIds };
+    }
+
+    /**
+     * 从历史消息中移除孤立的 tool_use
+     * 
+     * 遍历 history，从 assistantResponseMessage.toolUses 中移除孤立的 tool_use
+     * 如果 toolUses 变空，设置为 undefined（避免空数组）
+     * 
+     * @param {Array} history - 历史消息数组
+     * @param {Set} orphanedToolUseIds - 孤立的 tool_use_id 集合
+     */
+    removeOrphanedToolUses(history, orphanedToolUseIds) {
+      if (orphanedToolUseIds.size === 0) return;
+      
+      let removedCount = 0;
+      
+      for (const msg of history) {
+        if (msg.assistantResponseMessage?.toolUses) {
+          const originalLength = msg.assistantResponseMessage.toolUses.length;
+          
+          // 过滤掉孤立的 tool_use
+          msg.assistantResponseMessage.toolUses = 
+            msg.assistantResponseMessage.toolUses.filter(
+              tu => !orphanedToolUseIds.has(tu.toolUseId)
+            );
+          
+          removedCount += originalLength - msg.assistantResponseMessage.toolUses.length;
+          
+          // 如果 toolUses 变空，设置为 undefined
+          if (msg.assistantResponseMessage.toolUses.length === 0) {
+            delete msg.assistantResponseMessage.toolUses;
+          }
+        }
+      }
+      
+      if (removedCount > 0) {
+        console.warn(`⚠ 从历史中移除了 ${removedCount} 个孤立的 tool_use`);
+      }
+    }
+
+    /**
+     * 发送 API 请求（流式）
+     */
+    async callApiStream(anthropicReq) {
     const token = await this.tokenManager.ensureValidToken();
     const region = this.config.region || 'us-east-1';
     const url = `https://q.${region}.amazonaws.com/generateAssistantResponse`;
