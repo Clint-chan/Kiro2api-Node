@@ -1098,6 +1098,7 @@
         let token = localStorage.getItem('kiro_token');
         let adminKey = token || '';
         let selectedAccounts = new Set();
+        let selectedAgtAccounts = new Set();
         let autoRefreshInterval = null;
         let serverStartTime = null;
         let uptimeInterval = null;
@@ -1381,9 +1382,10 @@
                 <table class="w-full">
                     <thead>
                         <tr class="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            <th class="px-4 py-3 rounded-tl-lg">账号</th>
-                            <th class="px-4 py-3">额度</th>
+                            <th class="px-4 py-3 rounded-tl-lg w-10"><input type="checkbox" id="selectAllAgt" onchange="toggleSelectAllAgt(this.checked)" class="rounded border-gray-300 text-indigo-500 focus:ring-indigo-500"></th>
+                            <th class="px-4 py-3">名称</th>
                             <th class="px-4 py-3">状态</th>
+                            <th class="px-4 py-3">额度</th>
                             <th class="px-4 py-3">请求</th>
                             <th class="px-4 py-3">错误</th>
                             <th class="px-4 py-3 rounded-tr-lg">操作</th>
@@ -1392,28 +1394,30 @@
                     <tbody class="divide-y divide-gray-100">
                         ${allAgtAccounts.map((a, i) => `
                             <tr class="hover:bg-gray-50 transition ${i % 2 === 1 ? 'bg-gray-50/50' : ''}">
-                                <td class="px-4 py-3">
-                                    <div class="font-medium text-gray-900">${a.name || '-'}</div>
-                                    <div class="text-xs text-gray-500">${a.email || '-'}</div>
-                                    <div class="mt-1.5 flex items-center gap-1.5 flex-wrap">
+                                <td class="px-4 py-4"><input type="checkbox" data-id="${a.id}" onchange="toggleSelectAgt('${a.id}', this.checked)" class="agt-account-checkbox rounded border-gray-300 text-indigo-500 focus:ring-indigo-500"></td>
+                                <td class="px-4 py-4">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <div class="font-medium text-gray-900">${a.name || a.email || '-'}</div>
                                         ${formatAgtTierBadge(a.paid_tier || a.plan_tier)}
+                                    </div>
+                                    <div class="flex items-center gap-1.5 flex-wrap">
                                         ${formatAgtNextResetBadge(a.next_reset)}
                                     </div>
+                                    ${a.email ? `<div class="text-xs text-gray-500 mt-1">${a.email}</div>` : ''}
                                 </td>
-                                <td class="px-4 py-3">
+                                <td class="px-4 py-4">${formatStatus(a.status)}</td>
+                                <td class="px-4 py-4">
                                     <div class="space-y-1.5 text-xs">
                                         ${formatAgtQuotaDetails(a.model_quotas, a.next_reset)}
                                     </div>
                                 </td>
-                                <td class="px-4 py-3">${formatStatus(a.status)}</td>
-                                <td class="px-4 py-3 text-sm text-gray-600">${a.request_count || 0}</td>
-                                <td class="px-4 py-3 text-sm text-gray-600">${a.error_count || 0}</td>
-                                <td class="px-4 py-3">
+                                <td class="px-4 py-4 text-gray-600">${a.request_count || 0}</td>
+                                <td class="px-4 py-4 text-gray-600">${a.error_count || 0}</td>
+                                <td class="px-4 py-4">
                                     <div class="flex items-center gap-2">
-                                        <button onclick="refreshAgtUsage('${a.id}')" class="p-1.5 text-green-600 hover:bg-green-50 rounded transition" title="刷新额度信息">
+                                        <button onclick="refreshAgtUsage('${a.id}')" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition" title="刷新额度">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                                         </button>
-
                                         ${a.status === 'disabled'
                                             ? `<button onclick="toggleAgtAccount('${a.id}', true)" class="p-1.5 text-green-600 hover:bg-green-50 rounded transition" title="启用">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -1659,6 +1663,19 @@
             } catch (e) {
                 showToast('删除失败: ' + e.message, 'error');
             }
+        }
+
+        function toggleSelectAgt(id, checked) {
+            if (checked) selectedAgtAccounts.add(id);
+            else selectedAgtAccounts.delete(id);
+        }
+
+        function toggleSelectAllAgt(checked) {
+            document.querySelectorAll('.agt-account-checkbox').forEach(cb => {
+                cb.checked = checked;
+                if (checked) selectedAgtAccounts.add(cb.dataset.id);
+                else selectedAgtAccounts.delete(cb.dataset.id);
+            });
         }
 
         function renderAccountsPage() {
