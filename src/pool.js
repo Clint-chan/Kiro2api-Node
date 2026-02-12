@@ -143,14 +143,15 @@ export class AccountPool {
     return id;
   }
 
-  async removeAccount(id) {
+  async removeAccount(id, options = {}) {
+    const { skipDbDelete = false } = options;
     const removed = this.accounts.delete(id);
     this.tokenManagers.delete(id);
     if (removed) {
       await this.save();
       
       // 同步到数据库
-      if (this.db) {
+      if (this.db && !skipDbDelete) {
         this.db.deleteKiroAccount(id);
         console.log(`✓ 账号 ${id} 已从数据库删除`);
       }

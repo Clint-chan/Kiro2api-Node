@@ -991,6 +991,7 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
   router.delete('/accounts/:id', async (req, res) => {
     try {
       const { id } = req.params;
+      const forceDelete = req.query.force === 'true' || req.query.force === '1';
       
       const account = db.getKiroAccountById(id);
       if (!account) {
@@ -1006,7 +1007,7 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
         'SELECT COUNT(*) as count FROM request_logs WHERE kiro_account_id = ?'
       ).get(id);
       
-      if (logCount && logCount.count > 0) {
+      if (logCount && logCount.count > 0 && !forceDelete) {
         return res.status(409).json({
           error: {
             type: 'conflict',
@@ -1017,9 +1018,36 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
           }
         });
       }
-      
+
+      if (forceDelete) {
+        const deleteWithLogs = db.db.transaction((accountId) => {
+          const logsDeleteResult = db.db.prepare('DELETE FROM request_logs WHERE kiro_account_id = ?').run(accountId);
+          const accountDeleteResult = db.db.prepare('DELETE FROM kiro_accounts WHERE id = ?').run(accountId);
+          return {
+            deletedLogs: logsDeleteResult.changes || 0,
+            deletedAccounts: accountDeleteResult.changes || 0
+          };
+        });
+
+        const txResult = deleteWithLogs(id);
+
+        if (accountPool) {
+          await accountPool.removeAccount(id, { skipDbDelete: true });
+        }
+
+        return res.json({
+          success: true,
+          message: 'Account and related request logs deleted successfully',
+          data: {
+            force: true,
+            deletedLogs: txResult.deletedLogs,
+            deletedAccounts: txResult.deletedAccounts
+          }
+        });
+      }
+
       if (accountPool) {
-        await accountPool.removeAccount(id);
+        await accountPool.removeAccount(id, { skipDbDelete: false });
       } else {
         db.deleteKiroAccount(id);
       }

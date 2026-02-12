@@ -12,9 +12,10 @@
 - [x] 后端：删除路径避免 DB 双删（accountPool 优先）
 - [x] 后端：`/api/admin/stats/overview` 补全六类状态统计
 - [x] 前端：删除失败 409 显示依赖数量与“改用禁用”提示
-- [x] 前端：账号列表删除按钮支持“有依赖禁用态 + tooltip”
+- [x] 前端：账号列表删除按钮支持“有依赖提示 + 强制删除二次确认”
 - [x] 前端：状态卡 `cooldown` 与 `invalid` 统计口径修正
-- [ ] 文档：补充 `/metrics`（内存）与 `/stats/overview`（DB）口径差异说明
+- [x] 文档：补充 `/metrics`（内存）与 `/stats/overview`（DB）口径差异说明
+- [x] 后端：删除接口支持 `force=true`（事务删除请求日志+账号）
 
 ## 一、已定位问题
 
@@ -74,7 +75,16 @@
 - `request_log_count`
 - `has_dependencies`
 
-前端据此将“有依赖账号”的删除按钮置灰，并给出 tooltip，降低误操作率。
+前端据此给出“强制删除将同步删除日志”的提示，并增加二次确认，降低误操作率。
+
+### D. 删除接口支持强制删除（force）
+
+文件：`src/routes/admin-new.js`
+
+`DELETE /api/admin/accounts/:id?force=true`：
+- 在事务中先删 `request_logs` 再删 `kiro_accounts`
+- 返回 `deletedLogs/deletedAccounts`
+- 若存在 `accountPool`，同步清理内存（避免重启前脏状态）
 
 ## 三、为什么不做过度设计
 
@@ -92,6 +102,26 @@
 1. 先做依赖检查并返回可读错误（当前已做）。
 2. 管理端提供“禁用替代删除”操作（当前已有 `disable` 路由）。
 3. 后续若要真删历史，可再引入事务化清理策略（单独评估）。
+
+## 四点五、指标口径说明（已补充）
+
+当前两个核心统计端点的口径不同，这是设计上的取舍，不是 bug：
+
+1. `GET /metrics`
+   - 主要来源：`accountPool` 内存态
+   - 特点：实时性高，适合监控告警
+   - 风险：在状态刚更新但尚未完全落库/重载时，可能与后台统计短时不一致
+
+2. `GET /api/admin/stats/overview`
+   - 主要来源：数据库聚合
+   - 特点：管理视角稳定，适合报表与后台总览
+   - 风险：相比内存态有轻微延迟
+
+### 使用建议
+
+- 告警/运行态判断优先看 `/metrics`。
+- 管理后台总览优先看 `/api/admin/stats/overview`。
+- 若出现短时差异，以“刷新后收敛”作为正常预期；持续不收敛才视为异常。
 
 ## 五、下一步（按优先级）
 

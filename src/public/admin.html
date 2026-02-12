@@ -1340,17 +1340,17 @@
                                             </svg>
                                         </button>
                                         ${a.status === 'disabled'
-                                            ? `<button onclick="enableAccount('${a.id}')" class="p-1.5 text-green-600 hover:bg-green-50 rounded transition" title="启用">
+                                            ? `<button onclick="enableAccount('${a.id}', this)" class="p-1.5 text-green-600 hover:bg-green-50 rounded transition" title="启用">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                                 </svg>
                                             </button>`
-                                            : `<button onclick="disableAccount('${a.id}')" class="p-1.5 text-orange-600 hover:bg-orange-50 rounded transition" title="禁用">
+                                            : `<button onclick="disableAccount('${a.id}', this)" class="p-1.5 text-orange-600 hover:bg-orange-50 rounded transition" title="禁用">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
                                                 </svg>
                                             </button>`}
-                                        <button onclick="removeAccount('${a.id}', ${a.request_log_count || 0})" ${a.has_dependencies ? 'disabled' : ''} class="p-1.5 rounded transition ${a.has_dependencies ? 'text-gray-400 cursor-not-allowed bg-gray-50' : 'text-red-600 hover:bg-red-50'}" title="${a.has_dependencies ? `不可删除：存在${a.request_log_count || 0}条请求日志，请改用禁用` : '删除'}">
+                                        <button onclick="removeAccount('${a.id}', ${a.request_log_count || 0})" class="p-1.5 rounded transition ${a.has_dependencies ? 'text-orange-600 hover:bg-orange-50' : 'text-red-600 hover:bg-red-50'}" title="${a.has_dependencies ? `强制删除：将同时删除${a.request_log_count || 0}条请求日志` : '删除'}">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                             </svg>
@@ -2261,15 +2261,25 @@
         }
 
         async function removeAccount(id, dependencyCount = 0) {
+            let force = false;
             if (dependencyCount > 0) {
-                showToast(`无法删除：存在 ${dependencyCount} 条请求日志，请改用“禁用”`, 'warning');
-                return;
+                const confirmed = confirm(`该账号存在 ${dependencyCount} 条请求日志。\n\n强制删除将同时删除这些日志，且不可恢复。\n\n确认强制删除？`);
+                if (!confirmed) return;
+                force = true;
+            } else {
+                if (!confirm('确定删除此账号？')) return;
             }
-            if (!confirm('确定删除此账号？')) return;
+
             try {
-                await fetchApi(`/api/admin/accounts/${id}`, { method: 'DELETE' });
+                const url = force ? `/api/admin/accounts/${id}?force=true` : `/api/admin/accounts/${id}`;
+                const result = await fetchApi(url, { method: 'DELETE' });
                 refresh();
-                showToast('账号已删除', 'success');
+                if (force) {
+                    const deletedLogs = result?.data?.deletedLogs ?? dependencyCount;
+                    showToast(`账号已强制删除，并清理 ${deletedLogs} 条请求日志`, 'warning');
+                } else {
+                    showToast('账号已删除', 'success');
+                }
             }
             catch (e) {
                 if (e.status === 409) {
@@ -2285,15 +2295,59 @@
             }
         }
 
-        async function enableAccount(id) {
-            try { await fetchApi(`/api/admin/accounts/${id}/enable`, { method: 'POST' }); refresh(); showToast('账号已启用', 'success'); }
+        async function enableAccount(id, buttonEl = null) {
+            const originalHtml = buttonEl ? buttonEl.innerHTML : '';
+            try {
+                if (buttonEl) {
+                    buttonEl.disabled = true;
+                    buttonEl.classList.add('opacity-60', 'cursor-wait');
+                    buttonEl.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v3a5 5 0 00-5 5H4z"></path></svg>';
+                }
+                await fetchApi(`/api/admin/accounts/${id}/enable`, { method: 'POST' });
+                const target = allAccounts.find(a => a.id === id);
+                if (target) {
+                    target.status = 'active';
+                    renderAccountsPage();
+                }
+                loadStatus();
+                showToast('账号已启用', 'success');
+            }
             catch (e) { showToast('启用失败: ' + e.message, 'error'); }
+            finally {
+                if (buttonEl) {
+                    buttonEl.disabled = false;
+                    buttonEl.classList.remove('opacity-60', 'cursor-wait');
+                    buttonEl.innerHTML = originalHtml;
+                }
+            }
         }
 
-        async function disableAccount(id) {
+        async function disableAccount(id, buttonEl = null) {
             if (!confirm('确定禁用此账号？')) return;
-            try { await fetchApi(`/api/admin/accounts/${id}/disable`, { method: 'POST' }); refresh(); showToast('账号已禁用', 'warning'); }
+            const originalHtml = buttonEl ? buttonEl.innerHTML : '';
+            try {
+                if (buttonEl) {
+                    buttonEl.disabled = true;
+                    buttonEl.classList.add('opacity-60', 'cursor-wait');
+                    buttonEl.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v3a5 5 0 00-5 5H4z"></path></svg>';
+                }
+                await fetchApi(`/api/admin/accounts/${id}/disable`, { method: 'POST' });
+                const target = allAccounts.find(a => a.id === id);
+                if (target) {
+                    target.status = 'disabled';
+                    renderAccountsPage();
+                }
+                loadStatus();
+                showToast('账号已禁用', 'warning');
+            }
             catch (e) { showToast('禁用失败: ' + e.message, 'error'); }
+            finally {
+                if (buttonEl) {
+                    buttonEl.disabled = false;
+                    buttonEl.classList.remove('opacity-60', 'cursor-wait');
+                    buttonEl.innerHTML = originalHtml;
+                }
+            }
         }
 
         function exportAccountJson(id) {
@@ -2587,7 +2641,7 @@
             }
         }
 
-        async function refresh() { loadStatus(); loadUsers(); }
+        async function refresh() { loadStatus(); loadUsers(); loadAccounts(); }
 
         (async () => {
             if (!token) {
