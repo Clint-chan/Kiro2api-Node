@@ -48,3 +48,5 @@ verify-*.js
 .pm2/
 /.sisyphus/plans
 /.sisyphus
+*.log
+server.log
