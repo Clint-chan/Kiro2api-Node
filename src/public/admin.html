@@ -214,6 +214,22 @@
                     </div>
                 </div>
 
+                <div id="tab-agt-accounts" class="p-6 tab-content hidden">
+                    <div class="flex flex-wrap items-center gap-3 mb-6">
+                        <button onclick="showModal('agtImportModal')" class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                            导入 AGT 账号
+                        </button>
+                        <button onclick="refreshAllAgtUsage()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                            刷新全部额度
+                        </button>
+
+                        <button onclick="loadAgtAccounts()" class="border border-gray-200 hover:bg-gray-50 px-4 py-2 rounded-lg text-sm font-medium text-gray-600 transition">刷新列表</button>
+                    </div>
+                    <div id="agt-accounts-table" class="overflow-x-auto"></div>
+                </div>
+
                 <!-- 请求记录 -->
                 <div id="tab-logs" class="p-6 tab-content hidden">
                     <div class="flex justify-between items-center mb-6">
@@ -322,6 +338,28 @@
             <div class="flex justify-end gap-3 p-6 border-t border-gray-100">
                 <button onclick="hideModal('addModal')" class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition">取消</button>
                 <button onclick="addAccount()" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition">添加</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="agtImportModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-3xl mx-4 animate-scaleIn">
+            <div class="flex items-center justify-between p-6 border-b border-gray-100">
+                <h3 class="text-lg font-semibold text-gray-900">导入 AGT 账号</h3>
+                <button onclick="hideModal('agtImportModal')" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="flex items-center justify-between">
+                    <p class="text-sm text-gray-600">支持单对象、数组或 { accounts: [] } 格式</p>
+                    <button onclick="loadAgtTemplate()" class="text-sm text-blue-600 hover:text-blue-700">加载模板</button>
+                </div>
+                <textarea id="agt-import-json" rows="12" class="w-full px-3 py-2 border border-gray-200 rounded-lg font-mono text-xs resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="粘贴 ~/.cli-proxy-api/antigravity-*.json 内容"></textarea>
+            </div>
+            <div class="flex justify-end gap-3 p-6 border-t border-gray-100">
+                <button onclick="hideModal('agtImportModal')" class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition">取消</button>
+                <button onclick="importAgtAccounts()" class="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-sm font-medium transition">开始导入</button>
             </div>
         </div>
     </div>
@@ -1010,6 +1048,52 @@
         </div>
     </div>
 
+    <div id="permissionModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl animate-scaleIn overflow-hidden">
+            <div class="flex items-center justify-between p-6 border-b border-gray-100">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900">用户权限管理</h3>
+                    <p class="text-sm text-gray-500 mt-1" id="permission-username">-</p>
+                </div>
+                <button onclick="hideModal('permissionModal')" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="p-6 space-y-5">
+                <div>
+                    <div class="text-sm font-medium text-gray-700 mb-2">渠道权限</div>
+                    <div class="flex items-center gap-4">
+                        <label class="inline-flex items-center gap-2 text-sm text-gray-700">
+                            <input type="checkbox" id="perm-channel-kiro" class="rounded border-gray-300 text-blue-500 focus:ring-blue-500">
+                            <span>Kiro</span>
+                        </label>
+                        <label class="inline-flex items-center gap-2 text-sm text-gray-700">
+                            <input type="checkbox" id="perm-channel-agt" class="rounded border-gray-300 text-indigo-500 focus:ring-indigo-500">
+                            <span>AGT</span>
+                        </label>
+                    </div>
+                </div>
+                <div>
+                    <div class="text-sm font-medium text-gray-700 mb-2">模型白名单（可选）</div>
+                    <div id="perm-models-checkboxes" class="max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3 space-y-2 bg-white">
+                        <!-- 动态生成 -->
+                    </div>
+                    <div class="mt-2 flex gap-2">
+                        <button type="button" onclick="selectAllModels()" class="text-xs text-blue-600 hover:text-blue-700">全选</button>
+                        <button type="button" onclick="deselectAllModels()" class="text-xs text-gray-600 hover:text-gray-700">取消全选</button>
+                    </div>
+                </div>
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 text-xs text-gray-600">
+                    留空模型白名单 = 渠道内所有模型可用；勾选渠道为空时将自动保留 Kiro。
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 p-6 border-t border-gray-100">
+                <button onclick="hideModal('permissionModal')" class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition">取消</button>
+                <button onclick="saveUserPermissions()" class="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-sm font-medium transition">保存权限</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let token = localStorage.getItem('kiro_token');
         let adminKey = token || '';
@@ -1298,7 +1382,6 @@
                     <thead>
                         <tr class="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             <th class="px-4 py-3 rounded-tl-lg">账号</th>
-                            <th class="px-4 py-3">Project</th>
                             <th class="px-4 py-3">额度</th>
                             <th class="px-4 py-3">状态</th>
                             <th class="px-4 py-3">请求</th>
@@ -1317,8 +1400,11 @@
                                         ${formatAgtNextResetBadge(a.next_reset)}
                                     </div>
                                 </td>
-                                <td class="px-4 py-3 text-sm text-gray-600">${a.project_id || '-'}</td>
-                                <td class="px-4 py-3 text-xs text-gray-600">${formatAgtQuotaSummary(a.model_quotas)}</td>
+                                <td class="px-4 py-3">
+                                    <div class="space-y-1.5 text-xs">
+                                        ${formatAgtQuotaDetails(a.model_quotas, a.next_reset)}
+                                    </div>
+                                </td>
                                 <td class="px-4 py-3">${formatStatus(a.status)}</td>
                                 <td class="px-4 py-3 text-sm text-gray-600">${a.request_count || 0}</td>
                                 <td class="px-4 py-3 text-sm text-gray-600">${a.error_count || 0}</td>
@@ -1327,9 +1413,7 @@
                                         <button onclick="refreshAgtUsage('${a.id}')" class="p-1.5 text-green-600 hover:bg-green-50 rounded transition" title="刷新额度信息">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                                         </button>
-                                        <button onclick="refreshAgtModels('${a.id}')" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition" title="刷新模型">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                                        </button>
+
                                         ${a.status === 'disabled'
                                             ? `<button onclick="toggleAgtAccount('${a.id}', true)" class="p-1.5 text-green-600 hover:bg-green-50 rounded transition" title="启用">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -1397,6 +1481,59 @@
             return `<div class="space-y-0.5"><div>模型: ${entries.length}</div><div class="text-green-600">可用: ${availableCount}</div><div class="text-red-500">耗尽: ${exhaustedCount}</div></div>`;
         }
 
+        function formatAgtQuotaDetails(modelQuotas, nextReset) {
+            const quotas = modelQuotas && typeof modelQuotas === 'object' ? modelQuotas : null;
+            if (!quotas) return '<span class="text-gray-400">未同步</span>';
+
+            const entries = Object.entries(quotas);
+            if (!entries.length) return '<span class="text-gray-400">无模型配额</span>';
+
+            let resetInfo = '';
+            if (nextReset) {
+                const resetTime = new Date(nextReset);
+                const now = new Date();
+                const diffMs = resetTime - now;
+                if (diffMs > 0) {
+                    const hours = Math.floor(diffMs / (1000 * 60 * 60));
+                    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+                    resetInfo = `<div class="text-gray-500 mb-1.5">🔄 ${hours}h ${minutes}m 后重置</div>`;
+                }
+            }
+
+            const bars = entries.map(([modelName, quota]) => {
+                const remaining = Number(quota?.remaining_fraction) || 0;
+                const percentage = Math.round(remaining * 100);
+                
+                let barColor = 'bg-red-500';
+                let textColor = 'text-red-600';
+                if (percentage > 50) {
+                    barColor = 'bg-green-500';
+                    textColor = 'text-green-600';
+                } else if (percentage >= 20) {
+                    barColor = 'bg-yellow-500';
+                    textColor = 'text-yellow-600';
+                }
+
+                const displayName = modelName
+                    .replace('claude-sonnet-', 'CS-')
+                    .replace('claude-opus-', 'CO-')
+                    .replace('gemini-', 'G-')
+                    .replace('-thinking', '-T');
+
+                return `
+                    <div class="flex items-center gap-2">
+                        <div class="w-20 text-gray-600 truncate text-xs" title="${modelName}">${displayName}</div>
+                        <div class="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden">
+                            <div class="${barColor} h-full transition-all" style="width: ${percentage}%"></div>
+                        </div>
+                        <div class="w-10 text-right ${textColor} font-medium text-xs">${percentage}%</div>
+                    </div>
+                `;
+            }).join('');
+
+            return resetInfo + bars;
+        }
+
         function loadAgtTemplate() {
             const template = JSON.stringify({
                 type: 'antigravity',
@@ -1430,6 +1567,7 @@
                     body: JSON.stringify({ raw_json: jsonContent })
                 });
                 await loadAgtAccounts();
+                hideModal('agtImportModal');
                 showToast(`AGT 导入完成：成功 ${result.success}，失败 ${result.failed}`, result.failed > 0 ? 'warning' : 'success');
             } catch (e) {
                 showToast('AGT 导入失败: ' + e.message, 'error');
@@ -1456,6 +1594,50 @@
             } catch (e) {
                 showToast('刷新 AGT 额度失败: ' + e.message, 'error');
             }
+        }
+
+        async function refreshAllAgtUsage() {
+            if (!allAgtAccounts.length) {
+                showToast('暂无 AGT 账号可刷新', 'warning');
+                return;
+            }
+
+            showToast('正在刷新 AGT 额度，请稍候...', 'info');
+            let success = 0;
+
+            for (const account of allAgtAccounts) {
+                try {
+                    await fetchApi(`/api/admin/agt-accounts/${account.id}/refresh-usage`, { method: 'POST' });
+                    success += 1;
+                } catch {
+                }
+            }
+
+            await loadAgtAccounts();
+            const failed = allAgtAccounts.length - success;
+            showToast(`AGT 额度刷新完成：成功 ${success}，失败 ${failed}`, failed > 0 ? 'warning' : 'success');
+        }
+
+        async function refreshAllAgtModels() {
+            if (!allAgtAccounts.length) {
+                showToast('暂无 AGT 账号可刷新', 'warning');
+                return;
+            }
+
+            showToast('正在刷新 AGT 模型，请稍候...', 'info');
+            let success = 0;
+
+            for (const account of allAgtAccounts) {
+                try {
+                    await fetchApi(`/api/admin/agt-accounts/${account.id}/refresh-models`, { method: 'POST' });
+                    success += 1;
+                } catch {
+                }
+            }
+
+            await loadAgtAccounts();
+            const failed = allAgtAccounts.length - success;
+            showToast(`AGT 模型刷新完成：成功 ${success}，失败 ${failed}`, failed > 0 ? 'warning' : 'success');
         }
 
         async function toggleAgtAccount(id, enable) {
@@ -1668,6 +1850,17 @@
             return `<span class="px-2 py-1 rounded-full text-xs font-medium ${styles[status] || styles.disabled}">${status}</span>`;
         }
 
+        function formatUserChannelBadges(channels) {
+            const list = Array.isArray(channels) && channels.length > 0 ? channels : ['kiro', 'agt'];
+            return list.map((channel) => {
+                const label = channel === 'agt' ? 'AGT' : 'Kiro';
+                const color = channel === 'agt'
+                    ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                    : 'bg-blue-50 text-blue-700 border-blue-200';
+                return `<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium border ${color}">${label}</span>`;
+            }).join('');
+        }
+
         function formatUsage(account) {
             if (!account) return '<span class="text-gray-400 text-sm">未知</span>';
 
@@ -1769,33 +1962,6 @@
                             ${badge.desc}
                         </div>
                     </div>
-                </div>
-
-                <div id="tab-agt-accounts" class="p-6 tab-content hidden">
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                        <div class="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                            <div class="flex items-center justify-between mb-3">
-                                <h4 class="text-sm font-semibold text-gray-900">批量导入 Antigravity JSON</h4>
-                                <button onclick="loadAgtTemplate()" class="text-xs text-blue-600 hover:text-blue-700">加载模板</button>
-                            </div>
-                            <textarea id="agt-import-json" rows="8" class="w-full px-3 py-2 border border-gray-200 rounded-lg font-mono text-xs resize-y focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="粘贴 ~/.cli-proxy-api/antigravity-*.json 内容（支持单对象或数组）"></textarea>
-                            <div class="flex items-center gap-2 mt-3">
-                                <button onclick="importAgtAccounts()" class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition">导入 AGT 账号</button>
-                                <button onclick="loadAgtAccounts()" class="border border-gray-200 hover:bg-gray-100 px-4 py-2 rounded-lg text-sm font-medium text-gray-700 transition">刷新列表</button>
-                            </div>
-                        </div>
-                        <div class="bg-white border border-gray-200 rounded-xl p-4">
-                            <h4 class="text-sm font-semibold text-gray-900 mb-3">协议端点</h4>
-                            <div class="space-y-2 font-mono text-xs text-gray-600">
-                                <div><span class="text-blue-600">POST</span> /v1/chat/completions</div>
-                                <div><span class="text-blue-600">POST</span> /v1/messages</div>
-                                <div><span class="text-purple-600">POST</span> /v1internal:generateContent</div>
-                                <div><span class="text-purple-600">POST</span> /v1internal:countTokens</div>
-                                <div><span class="text-purple-600">POST</span> /v1internal:fetchAvailableModels</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div id="agt-accounts-table" class="overflow-x-auto"></div>
                 </div>
             `;
         }
@@ -2183,6 +2349,7 @@
                                 <td class="px-4 py-4">
                                     <div class="font-medium text-gray-900">${u.username}</div>
                                     <div class="text-xs text-gray-500">${u.role === 'admin' ? '管理员' : '普通用户'}</div>
+                                    <div class="mt-1 flex items-center gap-1.5 flex-wrap">${formatUserChannelBadges(u.allowed_channels)}</div>
                                     ${u.subscription_type && u.subscription_type !== 'none' 
                                         ? `<div class="mt-1"><span class="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">${u.subscription_type === 'daily' ? '每日套餐' : '每月套餐'}</span></div>`
                                         : ''}
@@ -2217,6 +2384,12 @@
                                         <button onclick="showRechargeModal('${u.id}', '${u.username}', ${u.balance})" class="p-1.5 text-green-600 hover:bg-green-50 rounded transition" title="修改额度">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                            </svg>
+                                        </button>
+                                        <button onclick="showPermissionModal('${u.id}', '${u.username.replace(/'/g, "\\'")}')" class="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded transition" title="权限管理">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"/>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422A12.083 12.083 0 0112 20.055a12.083 12.083 0 01-6.16-9.477L12 14z"/>
                                             </svg>
                                         </button>
                                         <button onclick="refreshUserStats('${u.id}')" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition" title="刷新统计">
@@ -2887,6 +3060,104 @@
         // ==================== Subscription Management ====================
 
         let currentSubscriptionUserId = null;
+        let currentPermissionUserId = null;
+
+        function normalizeModelListText(value) {
+            return String(value || '')
+                .split('\n')
+                .map((line) => line.trim())
+                .filter(Boolean);
+        }
+
+        async function showPermissionModal(userId, username) {
+            currentPermissionUserId = userId;
+            document.getElementById('permission-username').textContent = `用户：${username}`;
+            document.getElementById('perm-channel-kiro').checked = true;
+            document.getElementById('perm-channel-agt').checked = true;
+
+            try {
+                const response = await fetchApi(`/api/admin/users/${userId}`);
+                const user = response?.data || {};
+                const channels = Array.isArray(user.allowed_channels) && user.allowed_channels.length > 0
+                    ? user.allowed_channels
+                    : ['kiro', 'agt'];
+
+                document.getElementById('perm-channel-kiro').checked = channels.includes('kiro');
+                document.getElementById('perm-channel-agt').checked = channels.includes('agt');
+
+                const allModels = [
+                    { id: 'claude-sonnet-4-5', name: 'Claude Sonnet 4.5 (Kiro)' },
+                    { id: 'claude-opus-4-5', name: 'Claude Opus 4.5 (Kiro)' },
+                    { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet (Kiro)' },
+                    { id: 'antigravity-gemini-3-pro', name: 'Gemini 3 Pro (AGT)' },
+                    { id: 'antigravity-gemini-3-flash', name: 'Gemini 3 Flash (AGT)' },
+                    { id: 'antigravity-claude-sonnet-4-5', name: 'Claude Sonnet 4.5 (AGT)' },
+                    { id: 'antigravity-claude-sonnet-4-5-thinking', name: 'Claude Sonnet 4.5 Thinking (AGT)' },
+                    { id: 'antigravity-claude-opus-4-5-thinking', name: 'Claude Opus 4.5 Thinking (AGT)' },
+                    { id: 'antigravity-claude-opus-4-6-thinking', name: 'Claude Opus 4.6 Thinking (AGT)' }
+                ];
+
+                const userModels = Array.isArray(user.allowed_models) ? user.allowed_models : [];
+                const checkboxesHtml = allModels.map(m => {
+                    const checked = userModels.length === 0 || userModels.includes(m.id) ? 'checked' : '';
+                    return `
+                        <label class="inline-flex items-center gap-2 text-sm text-gray-700 hover:bg-gray-50 px-2 py-1 rounded">
+                            <input type="checkbox" value="${m.id}" ${checked} class="rounded border-gray-300 text-indigo-500 focus:ring-indigo-500 model-checkbox">
+                            <span>${m.name}</span>
+                        </label>
+                    `;
+                }).join('');
+
+                document.getElementById('perm-models-checkboxes').innerHTML = checkboxesHtml;
+            } catch (e) {
+                showToast('加载权限失败: ' + e.message, 'error');
+            }
+
+            showModal('permissionModal');
+        }
+
+        async function saveUserPermissions() {
+            if (!currentPermissionUserId) return;
+
+            const channels = [];
+            if (document.getElementById('perm-channel-kiro').checked) channels.push('kiro');
+            if (document.getElementById('perm-channel-agt').checked) channels.push('agt');
+
+            if (channels.length === 0) {
+                channels.push('kiro');
+            }
+
+            const modelCheckboxes = document.querySelectorAll('.model-checkbox:checked');
+            const models = Array.from(modelCheckboxes).map(cb => cb.value);
+
+            try {
+                await fetchApi(`/api/admin/users/${currentPermissionUserId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        allowed_channels: channels,
+                        allowed_models: models
+                    })
+                });
+
+                hideModal('permissionModal');
+                await loadUsers();
+                showToast('权限已更新', 'success');
+            } catch (e) {
+                showToast('保存权限失败: ' + e.message, 'error');
+            }
+        }
+
+        function selectAllModels() {
+            document.querySelectorAll('.model-checkbox').forEach(cb => {
+                cb.checked = true;
+            });
+        }
+
+        function deselectAllModels() {
+            document.querySelectorAll('.model-checkbox').forEach(cb => {
+                cb.checked = false;
+            });
+        }
 
         function showSubscriptionModal(userId, username) {
             currentSubscriptionUserId = userId;
