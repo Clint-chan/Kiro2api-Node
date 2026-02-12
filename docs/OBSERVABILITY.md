@@ -202,6 +202,113 @@ curl -X POST \
   http://localhost:19864/api/config/reset
 ```
 
+## 账号状态管理机制
+
+### 状态类型
+
+系统支持以下账号状态：
+
+- **active** - 正常可用，余额充足
+- **depleted** - 余额耗尽，等待月度重置
+- **error** - Token 失效或账号被封禁
+- **cooldown** - 冷却中（暂未使用）
+- **disabled** - 手动禁用
+- **inactive** - 未激活
+
+### 状态转换流程
+
+```
+        余额充足              余额不足
+active ────────────────────> depleted
+  ↑                              │
+  │                              │
+  │ 余额恢复 + 到达nextReset      │
+  └──────────────────────────────┘
+
+        Token失效/封禁
+active ────────────────────> error
+  ↑                              │
+  │                              │
+  │ 刷新成功 + 余额充足            │
+  └──────────────────────────────┘
+```
+
+### 自动状态管理
+
+#### 1. 前端手动刷新
+管理员在管理页面点击"刷新"按钮：
+- 调用 `POST /api/admin/accounts/:id/refresh-usage`
+- 检查余额并更新状态
+- 同步到数据库
+- 前端显示状态感知的提示
+
+#### 2. 后端定时监测
+balance-monitor 每 5 分钟自动执行：
+- 批量刷新所有账号余额
+- 自动标记余额不足的账号为 `depleted`
+- 自动恢复余额充足的账号（需满足重置时间条件）
+
+#### 3. 请求时容灾
+用户请求时的三道防线：
+
+**第一道防线：账号选择过滤**
+```javascript
+// 只选择满足条件的账号
+- status === 'active'
+- available >= MIN_BALANCE_THRESHOLD (默认5)
+- inflight < MAX_INFLIGHT_PER_ACCOUNT (默认5)
+```
+
+**第二道防线：失败自动切换**
+- 请求失败自动切换到下一个可用账号
+- 最多重试 3 次
+- 失败账号标记为 error
+
+**第三道防线：定期监控**
+- 每 5 分钟自动检查所有账号
+- 发现问题及时标记状态
+
+### 月度重置机制
+
+**depleted 账号的恢复条件：**
+```javascript
+if (available >= minBalance && status === 'depleted') {
+  const nextReset = usage.nextReset ? new Date(usage.nextReset) : null;
+  const now = new Date();
+  const canRecover = !nextReset || now >= nextReset;
+  
+  if (canRecover) {
+    status = 'active';  // 只有到了重置时间才恢复
+  }
+}
+```
+
+**这意味着：**
+- 余额用完的账号会被标记为 `depleted`
+- 即使 AWS 提前恢复了余额，也要等到下月初（nextReset）才会自动启用
+- 避免月中频繁启用/禁用，保持稳定性
+
+### 配置参数
+
+```bash
+# .env
+MIN_BALANCE_THRESHOLD=5              # 最低余额阈值
+MAX_INFLIGHT_PER_ACCOUNT=5           # 每账号最大并发
+BALANCE_REFRESH_INTERVAL=300000      # 监控间隔（5分钟）
+BALANCE_MONITOR_ENABLED=true         # 启用自动监控
+```
+
+### 监控指标
+
+通过 `/metrics` 端点可以监控账号状态分布：
+```
+kiro_accounts_total 48
+kiro_accounts_active 43
+kiro_accounts_depleted 4
+kiro_accounts_error 1
+kiro_balance_total 12313.97
+```
+
 ## 集成示例
 
 ### Grafana Dashboard
