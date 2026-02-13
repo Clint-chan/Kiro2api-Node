@@ -140,6 +140,25 @@ function generateSessionIdFallback() {
   return `-${n}`;
 }
 
+function generateStableSessionId(body) {
+  // Try to extract user message content for stable session ID
+  if (body && body.request && Array.isArray(body.request.contents)) {
+    for (const content of body.request.contents) {
+      if (content.role === 'user' && content.parts && content.parts[0] && content.parts[0].text) {
+        const text = content.parts[0].text;
+        // Simple hash: use first 16 chars of text to generate stable ID
+        let hash = 0;
+        for (let i = 0; i < text.length; i++) {
+          hash = ((hash << 5) - hash) + text.charCodeAt(i);
+          hash = hash & hash; // Convert to 32bit integer
+        }
+        return `-${Math.abs(hash)}`;
+      }
+    }
+  }
+  return generateSessionIdFallback();
+}
+
 function buildAgtRequestBody(body, projectId, skipInjection = false) {
   const nextBody = body && typeof body === 'object' ? JSON.parse(JSON.stringify(body)) : {};
 
@@ -150,9 +169,27 @@ function buildAgtRequestBody(body, projectId, skipInjection = false) {
 
   const normalizedProject = String(projectId || '').trim() || generateProjectIdFallback();
 
-  // Only inject project_id - match CLIProxyAPI behavior
-  if (!nextBody.project_id) {
-    nextBody.project_id = normalizedProject;
+  // Match CLIProxyAPI: inject all required fields
+  if (!nextBody.model) {
+    nextBody.model = '';
+  }
+  if (!nextBody.userAgent) {
+    nextBody.userAgent = 'antigravity';
+  }
+  if (!nextBody.requestType) {
+    nextBody.requestType = 'agent';
+  }
+  if (!nextBody.project) {
+    nextBody.project = normalizedProject;
+  }
+  if (!nextBody.requestId) {
+    nextBody.requestId = `agent-${uuidv4()}`;
+  }
+  if (!nextBody.request || typeof nextBody.request !== 'object') {
+    nextBody.request = {};
+  }
+  if (!nextBody.request.sessionId) {
+    nextBody.request.sessionId = generateStableSessionId(nextBody);
   }
 
   return nextBody;
