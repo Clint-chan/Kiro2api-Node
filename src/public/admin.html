@@ -2076,7 +2076,6 @@
             container.innerHTML = `
                 <table class="w-full">
                     <thead>
-                    <thead>
                         <tr class="bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wider">
                             <th class="px-4 py-3 text-left rounded-tl-lg w-10"><input type="checkbox" id="selectAll" onchange="toggleSelectAll(this.checked)" class="rounded border-gray-300 text-blue-500 focus:ring-blue-500"></th>
                             <th class="px-4 py-3 text-left">账号信息</th>
@@ -2086,12 +2085,11 @@
                             <th class="px-4 py-3 text-center rounded-tr-lg">操作</th>
                         </tr>
                     </thead>
-                    </thead>
                     <tbody class="divide-y divide-gray-100">
                         ${pageAccounts.map((a, i) => `
                             <tr class="hover:bg-gray-50 transition group ${i % 2 === 1 ? 'bg-gray-50/50' : ''}">
-                                <td class="px-4 py-4 align-top"><input type="checkbox" data-id="${a.id}" onchange="toggleSelect('${a.id}', this.checked)" class="account-checkbox rounded border-gray-300 text-blue-500 focus:ring-blue-500 mt-1"></td>
-                                <td class="px-4 py-4 align-top">
+                                <td class="px-4 py-4 align-middle"><input type="checkbox" data-id="${a.id}" onchange="toggleSelect('${a.id}', this.checked)" class="account-checkbox rounded border-gray-300 text-blue-500 focus:ring-blue-500"></td>
+                                <td class="px-4 py-4 align-middle">
                                     <div class="flex flex-col gap-1">
                                         <div class="font-semibold text-gray-900 text-sm flex items-center gap-2">
                                             <span>${a.name}</span>
@@ -2105,19 +2103,19 @@
                                         ${a.user_email ? `<div class="text-xs text-gray-400 mt-0.5 flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>${a.user_email}</div>` : ''}
                                     </div>
                                 </td>
-                                <td class="px-4 py-4 align-top">
+                                <td class="px-4 py-4 align-middle">
                                     <div class="flex justify-center">${formatStatus(a.status)}</div>
                                 </td>
-                                <td class="px-4 py-4 align-top">
+                                <td class="px-4 py-4 align-middle">
                                     <div class="flex justify-center">${formatUsage(a)}</div>
                                 </td>
-                                <td class="px-4 py-4 align-top">
+                                <td class="px-4 py-4 align-middle">
                                     <div class="flex flex-col items-center gap-1 text-xs">
                                         <div class="flex items-center gap-1"><span class="text-gray-500 w-8 text-right">Req:</span> <span class="font-medium text-gray-700">${a.request_count || 0}</span></div>
                                         <div class="flex items-center gap-1"><span class="text-gray-500 w-8 text-right">Err:</span> <span class="${(a.error_count || 0) > 0 ? 'text-red-600 font-medium' : 'text-gray-400'}">${a.error_count || 0}</span></div>
                                     </div>
                                 </td>
-                                <td class="px-4 py-4 align-top">
+                                <td class="px-4 py-4 align-middle">
                                     <div class="flex items-center justify-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
                                         <button onclick="refreshUsage('${a.id}')" class="p-1 text-blue-600 hover:bg-blue-50 rounded transition" title="刷新额度">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
@@ -2633,7 +2631,14 @@
             document.getElementById('tab-' + tab).classList.remove('hidden');
             if (tab === 'users') loadUsers();
             if (tab === 'accounts') loadAccounts();
-            if (tab === 'agt-accounts') loadAgtAccounts();
+            if (tab === 'agt-accounts') {
+                // 只在没有缓存数据时才加载
+                if (cliproxyAgtAccounts.length === 0) {
+                    loadCliProxyAccounts();
+                } else {
+                    renderCliProxyAccounts();
+                }
+            }
             if (tab === 'logs') {
                 loadLogs();
                 const toggle = document.getElementById('autoRefreshToggle');
