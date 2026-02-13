@@ -1368,7 +1368,7 @@
             <div class="p-6 space-y-5">
                 <div>
                     <div class="text-sm font-medium text-gray-700 mb-2">渠道权限</div>
-                    <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-4 flex-wrap">
                         <label
                             class="inline-flex items-center gap-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded transition">
                             <input type="checkbox" name="perm-channel" value="kiro" id="perm-channel-kiro"
@@ -1705,7 +1705,7 @@
                             <th class="px-4 py-3 rounded-tl-lg w-10"><input type="checkbox" id="selectAllAgt" onchange="toggleSelectAllAgt(this.checked)" class="rounded border-gray-300 text-indigo-500 focus:ring-indigo-500"></th>
                             <th class="px-4 py-3">名称</th>
                             <th class="px-4 py-3">状态</th>
-                            <th class="px-4 py-3">额度</th>
+                            <th class="px-4 py-3 w-72">额度</th>
                             <th class="px-4 py-3">请求</th>
                             <th class="px-4 py-3">错误</th>
                             <th class="px-4 py-3 rounded-tr-lg">操作</th>
@@ -1717,17 +1717,16 @@
                                 <td class="px-4 py-4"><input type="checkbox" data-id="${a.id}" onchange="toggleSelectAgt('${a.id}', this.checked)" class="agt-account-checkbox rounded border-gray-300 text-indigo-500 focus:ring-indigo-500"></td>
                                 <td class="px-4 py-4">
                                     <div class="flex items-center gap-2 mb-1">
-                                        <div class="font-medium text-gray-900">${a.name || a.email || '-'}</div>
+                                        <div class="font-medium text-gray-900">${a.name || '-'}</div>
                                         ${formatAgtTierBadge(a.paid_tier || a.plan_tier)}
                                     </div>
                                     <div class="flex items-center gap-1.5 flex-wrap">
                                         ${formatAgtNextResetBadge(a.next_reset)}
                                     </div>
-                                    ${a.email ? `<div class="text-xs text-gray-500 mt-1">${a.email}</div>` : ''}
                                 </td>
                                 <td class="px-4 py-4">${formatStatus(a.status)}</td>
                                 <td class="px-4 py-4">
-                                    <div class="space-y-1.5 text-xs">
+                                    <div class="space-y-2 text-xs">
                                         ${formatAgtQuotaDetails(a.model_quotas, a.next_reset)}
                                     </div>
                                 </td>
@@ -1737,6 +1736,9 @@
                                     <div class="flex items-center gap-2">
                                         <button onclick="refreshAgtUsage('${a.id}')" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition" title="刷新额度">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                        </button>
+                                        <button onclick="exportAccountJson('${a.id}')" class="p-1.5 text-purple-600 hover:bg-purple-50 rounded transition" title="导出JSON">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
                                         </button>
                                         ${a.status === 'disabled'
                     ? `<button onclick="toggleAgtAccount('${a.id}', true)" class="p-1.5 text-green-600 hover:bg-green-50 rounded transition" title="启用">
@@ -1846,7 +1848,7 @@
 
                 return `
                     <div class="flex items-center gap-2">
-                        <div class="w-20 text-gray-600 truncate text-xs" title="${modelName}">${displayName}</div>
+                        <div class="w-32 text-gray-600 truncate text-xs" title="${modelName}">${modelName}</div>
                         <div class="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden">
                             <div class="${barColor} h-full transition-all" style="width: ${percentage}%"></div>
                         </div>
@@ -2031,14 +2033,16 @@
             container.innerHTML = `
                 <table class="w-full">
                     <thead>
-                        <tr class="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            <th class="px-4 py-3 rounded-tl-lg w-10"><input type="checkbox" id="selectAll" onchange="toggleSelectAll(this.checked)" class="rounded border-gray-300 text-blue-500 focus:ring-blue-500"></th>
-                            <th class="px-4 py-3">账号信息</th>
-                            <th class="px-4 py-3">状态</th>
-                            <th class="px-4 py-3">额度使用</th>
-                            <th class="px-4 py-3">统计 (Req/Err)</th>
-                            <th class="px-4 py-3 rounded-tr-lg">操作</th>
+                    <thead>
+                        <tr class="bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th class="px-4 py-3 text-left rounded-tl-lg w-10"><input type="checkbox" id="selectAll" onchange="toggleSelectAll(this.checked)" class="rounded border-gray-300 text-blue-500 focus:ring-blue-500"></th>
+                            <th class="px-4 py-3 text-left">账号信息</th>
+                            <th class="px-4 py-3 text-center">状态</th>
+                            <th class="px-4 py-3 text-center">额度使用</th>
+                            <th class="px-4 py-3 text-center">统计 (Req/Err)</th>
+                            <th class="px-4 py-3 text-center rounded-tr-lg">操作</th>
                         </tr>
+                    </thead>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
                         ${pageAccounts.map((a, i) => `
@@ -2058,16 +2062,20 @@
                                         ${a.user_email ? `<div class="text-xs text-gray-400 mt-0.5 flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>${a.user_email}</div>` : ''}
                                     </div>
                                 </td>
-                                <td class="px-4 py-4 align-top">${formatStatus(a.status)}</td>
-                                <td class="px-4 py-4 align-top">${formatUsage(a)}</td>
                                 <td class="px-4 py-4 align-top">
-                                    <div class="flex flex-col gap-1 text-xs">
-                                        <div class="flex items-center gap-1"><span class="text-gray-500 w-8">Req:</span> <span class="font-medium text-gray-700">${a.request_count || 0}</span></div>
-                                        <div class="flex items-center gap-1"><span class="text-gray-500 w-8">Err:</span> <span class="${(a.error_count || 0) > 0 ? 'text-red-600 font-medium' : 'text-gray-400'}">${a.error_count || 0}</span></div>
+                                    <div class="flex justify-center">${formatStatus(a.status)}</div>
+                                </td>
+                                <td class="px-4 py-4 align-top">
+                                    <div class="flex justify-center">${formatUsage(a)}</div>
+                                </td>
+                                <td class="px-4 py-4 align-top">
+                                    <div class="flex flex-col items-center gap-1 text-xs">
+                                        <div class="flex items-center gap-1"><span class="text-gray-500 w-8 text-right">Req:</span> <span class="font-medium text-gray-700">${a.request_count || 0}</span></div>
+                                        <div class="flex items-center gap-1"><span class="text-gray-500 w-8 text-right">Err:</span> <span class="${(a.error_count || 0) > 0 ? 'text-red-600 font-medium' : 'text-gray-400'}">${a.error_count || 0}</span></div>
                                     </div>
                                 </td>
                                 <td class="px-4 py-4 align-top">
-                                    <div class="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
+                                    <div class="flex items-center justify-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
                                         <button onclick="refreshUsage('${a.id}')" class="p-1 text-blue-600 hover:bg-blue-50 rounded transition" title="刷新额度">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                                         </button>
@@ -2329,25 +2337,28 @@
             const resetDate = new Date(nextReset);
             const now = new Date();
             const diffMs = resetDate - now;
-            const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+            // Calculate days and hours
+            const dayMs = 1000 * 60 * 60 * 24;
+            const hourMs = 1000 * 60 * 60;
+
+            const diffDays = Math.floor(diffMs / dayMs);
+            const diffHours = Math.ceil((diffMs % dayMs) / hourMs);
 
             let label, color;
 
-            if (diffDays < 0) {
+            if (diffMs < 0) {
                 label = '已过期';
                 color = 'bg-red-50 text-red-700 border-red-200';
             } else if (diffDays === 0) {
-                label = '今天重置';
+                label = `${Math.max(1, Math.ceil(diffMs / hourMs))}小时后`;
                 color = 'bg-orange-50 text-orange-700 border-orange-200';
-            } else if (diffDays === 1) {
-                label = '明天重置';
+            } else if (diffDays < 3) {
+                label = `${diffDays}天 ${diffHours}小时`;
                 color = 'bg-yellow-50 text-yellow-700 border-yellow-200';
-            } else if (diffDays <= 7) {
-                label = `${diffDays}天后`;
-                color = 'bg-green-50 text-green-700 border-green-200';
             } else {
-                label = `${diffDays}天后`;
-                color = 'bg-gray-50 text-gray-700 border-gray-200';
+                label = `${diffDays}天 ${diffHours}小时`;
+                color = 'bg-green-50 text-green-700 border-green-200';
             }
 
             return `
@@ -2368,7 +2379,7 @@
 
         function formatSubscriptionBadge(subscriptionType) {
             if (!subscriptionType) {
-                return '<span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-medium bg-gray-100 text-gray-500 border border-gray-200">Free</span>';
+                return '<span class="inline-flex items-center px-1 py-0.5 rounded text-[10px] font-medium leading-none bg-gray-100 text-gray-500 border border-gray-200">Free</span>';
             }
 
             const tier = subscriptionType.toLowerCase().replace(/[_\s]/g, '');
@@ -2399,7 +2410,7 @@
             const badge = badges[tier] || badges.free;
 
             return `
-                <span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-bold border ${badge.color} shadow-sm">${badge.label}</span>
+                <span class="inline-flex items-center px-1 py-0.5 rounded text-[10px] font-medium leading-none border ${badge.color}">${badge.label}</span>
             `;
         }
 

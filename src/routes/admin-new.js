@@ -78,7 +78,20 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
     let nextReset = null;
     let nextResetTs = Number.POSITIVE_INFINITY;
 
+    const allowedModels = new Set([
+      'gemini-3-pro-high',
+      'gemini-3-flash',
+      'claude-sonnet-4-5',
+      'claude-sonnet-4-5-thinking',
+      'claude-opus-4-5-thinking',
+      'claude-opus-4-6-thinking'
+    ]);
+
     for (const [model, modelData] of Object.entries(modelsMap || {})) {
+      if (!allowedModels.has(model)) {
+        continue;
+      }
+
       const info = modelData?.quotaInfo;
       if (!info) continue;
 
