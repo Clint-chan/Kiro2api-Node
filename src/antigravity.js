@@ -116,6 +116,10 @@ function noCapacityDelay(attempt) {
   return delay;
 }
 
+function rateLimitDelay(attempt) {
+  return Math.min(1000 * Math.pow(2, attempt), 4000);
+}
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -339,8 +343,15 @@ async function requestWithFallback(token, path, body, options = {}) {
 
       const bodyText = await response.text();
 
-      if (response.status === 429 && index + 1 < baseUrls.length) {
-        continue;
+      if (response.status === 429) {
+        if (index + 1 < baseUrls.length) {
+          continue;
+        }
+        if (attempt < AGT_MAX_RETRY) {
+          shouldRetryAttempt = true;
+          await sleep(rateLimitDelay(attempt));
+          break;
+        }
       }
 
       if (shouldRetryNoCapacity(response.status, bodyText)) {
