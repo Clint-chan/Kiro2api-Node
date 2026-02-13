@@ -411,7 +411,10 @@ async function fetchCodexQuota(authIndex) {
         console.log('[Codex Quota] Parsed quota data', {
             authIndex,
             email: quotaData?.email,
-            planType: quotaData?.plan_type
+            planType: quotaData?.plan_type,
+            primaryWindow: quotaData?.rate_limit?.primary_window,
+            secondaryWindow: quotaData?.rate_limit?.secondary_window,
+            codeReviewWindow: quotaData?.code_review_rate_limit?.primary_window
         });
         
         return quotaData;

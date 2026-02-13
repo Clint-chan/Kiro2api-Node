@@ -454,7 +454,7 @@
                             <div class="space-y-3">
                                 <!-- Kiro 模型 -->
                                 <div>
-                                    <p class="text-xs font-semibold text-blue-700 mb-2">Kiro 渠道</p>
+                                    <p class="text-xs font-semibold text-blue-700 mb-2">Kiro 渠道（Anthropic 格式）</p>
                                     <div class="grid grid-cols-1 gap-2 text-xs font-mono">
                                         <div class="flex items-center justify-between bg-white px-3 py-2 rounded border border-gray-200">
                                             <span class="text-gray-700">claude-sonnet-4-5-20250929</span>
@@ -465,42 +465,70 @@
                                             <button onclick="copyText('claude-opus-4-5-20251101')" class="text-blue-500 hover:text-blue-700">复制</button>
                                         </div>
                                         <div class="flex items-center justify-between bg-white px-3 py-2 rounded border border-gray-200">
+                                            <span class="text-gray-700">claude-haiku-4-5-20251001</span>
+                                            <button onclick="copyText('claude-haiku-4-5-20251001')" class="text-blue-500 hover:text-blue-700">复制</button>
+                                        </div>
+                                        <div class="flex items-center justify-between bg-white px-3 py-2 rounded border border-gray-200">
                                             <span class="text-gray-700">claude-3-5-sonnet-20241022</span>
                                             <button onclick="copyText('claude-3-5-sonnet-20241022')" class="text-blue-500 hover:text-blue-700">复制</button>
+                                        </div>
+                                        <div class="flex items-center justify-between bg-white px-3 py-2 rounded border border-gray-200">
+                                            <span class="text-gray-700">claude-3-5-haiku-20241022</span>
+                                            <button onclick="copyText('claude-3-5-haiku-20241022')" class="text-blue-500 hover:text-blue-700">复制</button>
                                         </div>
                                     </div>
                                 </div>
                                 
                                 <!-- Antigravity 模型 -->
                                 <div>
-                                    <p class="text-xs font-semibold text-purple-700 mb-2">Antigravity 渠道</p>
+                                    <p class="text-xs font-semibold text-purple-700 mb-2">Antigravity 渠道（Gemini 格式）</p>
                                     <div class="grid grid-cols-1 gap-2 text-xs font-mono">
-                                        <div class="flex items-center justify-between bg-white px-3 py-2 rounded border border-gray-200">
-                                            <span class="text-gray-700">antigravity-claude-sonnet-4-5</span>
-                                            <button onclick="copyText('antigravity-claude-sonnet-4-5')" class="text-blue-500 hover:text-blue-700">复制</button>
-                                        </div>
                                         <div class="flex items-center justify-between bg-white px-3 py-2 rounded border border-gray-200">
                                             <span class="text-gray-700">antigravity-gemini-3-pro</span>
                                             <button onclick="copyText('antigravity-gemini-3-pro')" class="text-blue-500 hover:text-blue-700">复制</button>
                                         </div>
                                         <div class="flex items-center justify-between bg-white px-3 py-2 rounded border border-gray-200">
+                                            <span class="text-gray-700">antigravity-gemini-3-flash</span>
+                                            <button onclick="copyText('antigravity-gemini-3-flash')" class="text-blue-500 hover:text-blue-700">复制</button>
+                                        </div>
+                                        <div class="flex items-center justify-between bg-white px-3 py-2 rounded border border-gray-200">
                                             <span class="text-gray-700">antigravity-gemini-2-5-flash</span>
                                             <button onclick="copyText('antigravity-gemini-2-5-flash')" class="text-blue-500 hover:text-blue-700">复制</button>
+                                        </div>
+                                        <div class="flex items-center justify-between bg-white px-3 py-2 rounded border border-gray-200">
+                                            <span class="text-gray-700">antigravity-claude-sonnet-4-5</span>
+                                            <button onclick="copyText('antigravity-claude-sonnet-4-5')" class="text-blue-500 hover:text-blue-700">复制</button>
+                                        </div>
+                                        <div class="flex items-center justify-between bg-white px-3 py-2 rounded border border-gray-200">
+                                            <span class="text-gray-700">antigravity-claude-sonnet-4-5-thinking</span>
+                                            <button onclick="copyText('antigravity-claude-sonnet-4-5-thinking')" class="text-blue-500 hover:text-blue-700">复制</button>
+                                        </div>
+                                        <div class="flex items-center justify-between bg-white px-3 py-2 rounded border border-gray-200">
+                                            <span class="text-gray-700">antigravity-claude-opus-4-5-thinking</span>
+                                            <button onclick="copyText('antigravity-claude-opus-4-5-thinking')" class="text-blue-500 hover:text-blue-700">复制</button>
                                         </div>
                                     </div>
                                 </div>
                                 
                                 <!-- Codex 模型 -->
                                 <div>
-                                    <p class="text-xs font-semibold text-green-700 mb-2">Codex 渠道</p>
+                                    <p class="text-xs font-semibold text-green-700 mb-2">Codex 渠道（OpenAI 格式）</p>
                                     <div class="grid grid-cols-1 gap-2 text-xs font-mono">
                                         <div class="flex items-center justify-between bg-white px-3 py-2 rounded border border-gray-200">
                                             <span class="text-gray-700">codex-gpt-4o</span>
                                             <button onclick="copyText('codex-gpt-4o')" class="text-blue-500 hover:text-blue-700">复制</button>
                                         </div>
                                         <div class="flex items-center justify-between bg-white px-3 py-2 rounded border border-gray-200">
+                                            <span class="text-gray-700">codex-gpt-4o-mini</span>
+                                            <button onclick="copyText('codex-gpt-4o-mini')" class="text-blue-500 hover:text-blue-700">复制</button>
+                                        </div>
+                                        <div class="flex items-center justify-between bg-white px-3 py-2 rounded border border-gray-200">
                                             <span class="text-gray-700">codex-o1</span>
                                             <button onclick="copyText('codex-o1')" class="text-blue-500 hover:text-blue-700">复制</button>
+                                        </div>
+                                        <div class="flex items-center justify-between bg-white px-3 py-2 rounded border border-gray-200">
+                                            <span class="text-gray-700">codex-o1-mini</span>
+                                            <button onclick="copyText('codex-o1-mini')" class="text-blue-500 hover:text-blue-700">复制</button>
                                         </div>
                                         <div class="flex items-center justify-between bg-white px-3 py-2 rounded border border-gray-200">
                                             <span class="text-gray-700">codex-o3-mini</span>
