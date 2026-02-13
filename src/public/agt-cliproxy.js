@@ -72,8 +72,11 @@ async function refreshAllQuotas() {
             const authIndex = account.auth_index || account.authIndex;
             if (!authIndex) return { name: account.name, provider: 'codex', status: 'error', error: '缺少 auth_index' };
             
+            const accountId = account.id_token?.chatgpt_account_id;
+            if (!accountId) return { name: account.name, provider: 'codex', status: 'error', error: '缺少 chatgpt_account_id' };
+            
             try {
-                const quota = await fetchCodexQuota(authIndex);
+                const quota = await fetchCodexQuota(authIndex, accountId);
                 return { name: account.name, provider: 'codex', status: 'success', data: quota };
             } catch (e) {
                 return { name: account.name, provider: 'codex', status: 'error', error: e.message };
