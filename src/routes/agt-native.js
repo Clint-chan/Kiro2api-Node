@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { callAntigravity, callAntigravityStream } from '../antigravity.js';
+import { callAntigravity, callAntigravityStream, resolveAntigravityUpstreamModel } from '../antigravity.js';
 import { isChannelAllowed } from '../user-permissions.js';
 import { userAuthMiddleware } from '../middleware/auth.js';
 
@@ -13,19 +13,76 @@ export function createAgtNativeRouter(state) {
     '/v1internal:streamGenerateContent'
   ], userAuthMiddleware(state.db));
 
-  async function selectAgtAccount() {
-    const accounts = state.db.getAllAgtAccounts('active');
-    if (!accounts || accounts.length === 0) {
-      throw new Error('No active AGT accounts available');
+  function parseJsonSafe(value) {
+    if (typeof value !== 'string') return null;
+    try {
+      return JSON.parse(value);
+    } catch {
+      return null;
     }
+  }
 
-    accounts.sort((a, b) => {
+  function hasQuotaForModel(account, modelId) {
+    const quotas = parseJsonSafe(account?.model_quotas);
+    if (!quotas || typeof quotas !== 'object') return true;
+    const info = quotas[modelId];
+    if (!info || typeof info !== 'object') return true;
+    const remaining = Number(info.remaining_fraction);
+    if (!Number.isFinite(remaining)) return true;
+    return remaining > 0;
+  }
+
+  function getEligibleAgtAccounts(modelId, excludedIds = new Set()) {
+    const accounts = state.db.getAllAgtAccounts('active') || [];
+    const upstreamModel = resolveAntigravityUpstreamModel(modelId);
+
+    const filtered = accounts.filter((account) => {
+      if (excludedIds.has(account.id)) return false;
+      if (!upstreamModel) return true;
+      return hasQuotaForModel(account, upstreamModel);
+    });
+
+    filtered.sort((a, b) => {
       const scoreA = (a.error_count || 0) * 5 + (a.request_count || 0);
       const scoreB = (b.error_count || 0) * 5 + (b.request_count || 0);
       return scoreA - scoreB;
     });
 
-    return accounts[0];
+    return filtered;
+  }
+
+  function isAgtRateLimit(error) {
+    if (error?.status === 429) return true;
+    const msg = String(error?.message || '').toLowerCase();
+    return msg.includes('resource has been exhausted') || msg.includes('rate limit') || msg.includes('rate_limit');
+  }
+
+  async function executeWithFailover(modelId, executor) {
+    const excluded = new Set();
+    let lastError = null;
+
+    while (true) {
+      const accounts = getEligibleAgtAccounts(modelId, excluded);
+      if (accounts.length === 0) break;
+
+      const account = accounts[0];
+      try {
+        const result = await executor(account);
+        state.db.updateAgtAccountStats(account.id, false);
+        return result;
+      } catch (error) {
+        lastError = error;
+        state.db.updateAgtAccountStats(account.id, true);
+        if (isAgtRateLimit(error)) {
+          excluded.add(account.id);
+          continue;
+        }
+        throw error;
+      }
+    }
+
+    if (lastError) throw lastError;
+    throw new Error('No active AGT accounts available');
   }
 
   async function executeNative(path, req, res) {
@@ -38,9 +95,9 @@ export function createAgtNativeRouter(state) {
       });
     }
 
-    const account = await selectAgtAccount();
-    const response = await callAntigravity(state.db, account, path, req.body || {});
-    state.db.updateAgtAccountStats(account.id, false);
+    const response = await executeWithFailover(req.body?.model, async (account) => {
+      return callAntigravity(state.db, account, path, req.body || {});
+    });
     return res.json(response);
   }
 
@@ -80,29 +137,26 @@ export function createAgtNativeRouter(state) {
         });
       }
 
-      selectedAccount = await selectAgtAccount();
-      const upstream = await callAntigravityStream(state.db, selectedAccount, '/v1internal:streamGenerateContent', req.body || {});
+      const upstream = await executeWithFailover(req.body?.model, async (account) => {
+        selectedAccount = account;
+        const response = await callAntigravityStream(state.db, account, '/v1internal:streamGenerateContent', req.body || {});
+        if (!response.body) {
+          throw new Error('AGT stream body unavailable');
+        }
+        return response;
+      });
 
       res.status(200);
       res.setHeader('Content-Type', upstream.headers.get('content-type') || 'text/event-stream');
       res.setHeader('Cache-Control', 'no-cache');
       res.setHeader('Connection', 'keep-alive');
 
-      if (!upstream.body) {
-        state.db.updateAgtAccountStats(selectedAccount.id, true);
-        return res.status(502).json({ error: 'AGT stream body unavailable' });
-      }
-
       for await (const chunk of upstream.body) {
         res.write(chunk);
       }
 
-      state.db.updateAgtAccountStats(selectedAccount.id, false);
       return res.end();
     } catch (error) {
-      if (selectedAccount?.id) {
-        state.db.updateAgtAccountStats(selectedAccount.id, true);
-      }
       return res.status(500).json({ error: error.message || 'AGT streamGenerateContent failed' });
     }
   });

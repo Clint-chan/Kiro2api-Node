@@ -320,19 +320,41 @@
 
                 <div id="tab-agt-accounts" class="p-6 tab-content hidden">
                     <div class="flex flex-wrap items-center gap-3 mb-6">
-                        <button onclick="showModal('agtImportModal')"
-                            class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center">
+                        <button onclick="startAgtOAuth()"
+                            class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                    d="M12 4v16m8-8H4" />
                             </svg>
-                            上传凭证
+                            添加 AGT 账号 (OAuth)
                         </button>
-                        <button onclick="loadCliProxyAccounts()"
+                        <button onclick="loadCliProxyAgtAccounts()"
                             class="border border-gray-200 hover:bg-gray-50 px-4 py-2 rounded-lg text-sm font-medium text-gray-600 transition">刷新列表</button>
                     </div>
-
                     <div id="cliproxy-agt-accounts-table"></div>
+
+                    <!-- 使用统计 -->
+                    <div class="mt-8">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">使用统计</h3>
+                        <div id="cliproxy-usage-stats" class="grid grid-cols-1 md:grid-cols-4 gap-4"></div>
+                    </div>
+
+                    <!-- 实时日志 -->
+                    <div class="mt-8">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-semibold text-gray-900">实时日志</h3>
+                            <div class="flex gap-2">
+                                <button onclick="clearCliProxyLogs()" class="text-sm text-red-600 hover:text-red-700">清空日志</button>
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="checkbox" id="cliproxyAutoRefreshToggle" onchange="toggleCliProxyAutoRefresh()"
+                                        class="sr-only peer">
+                                    <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                    <span class="ml-3 text-sm font-medium text-gray-700">自动刷新</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div id="cliproxy-logs" class="bg-gray-50 rounded-lg p-4 font-mono text-xs max-h-96 overflow-y-auto"></div>
+                    </div>
                 </div>
 
                 <!-- 请求记录 -->
@@ -3452,9 +3474,7 @@
             document.getElementById('permission-username').textContent = `用户：${username}`;
 
             // 重置复选框
-            document.querySelectorAll('.channel-checkbox').forEach(cb => {
-                cb.checked = false;
-            });
+            document.querySelectorAll('.channel-checkbox').forEach(cb => cb.checked = false);
 
             try {
                 const response = await fetchApi(`/api/admin/users/${userId}`);
@@ -3502,47 +3522,51 @@
                 return;
             }
 
-            // 使用字符串拼接构建所有 HTML，一次性插入 DOM
-            let containerHTML = '';
-
             selectedChannels.forEach(channel => {
                 const models = ALL_MODELS[channel] || [];
                 if (models.length === 0) return;
+
+                const section = document.createElement('div');
+                section.className = 'bg-white rounded-lg border border-gray-100 overflow-hidden';
 
                 const channelName = channel === 'kiro' ? 'Kiro' : 'AGT';
                 const channelColor = channel === 'kiro' ? 'text-blue-600 bg-blue-50' : 'text-indigo-600 bg-indigo-50';
                 const borderColor = channel === 'kiro' ? 'border-blue-100' : 'border-indigo-100';
 
-                // 构建模型复选框 HTML
-                const modelsHTML = models.map(m => {
-                    const isChecked = userModels.includes(m.id);
-                    return `
-                        <label class="flex items-center gap-2 text-sm text-gray-700 hover:bg-gray-50 p-1.5 rounded cursor-pointer transition">
-                            <input type="checkbox" value="${m.id}" ${isChecked ? 'checked' : ''} class="rounded border-gray-300 text-indigo-500 focus:ring-indigo-500 model-checkbox model-checkbox-${channel}">
-                            <span class="truncate" title="${m.name}">${m.name}</span>
-                        </label>
-                    `;
-                }).join('');
-
-                // 构建完整的渠道分组 HTML
-                containerHTML += `
-                    <div class="bg-white rounded-lg border border-gray-100 overflow-hidden">
-                        <div class="px-3 py-2 ${channelColor} border-b ${borderColor} flex justify-between items-center">
-                            <span class="font-semibold text-sm">${channelName} 模型</span>
-                            <div class="flex gap-2">
-                                <button type="button" onclick="batchSelectModels('${channel}', true)" class="text-xs hover:underline opacity-80 hover:opacity-100">全选</button>
-                                <button type="button" onclick="batchSelectModels('${channel}', false)" class="text-xs hover:underline opacity-80 hover:opacity-100">清空</button>
-                            </div>
-                        </div>
-                        <div class="p-3 grid grid-cols-2 gap-2">
-                            ${modelsHTML}
-                        </div>
+                // Header
+                const header = document.createElement('div');
+                header.className = `px-3 py-2 ${channelColor} border-b ${borderColor} flex justify-between items-center`;
+                header.innerHTML = `
+                    <span class="font-semibold text-sm">${channelName} 模型</span>
+                    <div class="flex gap-2">
+                        <button type="button" onclick="batchSelectModels('${channel}', true)" class="text-xs hover:underline opacity-80 hover:opacity-100">全选</button>
+                        <button type="button" onclick="batchSelectModels('${channel}', false)" class="text-xs hover:underline opacity-80 hover:opacity-100">清空</button>
                     </div>
                 `;
-            });
+                section.appendChild(header);
 
-            // 一次性插入所有 HTML，只触发一次 DOM 重排
-            container.innerHTML = containerHTML;
+                // Body
+                const body = document.createElement('div');
+                body.className = 'p-3 grid grid-cols-2 gap-2';
+
+                models.forEach(m => {
+                    const isChecked = userModels.includes(m.id);
+                    // 注意：如果用户列表里没有任何该渠道的模型，通常意味着全部允许。
+                    // 但为了 UI 的明确性，我们这里只反映 allowed_models 里的真实数据。
+                    // 并在下方说明 "未勾选任何模型 = 全部可用"
+
+                    const label = document.createElement('label');
+                    label.className = 'flex items-center gap-2 text-sm text-gray-700 hover:bg-gray-50 p-1.5 rounded cursor-pointer transition';
+                    label.innerHTML = `
+                        <input type="checkbox" value="${m.id}" ${isChecked ? 'checked' : ''} class="rounded border-gray-300 text-indigo-500 focus:ring-indigo-500 model-checkbox model-checkbox-${channel}">
+                        <span class="truncate" title="${m.name}">${m.name}</span>
+                    `;
+                    body.appendChild(label);
+                });
+                section.appendChild(body);
+
+                container.appendChild(section);
+            });
         }
 
         function batchSelectModels(channel, selectAll) {
@@ -3787,8 +3811,6 @@
         class="fixed z-[100] hidden opacity-0 invisible transition-all duration-200 bg-white rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] border border-gray-100 p-4 text-left w-72 backdrop-blur-sm ring-1 ring-black/5"
         onmouseenter="keepTooltipOpen()" onmouseleave="hideMachineIdTooltip()">
     </div>
-
-    <script src="/agt-cliproxy.js"></script>
 </body>
 
 </html>

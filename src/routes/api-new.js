@@ -9,13 +9,9 @@ import path from 'path';
 import { recordApiStart, recordApiSuccess, recordApiFailure } from './api-new-metrics.js';
 import {
   AGT_STATIC_MODELS,
-  callAntigravity,
-  convertAgtToClaude,
-  convertAgtToOpenAI,
-  convertClaudeToAgtPayload,
-  convertOpenAIToAgtPayload,
   fetchAntigravityModels,
-  isAntigravityModel
+  isAntigravityModel,
+  resolveAntigravityUpstreamModel
 } from '../antigravity.js';
 import {
   canAccessModel,
@@ -80,37 +76,89 @@ export function createApiRouter(state) {
 
   router.use(authMiddleware);
 
-  async function selectAgtAccount() {
-    const accounts = state.db.getAllAgtAccounts('active');
-    if (!accounts || accounts.length === 0) {
-      throw new Error('No active AGT accounts available');
+  function parseJsonSafe(value) {
+    if (typeof value !== 'string') return null;
+    try {
+      return JSON.parse(value);
+    } catch {
+      return null;
     }
+  }
 
-    accounts.sort((a, b) => {
-      const scoreA = (a.error_count || 0) * 5 + (a.request_count || 0);
-      const scoreB = (b.error_count || 0) * 5 + (b.request_count || 0);
-      return scoreA - scoreB;
-    });
-
-    return accounts[0];
+  function hasQuotaForModel(account, modelId) {
+    const quotas = parseJsonSafe(account?.model_quotas);
+    if (!quotas || typeof quotas !== 'object') return true;
+    const info = quotas[modelId];
+    if (!info || typeof info !== 'object') return true;
+    const remaining = Number(info.remaining_fraction);
+    if (!Number.isFinite(remaining)) return true;
+    return remaining > 0;
   }
 
   async function handleAgtClaudeRequest(req, res) {
-    const account = await selectAgtAccount();
-    const payload = convertClaudeToAgtPayload(req.body, req.body.model);
-    const upstream = await callAntigravity(state.db, account, '/v1internal:generateContent', payload);
-    const response = convertAgtToClaude(upstream, req.body.model);
-    state.db.updateAgtAccountStats(account.id, false);
-    return res.json(response);
+    const cliproxyUrl = process.env.CLIPROXY_URL || 'http://localhost:19865';
+    const cliproxyApiKey = process.env.CLIPROXY_API_KEY || 'zxc123';
+
+    try {
+      const response = await fetch(`${cliproxyUrl}/v1/messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${cliproxyApiKey}`,
+          'anthropic-version': req.headers['anthropic-version'] || '2023-06-01'
+        },
+        body: JSON.stringify(req.body)
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        return res.status(response.status).json(error);
+      }
+
+      const data = await response.json();
+      return res.json(data);
+    } catch (error) {
+      console.error('[AGT Claude] Request failed:', error);
+      return res.status(500).json({
+        type: 'error',
+        error: {
+          type: 'api_error',
+          message: `AGT request failed: ${error.message}`
+        }
+      });
+    }
   }
 
   async function handleAgtOpenAIRequest(req, res) {
-    const account = await selectAgtAccount();
-    const payload = convertOpenAIToAgtPayload(req.body, req.body.model);
-    const upstream = await callAntigravity(state.db, account, '/v1internal:generateContent', payload);
-    const response = convertAgtToOpenAI(upstream, req.body.model);
-    state.db.updateAgtAccountStats(account.id, false);
-    return res.json(response);
+    const cliproxyUrl = process.env.CLIPROXY_URL || 'http://localhost:19865';
+    const cliproxyApiKey = process.env.CLIPROXY_API_KEY || 'zxc123';
+
+    try {
+      const response = await fetch(`${cliproxyUrl}/v1/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${cliproxyApiKey}`
+        },
+        body: JSON.stringify(req.body)
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        return res.status(response.status).json(error);
+      }
+
+      const data = await response.json();
+      return res.json(data);
+    } catch (error) {
+      console.error('[AGT OpenAI] Request failed:', error);
+      return res.status(500).json({
+        error: {
+          type: 'api_error',
+          message: `AGT request failed: ${error.message}`
+        }
+      });
+    }
   }
 
   function resolveModelChannel(modelId) {
@@ -208,13 +256,6 @@ export function createApiRouter(state) {
 
       return await handleAgtOpenAIRequest(req, res);
     } catch (error) {
-      if (error?.message?.includes('AGT')) {
-        try {
-          const account = state.db.getAllAgtAccounts('active')[0];
-          if (account) state.db.updateAgtAccountStats(account.id, true);
-        } catch {}
-      }
-
       return res.status(500).json({
         error: {
           type: 'api_error',

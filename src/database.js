@@ -294,7 +294,6 @@ export class DatabaseManager {
       SET allowed_channels = '["kiro"]'
       WHERE allowed_channels IS NULL
          OR TRIM(allowed_channels) = ''
-         OR TRIM(allowed_channels) = '["kiro","agt"]'
     `).run();
   }
 

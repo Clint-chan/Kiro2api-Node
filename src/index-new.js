@@ -16,6 +16,7 @@ import { createUserRouter } from './routes/user.js';
 import { createUiRouter } from './routes/ui.js';
 import { createObservabilityRouter } from './routes/observability.js';
 import { createConfigRouter } from './routes/config.js';
+import { createCLIProxyAdminRouter } from './routes/cliproxy-admin.js';
 import { logger } from './logger.js';
 import { metrics } from './metrics.js';
 
@@ -163,6 +164,9 @@ async function startServer() {
 
     // Admin API routes (requires admin authentication)
     app.use('/api/admin', adminAuthMiddleware(db), createAdminRouter(db, billing, subscription, accountPool));
+
+    // CLIProxy Admin API routes (requires admin authentication)
+    app.use('/api/admin/cliproxy', adminAuthMiddleware(db), createCLIProxyAdminRouter());
 
     // Config API routes (requires admin authentication)
     app.use('/api/config', createConfigRouter(state));
