@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,21 +11,76 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
-        @keyframes scaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
-        .animate-slideIn { animation: slideIn 0.3s ease-out; }
-        .animate-slideOut { animation: slideOut 0.3s ease-out forwards; }
-        .animate-scaleIn { animation: scaleIn 0.3s ease-out; }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        @keyframes scaleIn {
+            from {
+                transform: scale(0.95);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .animate-fadeIn {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .animate-slideIn {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .animate-slideOut {
+            animation: slideOut 0.3s ease-out forwards;
+        }
+
+        .animate-scaleIn {
+            animation: scaleIn 0.3s ease-out;
+        }
     </style>
 </head>
+
 <body class="bg-gray-50 min-h-screen">
     <!-- 加载中 -->
     <div id="loadingPage" class="min-h-screen flex items-center justify-center">
         <div class="text-center">
-            <div class="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <div class="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4">
+            </div>
             <p class="text-gray-500">加载中...</p>
         </div>
     </div>
@@ -38,7 +94,8 @@
                     <div class="flex items-center">
                         <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center mr-3">
                             <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M13 10V3L4 14h7v7l9-11h-7z" />
                             </svg>
                         </div>
                         <div>
@@ -47,7 +104,8 @@
                         </div>
                     </div>
                     <div class="flex items-center space-x-4">
-                        <button onclick="logout()" class="text-gray-500 hover:text-gray-700 text-sm font-medium transition">退出登录</button>
+                        <button onclick="logout()"
+                            class="text-gray-500 hover:text-gray-700 text-sm font-medium transition">退出登录</button>
                     </div>
                 </div>
             </div>
@@ -93,7 +151,8 @@
                     <div class="flex items-center justify-between mb-4">
                         <div class="text-sm font-medium opacity-90">账号池总额度</div>
                         <svg class="w-8 h-8 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                         </svg>
                     </div>
                     <div class="text-3xl font-bold mb-2" id="stat-total-quota">-</div>
@@ -102,7 +161,8 @@
                         <span>已用: <span id="stat-used-percent" class="font-semibold">-</span></span>
                     </div>
                     <div class="mt-3 h-2 bg-white bg-opacity-20 rounded-full overflow-hidden">
-                        <div id="quota-progress" class="h-full bg-white rounded-full transition-all" style="width: 0%"></div>
+                        <div id="quota-progress" class="h-full bg-white rounded-full transition-all" style="width: 0%">
+                        </div>
                     </div>
                 </div>
 
@@ -142,33 +202,53 @@
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-6">
                 <div class="border-b border-gray-100">
                     <nav class="flex space-x-8 px-6">
-                        <button onclick="switchTab('users')" class="tab-btn border-b-2 border-blue-500 text-blue-600 py-4 px-1 text-sm font-medium" data-tab="users">用户管理</button>
-                        <button onclick="switchTab('accounts')" class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1 text-sm font-medium" data-tab="accounts">Kiro账号池</button>
-                        <button onclick="switchTab('agt-accounts')" class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1 text-sm font-medium" data-tab="agt-accounts">AGT账号池</button>
-                        <button onclick="switchTab('logs')" class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1 text-sm font-medium" data-tab="logs">请求记录</button>
-                        <button onclick="switchTab('settings')" class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1 text-sm font-medium" data-tab="settings">系统设置</button>
+                        <button onclick="switchTab('users')"
+                            class="tab-btn border-b-2 border-blue-500 text-blue-600 py-4 px-1 text-sm font-medium"
+                            data-tab="users">用户管理</button>
+                        <button onclick="switchTab('accounts')"
+                            class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1 text-sm font-medium"
+                            data-tab="accounts">Kiro账号池</button>
+                        <button onclick="switchTab('agt-accounts')"
+                            class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1 text-sm font-medium"
+                            data-tab="agt-accounts">AGT账号池</button>
+                        <button onclick="switchTab('logs')"
+                            class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1 text-sm font-medium"
+                            data-tab="logs">请求记录</button>
+                        <button onclick="switchTab('settings')"
+                            class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1 text-sm font-medium"
+                            data-tab="settings">系统设置</button>
                     </nav>
                 </div>
 
                 <!-- 用户管理 -->
                 <div id="tab-users" class="p-6 tab-content">
                     <div class="flex justify-end items-center mb-6">
-                        <button onclick="showModal('createUserModal')" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        <button onclick="showModal('createUserModal')"
+                            class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 4v16m8-8H4" />
+                            </svg>
                             创建用户
                         </button>
                     </div>
                     <div id="users-table" class="overflow-x-auto"></div>
 
                     <!-- 用户分页控件 -->
-                    <div id="users-pagination" class="flex items-center justify-between mt-6 pt-4 border-t border-gray-100 hidden">
+                    <div id="users-pagination"
+                        class="flex items-center justify-between mt-6 pt-4 border-t border-gray-100 hidden">
                         <div class="text-sm text-gray-600">
-                            显示 <span id="users-page-start">0</span> - <span id="users-page-end">0</span>，共 <span id="total-users">0</span> 个用户
+                            显示 <span id="users-page-start">0</span> - <span id="users-page-end">0</span>，共 <span
+                                id="total-users">0</span> 个用户
                         </div>
                         <div class="flex items-center gap-2">
-                            <button onclick="changeUsersPage('prev')" id="users-prev-btn" class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled>上一页</button>
+                            <button onclick="changeUsersPage('prev')" id="users-prev-btn"
+                                class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled>上一页</button>
                             <div id="users-page-numbers" class="flex gap-1"></div>
-                            <button onclick="changeUsersPage('next')" id="users-next-btn" class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled>下一页</button>
+                            <button onclick="changeUsersPage('next')" id="users-next-btn"
+                                class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled>下一页</button>
                         </div>
                     </div>
                 </div>
@@ -176,56 +256,89 @@
                 <!-- Kiro账号管理 -->
                 <div id="tab-accounts" class="p-6 tab-content hidden">
                     <div class="flex flex-wrap items-center gap-3 mb-6">
-                        <button onclick="showModal('addModal')" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        <button onclick="showModal('addModal')"
+                            class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 4v16m8-8H4" />
+                            </svg>
                             添加账号
                         </button>
-                        <button onclick="showModal('importModal')" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                        <button onclick="showModal('importModal')"
+                            class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
                             批量导入
                         </button>
-                        <button onclick="refreshAllUsage()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                        <button onclick="refreshAllUsage()"
+                            class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
                             刷新全部额度
                         </button>
-                        <button id="batchDeleteBtn" onclick="batchDeleteAccounts()" class="hidden bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        <button id="batchDeleteBtn" onclick="batchDeleteAccounts()"
+                            class="hidden bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
                             批量删除 (<span id="selectedCount">0</span>)
                         </button>
-                        <select id="strategy" onchange="setStrategy(this.value)" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <select id="strategy" onchange="setStrategy(this.value)"
+                            class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <option value="round-robin">轮询策略</option>
                             <option value="random">随机策略</option>
                             <option value="least-used">最少使用</option>
                         </select>
-                        <button onclick="refresh()" class="border border-gray-200 hover:bg-gray-50 px-4 py-2 rounded-lg text-sm font-medium text-gray-600 transition">刷新</button>
+                        <button onclick="refresh()"
+                            class="border border-gray-200 hover:bg-gray-50 px-4 py-2 rounded-lg text-sm font-medium text-gray-600 transition">刷新</button>
                     </div>
                     <div id="accounts-table"></div>
 
                     <!-- 分页控件 -->
-                    <div id="accounts-pagination" class="flex items-center justify-between mt-6 pt-4 border-t border-gray-100">
+                    <div id="accounts-pagination"
+                        class="flex items-center justify-between mt-6 pt-4 border-t border-gray-100">
                         <div class="text-sm text-gray-600">
-                            显示 <span id="page-start">0</span> - <span id="page-end">0</span>，共 <span id="total-accounts">0</span> 个账号
+                            显示 <span id="page-start">0</span> - <span id="page-end">0</span>，共 <span
+                                id="total-accounts">0</span> 个账号
                         </div>
                         <div class="flex items-center gap-2">
-                            <button onclick="changePage('prev')" id="prev-btn" class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled>上一页</button>
+                            <button onclick="changePage('prev')" id="prev-btn"
+                                class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled>上一页</button>
                             <div id="page-numbers" class="flex gap-1"></div>
-                            <button onclick="changePage('next')" id="next-btn" class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled>下一页</button>
+                            <button onclick="changePage('next')" id="next-btn"
+                                class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled>下一页</button>
                         </div>
                     </div>
                 </div>
 
                 <div id="tab-agt-accounts" class="p-6 tab-content hidden">
                     <div class="flex flex-wrap items-center gap-3 mb-6">
-                        <button onclick="showModal('agtImportModal')" class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        <button onclick="showModal('agtImportModal')"
+                            class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 4v16m8-8H4" />
+                            </svg>
                             导入 AGT 账号
                         </button>
-                        <button onclick="refreshAllAgtUsage()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                        <button onclick="refreshAllAgtUsage()"
+                            class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
                             刷新全部额度
                         </button>
 
-                        <button onclick="loadAgtAccounts()" class="border border-gray-200 hover:bg-gray-50 px-4 py-2 rounded-lg text-sm font-medium text-gray-600 transition">刷新列表</button>
+                        <button onclick="loadAgtAccounts()"
+                            class="border border-gray-200 hover:bg-gray-50 px-4 py-2 rounded-lg text-sm font-medium text-gray-600 transition">刷新列表</button>
                     </div>
                     <div id="agt-accounts-table"></div>
                 </div>
@@ -234,29 +347,43 @@
                 <div id="tab-logs" class="p-6 tab-content hidden">
                     <div class="flex justify-between items-center mb-6">
                         <div class="flex gap-3">
-                            <button onclick="loadLogs()" class="border border-gray-200 hover:bg-gray-50 px-4 py-2 rounded-lg text-sm font-medium text-gray-600 transition">刷新</button>
-                            <button onclick="clearLogs()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            <button onclick="loadLogs()"
+                                class="border border-gray-200 hover:bg-gray-50 px-4 py-2 rounded-lg text-sm font-medium text-gray-600 transition">刷新</button>
+                            <button onclick="clearLogs()"
+                                class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
                                 清空记录
                             </button>
                         </div>
                         <label class="flex items-center cursor-pointer">
-                            <input type="checkbox" id="autoRefreshToggle" onchange="toggleAutoRefresh()" class="sr-only peer">
-                            <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            <input type="checkbox" id="autoRefreshToggle" onchange="toggleAutoRefresh()"
+                                class="sr-only peer">
+                            <div
+                                class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600">
+                            </div>
                             <span class="ml-3 text-sm font-medium text-gray-700">自动刷新</span>
                         </label>
                     </div>
                     <div id="logs-table" class="overflow-x-auto"></div>
 
                     <!-- 日志分页控件 -->
-                    <div id="logs-pagination" class="flex items-center justify-between mt-6 pt-4 border-t border-gray-100 hidden">
+                    <div id="logs-pagination"
+                        class="flex items-center justify-between mt-6 pt-4 border-t border-gray-100 hidden">
                         <div class="text-sm text-gray-600">
-                            显示 <span id="logs-page-start">0</span> - <span id="logs-page-end">0</span>，共 <span id="total-logs">0</span> 条记录
+                            显示 <span id="logs-page-start">0</span> - <span id="logs-page-end">0</span>，共 <span
+                                id="total-logs">0</span> 条记录
                         </div>
                         <div class="flex items-center gap-2">
-                            <button onclick="changeLogsPage('prev')" id="logs-prev-btn" class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled>上一页</button>
+                            <button onclick="changeLogsPage('prev')" id="logs-prev-btn"
+                                class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled>上一页</button>
                             <div id="logs-page-numbers" class="flex gap-1"></div>
-                            <button onclick="changeLogsPage('next')" id="logs-next-btn" class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled>下一页</button>
+                            <button onclick="changeLogsPage('next')" id="logs-next-btn"
+                                class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled>下一页</button>
                         </div>
                     </div>
                 </div>
@@ -267,42 +394,53 @@
                         <!-- API 端点信息 -->
                         <div class="mb-8 p-4 bg-gray-50 rounded-lg">
                             <h3 class="text-lg font-semibold text-gray-900 mb-3">API 端点</h3>
-                            
+
                             <div class="mb-4">
                                 <p class="text-xs text-gray-500 mb-2 font-medium">Anthropic 格式</p>
                                 <div class="space-y-2 font-mono text-sm">
                                     <div class="flex items-center gap-2">
-                                        <span class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">GET</span>
+                                        <span
+                                            class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">GET</span>
                                         <span class="text-gray-700">/v1/models</span>
-                                        <button onclick="copyText(location.origin + '/v1/models')" class="text-blue-500 hover:text-blue-700 text-xs">复制</button>
+                                        <button onclick="copyText(location.origin + '/v1/models')"
+                                            class="text-blue-500 hover:text-blue-700 text-xs">复制</button>
                                     </div>
                                     <div class="flex items-center gap-2">
-                                        <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">POST</span>
+                                        <span
+                                            class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">POST</span>
                                         <span class="text-gray-700">/v1/messages</span>
-                                        <button onclick="copyText(location.origin + '/v1/messages')" class="text-blue-500 hover:text-blue-700 text-xs">复制</button>
+                                        <button onclick="copyText(location.origin + '/v1/messages')"
+                                            class="text-blue-500 hover:text-blue-700 text-xs">复制</button>
                                     </div>
                                     <div class="flex items-center gap-2">
-                                        <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">POST</span>
+                                        <span
+                                            class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">POST</span>
                                         <span class="text-gray-700">/v1/chat/completions</span>
-                                        <button onclick="copyText(location.origin + '/v1/chat/completions')" class="text-blue-500 hover:text-blue-700 text-xs">复制</button>
+                                        <button onclick="copyText(location.origin + '/v1/chat/completions')"
+                                            class="text-blue-500 hover:text-blue-700 text-xs">复制</button>
                                     </div>
                                     <div class="flex items-center gap-2">
-                                        <span class="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-medium">POST</span>
+                                        <span
+                                            class="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-medium">POST</span>
                                         <span class="text-gray-700">/v1internal:generateContent</span>
-                                        <button onclick="copyText(location.origin + '/v1internal:generateContent')" class="text-blue-500 hover:text-blue-700 text-xs">复制</button>
+                                        <button onclick="copyText(location.origin + '/v1internal:generateContent')"
+                                            class="text-blue-500 hover:text-blue-700 text-xs">复制</button>
                                     </div>
                                 </div>
                             </div>
-                            
-                            <p class="text-xs text-gray-500 mt-3">Base URL: <span class="text-gray-700" id="baseUrl"></span></p>
+
+                            <p class="text-xs text-gray-500 mt-3">Base URL: <span class="text-gray-700"
+                                    id="baseUrl"></span></p>
                         </div>
 
                         <div class="mb-8">
                             <h3 class="text-lg font-semibold text-gray-900 mb-2">管理密钥</h3>
                             <p class="text-sm text-gray-500 mb-4">用于登录管理面板</p>
                             <div class="flex gap-3">
-                                <input type="password" id="new-admin-key" placeholder="输入新的管理密钥" class="flex-1 max-w-xs px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <button onclick="changeAdminKey()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition">修改密钥</button>
+                                <input type="password" id="new-admin-key" placeholder="输入新的管理密钥"
+                                    class="flex-1 max-w-xs px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <button onclick="changeAdminKey()"
+                                    class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition">修改密钥</button>
                             </div>
                         </div>
                     </div>
@@ -320,24 +458,34 @@
             <div class="flex items-center justify-between p-6 border-b border-gray-100">
                 <h3 class="text-lg font-semibold text-gray-900">添加账号</h3>
                 <button onclick="hideModal('addModal')" class="text-gray-400 hover:text-gray-600">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
                 </button>
             </div>
             <div class="p-6 space-y-4">
-                <input type="text" id="acc-name" placeholder="账号名称" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <select id="acc-auth" onchange="toggleIdcFields()" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <input type="text" id="acc-name" placeholder="账号名称"
+                    class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <select id="acc-auth" onchange="toggleIdcFields()"
+                    class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="social">Social</option>
                     <option value="idc">IdC / BuilderId</option>
                 </select>
-                <textarea id="acc-refresh" placeholder="Refresh Token" rows="3" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
+                <textarea id="acc-refresh" placeholder="Refresh Token" rows="3"
+                    class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
                 <div id="idc-fields" class="hidden space-y-4">
-                    <input type="text" id="acc-client-id" placeholder="Client ID" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <textarea id="acc-client-secret" placeholder="Client Secret" rows="2" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
+                    <input type="text" id="acc-client-id" placeholder="Client ID"
+                        class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <textarea id="acc-client-secret" placeholder="Client Secret" rows="2"
+                        class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
                 </div>
             </div>
             <div class="flex justify-end gap-3 p-6 border-t border-gray-100">
-                <button onclick="hideModal('addModal')" class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition">取消</button>
-                <button onclick="addAccount()" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition">添加</button>
+                <button onclick="hideModal('addModal')"
+                    class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition">取消</button>
+                <button onclick="addAccount()"
+                    class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition">添加</button>
             </div>
         </div>
     </div>
@@ -347,7 +495,10 @@
             <div class="flex items-center justify-between p-6 border-b border-gray-100">
                 <h3 class="text-lg font-semibold text-gray-900">导入 AGT 账号</h3>
                 <button onclick="hideModal('agtImportModal')" class="text-gray-400 hover:text-gray-600">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
                 </button>
             </div>
             <div class="p-6 space-y-4">
@@ -355,27 +506,38 @@
                     <p class="text-sm text-gray-600">支持单对象、数组或 { accounts: [] } 格式</p>
                     <button onclick="loadAgtTemplate()" class="text-sm text-blue-600 hover:text-blue-700">加载模板</button>
                 </div>
-                <textarea id="agt-import-json" rows="12" class="w-full px-3 py-2 border border-gray-200 rounded-lg font-mono text-xs resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="粘贴 ~/.cli-proxy-api/antigravity-*.json 内容"></textarea>
+                <textarea id="agt-import-json" rows="12"
+                    class="w-full px-3 py-2 border border-gray-200 rounded-lg font-mono text-xs resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="粘贴 ~/.cli-proxy-api/antigravity-*.json 内容"></textarea>
             </div>
             <div class="flex justify-end gap-3 p-6 border-t border-gray-100">
-                <button onclick="hideModal('agtImportModal')" class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition">取消</button>
-                <button onclick="importAgtAccounts()" class="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-sm font-medium transition">开始导入</button>
+                <button onclick="hideModal('agtImportModal')"
+                    class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition">取消</button>
+                <button onclick="importAgtAccounts()"
+                    class="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-sm font-medium transition">开始导入</button>
             </div>
         </div>
     </div>
 
     <!-- 创建用户弹窗 -->
-    <div id="createUserModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg animate-scaleIn overflow-hidden flex flex-col max-h-[90vh]">
+    <div id="createUserModal"
+        class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div
+            class="bg-white rounded-3xl shadow-2xl w-full max-w-lg animate-scaleIn overflow-hidden flex flex-col max-h-[90vh]">
             <!-- Header -->
             <div class="relative bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 p-6 text-white">
-                <button onclick="hideModal('createUserModal')" class="absolute top-4 right-4 text-white/80 hover:text-white transition">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                <button onclick="hideModal('createUserModal')"
+                    class="absolute top-4 right-4 text-white/80 hover:text-white transition">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
                 </button>
                 <div class="flex items-center gap-3 mb-3">
                     <div class="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
                         <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                         </svg>
                     </div>
                     <div>
@@ -391,7 +553,8 @@
                 <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
                     <div class="flex items-center gap-2 mb-2">
                         <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         <span class="text-sm font-medium text-gray-700">用户名预览</span>
                     </div>
@@ -401,13 +564,15 @@
                 <!-- 用户名 -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">自定义用户名（可选）</label>
-                    <input type="text" id="new-username" placeholder="留空自动生成" oninput="updateUsernamePreview()" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                    <input type="text" id="new-username" placeholder="留空自动生成" oninput="updateUsernamePreview()"
+                        class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
                 </div>
 
                 <!-- 创建数量 -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">创建数量</label>
-                    <input type="number" id="new-count" value="1" min="1" max="100" oninput="updateUsernamePreview()" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                    <input type="number" id="new-count" value="1" min="1" max="100" oninput="updateUsernamePreview()"
+                        class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
                     <p class="text-xs text-gray-500 mt-1">批量创建时自动生成唯一用户名</p>
                 </div>
 
@@ -416,7 +581,8 @@
                     <label class="block text-sm font-medium text-gray-700 mb-2">初始余额 (USD)</label>
                     <div class="relative">
                         <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-semibold">$</span>
-                        <input type="number" step="0.01" id="new-balance" value="0" class="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                        <input type="number" step="0.01" id="new-balance" value="0"
+                            class="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
                     </div>
                     <p class="text-xs text-gray-500 mt-1">💡 开通订阅后会立即获得首次充值额度</p>
                 </div>
@@ -424,13 +590,14 @@
                 <!-- 订阅选项 -->
                 <div class="border-2 border-gray-200 rounded-xl p-4">
                     <label class="flex items-center gap-3 cursor-pointer mb-4">
-                        <input type="checkbox" id="new-with-subscription" onchange="toggleSubscriptionOptions()" class="w-5 h-5 text-blue-500 rounded">
+                        <input type="checkbox" id="new-with-subscription" onchange="toggleSubscriptionOptions()"
+                            class="w-5 h-5 text-blue-500 rounded">
                         <div class="flex-1">
                             <span class="text-sm font-semibold text-gray-900">同时开通订阅</span>
                             <p class="text-xs text-gray-500">创建用户后立即开通订阅套餐</p>
                         </div>
                     </label>
-                    
+
                     <div id="subscription-options" class="hidden space-y-4">
                         <!-- 订阅类型 -->
                         <div>
@@ -438,10 +605,13 @@
                             <div class="grid grid-cols-2 gap-3">
                                 <label class="relative cursor-pointer">
                                     <input type="radio" name="sub-type" value="monthly" checked class="sr-only peer">
-                                    <div class="p-4 border-2 border-gray-200 rounded-xl peer-checked:border-purple-500 peer-checked:bg-purple-50 transition-all hover:border-purple-300">
+                                    <div
+                                        class="p-4 border-2 border-gray-200 rounded-xl peer-checked:border-purple-500 peer-checked:bg-purple-50 transition-all hover:border-purple-300">
                                         <div class="flex items-center gap-2 mb-1">
-                                            <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                            <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                             </svg>
                                             <span class="font-medium text-gray-900">每月重置</span>
                                         </div>
@@ -450,10 +620,13 @@
                                 </label>
                                 <label class="relative cursor-pointer">
                                     <input type="radio" name="sub-type" value="daily" class="sr-only peer">
-                                    <div class="p-4 border-2 border-gray-200 rounded-xl peer-checked:border-blue-500 peer-checked:bg-blue-50 transition-all hover:border-blue-300">
+                                    <div
+                                        class="p-4 border-2 border-gray-200 rounded-xl peer-checked:border-blue-500 peer-checked:bg-blue-50 transition-all hover:border-blue-300">
                                         <div class="flex items-center gap-2 mb-1">
-                                            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                             </svg>
                                             <span class="font-medium text-gray-900">每日重置</span>
                                         </div>
@@ -467,16 +640,21 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">充值额度 (USD)</label>
                             <div class="grid grid-cols-2 gap-2 mb-2">
-                                <button type="button" onclick="setSubQuota(1800)" class="sub-quota-btn px-4 py-2 border-2 border-purple-500 bg-purple-50 text-purple-600 rounded-lg text-sm font-medium transition hover:bg-purple-100">
+                                <button type="button" onclick="setSubQuota(1800)"
+                                    class="sub-quota-btn px-4 py-2 border-2 border-purple-500 bg-purple-50 text-purple-600 rounded-lg text-sm font-medium transition hover:bg-purple-100">
                                     $1800
                                 </button>
-                                <button type="button" onclick="setSubQuota(3600)" class="sub-quota-btn px-4 py-2 border-2 border-gray-200 rounded-lg text-sm font-medium transition hover:border-purple-500 hover:bg-purple-50">
+                                <button type="button" onclick="setSubQuota(3600)"
+                                    class="sub-quota-btn px-4 py-2 border-2 border-gray-200 rounded-lg text-sm font-medium transition hover:border-purple-500 hover:bg-purple-50">
                                     $3600
                                 </button>
                             </div>
                             <div class="relative">
-                                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-semibold">$</span>
-                                <input type="number" step="0.01" id="new-subscription-quota" value="1800" placeholder="或输入自定义额度" class="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all">
+                                <span
+                                    class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-semibold">$</span>
+                                <input type="number" step="0.01" id="new-subscription-quota" value="1800"
+                                    placeholder="或输入自定义额度"
+                                    class="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all">
                             </div>
                         </div>
 
@@ -484,26 +662,34 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">开通时长</label>
                             <div class="grid grid-cols-4 gap-2 mb-2">
-                                <button type="button" onclick="setSubDuration(1)" class="sub-duration-btn px-3 py-2 border-2 border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 text-sm font-medium transition">
+                                <button type="button" onclick="setSubDuration(1)"
+                                    class="sub-duration-btn px-3 py-2 border-2 border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 text-sm font-medium transition">
                                     1个月
                                 </button>
-                                <button type="button" onclick="setSubDuration(3)" class="sub-duration-btn px-3 py-2 border-2 border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 text-sm font-medium transition">
+                                <button type="button" onclick="setSubDuration(3)"
+                                    class="sub-duration-btn px-3 py-2 border-2 border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 text-sm font-medium transition">
                                     3个月
                                 </button>
-                                <button type="button" onclick="setSubDuration(6)" class="sub-duration-btn px-3 py-2 border-2 border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 text-sm font-medium transition">
+                                <button type="button" onclick="setSubDuration(6)"
+                                    class="sub-duration-btn px-3 py-2 border-2 border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 text-sm font-medium transition">
                                     6个月
                                 </button>
-                                <button type="button" onclick="setSubDuration(12)" class="sub-duration-btn px-3 py-2 border-2 border-purple-500 bg-purple-50 text-purple-600 rounded-lg text-sm font-medium transition">
+                                <button type="button" onclick="setSubDuration(12)"
+                                    class="sub-duration-btn px-3 py-2 border-2 border-purple-500 bg-purple-50 text-purple-600 rounded-lg text-sm font-medium transition">
                                     12个月
                                 </button>
                             </div>
-                            <input type="number" id="new-subscription-duration" value="12" min="1" max="120" placeholder="或输入自定义月数" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all">
+                            <input type="number" id="new-subscription-duration" value="12" min="1" max="120"
+                                placeholder="或输入自定义月数"
+                                class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all">
                         </div>
 
                         <div class="bg-green-50 border border-green-200 rounded-lg p-3">
                             <div class="flex items-start gap-2">
-                                <svg class="w-4 h-4 text-green-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                <svg class="w-4 h-4 text-green-600 mt-0.5" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                                 <div class="text-xs text-green-700">
                                     <div class="font-medium mb-1">订阅说明</div>
@@ -520,10 +706,12 @@
             <!-- Footer -->
             <div class="border-t border-gray-200 bg-gray-50 p-6">
                 <div class="flex gap-3">
-                    <button onclick="hideModal('createUserModal')" class="flex-1 px-4 py-3 bg-white border-2 border-gray-200 rounded-xl font-medium text-gray-600 hover:bg-gray-100 transition-all">
+                    <button onclick="hideModal('createUserModal')"
+                        class="flex-1 px-4 py-3 bg-white border-2 border-gray-200 rounded-xl font-medium text-gray-600 hover:bg-gray-100 transition-all">
                         取消
                     </button>
-                    <button onclick="createUser()" class="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white rounded-xl font-semibold transition-all shadow-lg shadow-blue-500/30">
+                    <button onclick="createUser()"
+                        class="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white rounded-xl font-semibold transition-all shadow-lg shadow-blue-500/30">
                         创建用户
                     </button>
                 </div>
@@ -537,7 +725,10 @@
             <div class="flex items-center justify-between p-6 border-b border-gray-100">
                 <h3 class="text-lg font-semibold text-gray-900">修改用户额度</h3>
                 <button onclick="hideModal('rechargeModal')" class="text-gray-400 hover:text-gray-600">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
                 </button>
             </div>
             <div class="p-6 space-y-4">
@@ -549,33 +740,44 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">调整金额 (USD) *</label>
-                    <input type="number" step="0.01" id="recharge-amount" placeholder="输入正数增加，负数减少" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="number" step="0.01" id="recharge-amount" placeholder="输入正数增加，负数减少"
+                        class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <p class="text-xs text-gray-500 mt-1">示例：+100 增加额度，-50 扣减额度</p>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">备注（可选）</label>
-                    <textarea id="recharge-notes" placeholder="额度调整备注" rows="2" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
+                    <textarea id="recharge-notes" placeholder="额度调整备注" rows="2"
+                        class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
                 </div>
             </div>
             <div class="flex justify-end gap-3 p-6 border-t border-gray-100">
-                <button onclick="hideModal('rechargeModal')" class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition">取消</button>
-                <button onclick="doRecharge()" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition">确认调整</button>
+                <button onclick="hideModal('rechargeModal')"
+                    class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition">取消</button>
+                <button onclick="doRecharge()"
+                    class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition">确认调整</button>
             </div>
         </div>
     </div>
 
     <!-- 订阅管理弹窗 - 全新设计 -->
-    <div id="subscriptionModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl animate-scaleIn max-h-[95vh] overflow-hidden flex flex-col">
+    <div id="subscriptionModal"
+        class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div
+            class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl animate-scaleIn max-h-[95vh] overflow-hidden flex flex-col">
             <!-- Header -->
             <div class="relative bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-600 p-8 text-white">
-                <button onclick="hideModal('subscriptionModal')" class="absolute top-6 right-6 text-white/80 hover:text-white transition">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                <button onclick="hideModal('subscriptionModal')"
+                    class="absolute top-6 right-6 text-white/80 hover:text-white transition">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
                 </button>
                 <div class="flex items-center gap-4 mb-4">
                     <div class="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
                         <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                         </svg>
                     </div>
                     <div>
@@ -589,13 +791,14 @@
                     <span class="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full">实时生效</span>
                 </div>
             </div>
-            
+
             <!-- Content -->
             <div class="flex-1 overflow-y-auto p-8 space-y-8">
                 <!-- 快速套餐选择 -->
                 <div>
                     <div class="flex items-center gap-2 mb-4">
-                        <div class="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-lg flex items-center justify-center">
+                        <div
+                            class="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-lg flex items-center justify-center">
                             <span class="text-white font-bold text-sm">1</span>
                         </div>
                         <h3 class="text-lg font-semibold text-gray-900">选择套餐模板</h3>
@@ -603,14 +806,20 @@
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <!-- 每日基础版 -->
-                        <button onclick="applyTemplate('daily', 5, 1)" class="group relative p-6 border-2 border-gray-200 rounded-2xl hover:border-blue-500 hover:shadow-lg transition-all text-left overflow-hidden">
-                            <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-transparent rounded-bl-full transform translate-x-8 -translate-y-8"></div>
+                        <button onclick="applyTemplate('daily', 5, 1)"
+                            class="group relative p-6 border-2 border-gray-200 rounded-2xl hover:border-blue-500 hover:shadow-lg transition-all text-left overflow-hidden">
+                            <div
+                                class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-transparent rounded-bl-full transform translate-x-8 -translate-y-8">
+                            </div>
                             <div class="relative">
                                 <div class="flex items-center justify-between mb-3">
                                     <div class="flex items-center gap-3">
-                                        <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
-                                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        <div
+                                            class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
+                                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                             </svg>
                                         </div>
                                         <div>
@@ -619,8 +828,10 @@
                                         </div>
                                     </div>
                                     <div class="opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                        <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M9 5l7 7-7 7" />
                                         </svg>
                                     </div>
                                 </div>
@@ -633,14 +844,20 @@
                         </button>
 
                         <!-- 每日专业版 -->
-                        <button onclick="applyTemplate('daily', 10, 1)" class="group relative p-6 border-2 border-gray-200 rounded-2xl hover:border-blue-500 hover:shadow-lg transition-all text-left overflow-hidden">
-                            <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-transparent rounded-bl-full transform translate-x-8 -translate-y-8"></div>
+                        <button onclick="applyTemplate('daily', 10, 1)"
+                            class="group relative p-6 border-2 border-gray-200 rounded-2xl hover:border-blue-500 hover:shadow-lg transition-all text-left overflow-hidden">
+                            <div
+                                class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-transparent rounded-bl-full transform translate-x-8 -translate-y-8">
+                            </div>
                             <div class="relative">
                                 <div class="flex items-center justify-between mb-3">
                                     <div class="flex items-center gap-3">
-                                        <div class="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center">
-                                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                                        <div
+                                            class="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center">
+                                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M13 10V3L4 14h7v7l9-11h-7z" />
                                             </svg>
                                         </div>
                                         <div>
@@ -649,8 +866,10 @@
                                         </div>
                                     </div>
                                     <div class="opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                        <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M9 5l7 7-7 7" />
                                         </svg>
                                     </div>
                                 </div>
@@ -663,14 +882,20 @@
                         </button>
 
                         <!-- 每月标准版 -->
-                        <button onclick="applyTemplate('monthly', 100, 12)" class="group relative p-6 border-2 border-gray-200 rounded-2xl hover:border-purple-500 hover:shadow-lg transition-all text-left overflow-hidden">
-                            <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-500/10 to-transparent rounded-bl-full transform translate-x-8 -translate-y-8"></div>
+                        <button onclick="applyTemplate('monthly', 100, 12)"
+                            class="group relative p-6 border-2 border-gray-200 rounded-2xl hover:border-purple-500 hover:shadow-lg transition-all text-left overflow-hidden">
+                            <div
+                                class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-500/10 to-transparent rounded-bl-full transform translate-x-8 -translate-y-8">
+                            </div>
                             <div class="relative">
                                 <div class="flex items-center justify-between mb-3">
                                     <div class="flex items-center gap-3">
-                                        <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
-                                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                        <div
+                                            class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
+                                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                             </svg>
                                         </div>
                                         <div>
@@ -679,8 +904,10 @@
                                         </div>
                                     </div>
                                     <div class="opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <svg class="w-6 h-6 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                        <svg class="w-6 h-6 text-purple-500" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M9 5l7 7-7 7" />
                                         </svg>
                                     </div>
                                 </div>
@@ -693,53 +920,64 @@
                         </button>
 
                         <!-- 每月企业版 -->
-                        <button onclick="applyTemplate('monthly', 200, 12)" class="group relative p-6 border-2 border-gray-200 rounded-2xl hover:border-purple-500 hover:shadow-lg transition-all text-left overflow-hidden">
-                            <div class="absolute top-2 right-2 px-2 py-1 bg-gradient-to-r from-yellow-400 to-orange-400 text-white text-xs font-bold rounded-full">推荐</div>
-                            <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-500/10 to-transparent rounded-bl-full transform translate-x-8 -translate-y-8"></div>
+                        <button onclick="applyTemplate('monthly', 200, 12)"
+                            class="group relative p-6 border-2 border-gray-200 rounded-2xl hover:border-purple-500 hover:shadow-lg transition-all text-left overflow-hidden">
+                            <div
+                                class="absolute top-2 right-2 px-2 py-1 bg-gradient-to-r from-yellow-400 to-orange-400 text-white text-xs font-bold rounded-full">
+                                推荐</div>
+                            <div
+                                class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-500/10 to-transparent rounded-bl-full transform translate-x-8 -translate-y-8">
+                            </div>
                             <div class="relative">
                                 <div class="flex items-center justify-between mb-3">
                                     <div class="flex items-center gap-3">
-                                        <div class="w-12 h-12 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-xl flex items-center justify-center">
-                                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-                            </svg>
-                        </div>
-                        <div>
-                            <div class="font-semibold text-gray-900 text-lg">每月企业版</div>
-                            <div class="text-xs text-gray-500">适合企业使用</div>
-                        </div>
-                    </div>
-                    <div class="opacity-0 group-hover:opacity-100 transition-opacity">
-                        <svg class="w-6 h-6 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                        </svg>
+                                        <div
+                                            class="w-12 h-12 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-xl flex items-center justify-center">
+                                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <div class="font-semibold text-gray-900 text-lg">每月企业版</div>
+                                            <div class="text-xs text-gray-500">适合企业使用</div>
+                                        </div>
+                                    </div>
+                                    <div class="opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <svg class="w-6 h-6 text-purple-500" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M9 5l7 7-7 7" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="flex items-baseline gap-2 mb-2">
+                                    <span class="text-3xl font-bold text-gray-900">$200</span>
+                                    <span class="text-gray-500">/月</span>
+                                </div>
+                                <div class="text-sm text-gray-600">订阅时长：12个月（1年）</div>
+                            </div>
+                        </button>
                     </div>
                 </div>
-                <div class="flex items-baseline gap-2 mb-2">
-                    <span class="text-3xl font-bold text-gray-900">$200</span>
-                    <span class="text-gray-500">/月</span>
-                </div>
-                <div class="text-sm text-gray-600">订阅时长：12个月（1年）</div>
-            </div>
-        </button>
-    </div>
-</div>
 
-<div class="relative">
-    <div class="absolute inset-0 flex items-center">
-        <div class="w-full border-t border-gray-200"></div>
-    </div>
-    <div class="relative flex justify-center">
-        <span class="px-4 bg-white text-sm text-gray-500">或自定义配置</span>
-    </div>
-</div>
+                <div class="relative">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t border-gray-200"></div>
+                    </div>
+                    <div class="relative flex justify-center">
+                        <span class="px-4 bg-white text-sm text-gray-500">或自定义配置</span>
+                    </div>
+                </div>
 
                 <!-- 自定义配置 -->
                 <div class="space-y-6">
                     <!-- 订阅类型 -->
                     <div>
                         <div class="flex items-center gap-2 mb-4">
-                            <div class="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-lg flex items-center justify-center">
+                            <div
+                                class="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-lg flex items-center justify-center">
                                 <span class="text-white font-bold text-sm">2</span>
                             </div>
                             <h3 class="text-lg font-semibold text-gray-900">选择订阅类型</h3>
@@ -747,21 +985,28 @@
                         </div>
                         <div class="grid grid-cols-2 gap-4">
                             <label class="relative group cursor-pointer">
-                                <input type="radio" name="sub-type-radio" value="daily" onchange="updateSubscriptionType('daily')" class="sr-only peer">
-                                <div class="p-6 border-2 border-gray-200 rounded-2xl peer-checked:border-blue-500 peer-checked:bg-blue-50 transition-all hover:border-blue-300">
+                                <input type="radio" name="sub-type-radio" value="daily"
+                                    onchange="updateSubscriptionType('daily')" class="sr-only peer">
+                                <div
+                                    class="p-6 border-2 border-gray-200 rounded-2xl peer-checked:border-blue-500 peer-checked:bg-blue-50 transition-all hover:border-blue-300">
                                     <div class="flex items-center gap-3 mb-3">
-                                        <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
-                                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        <div
+                                            class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
+                                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                             </svg>
                                         </div>
                                         <div class="flex-1">
                                             <div class="font-semibold text-gray-900">每日重置</div>
                                             <div class="text-xs text-gray-500">Daily Reset</div>
                                         </div>
-                                        <div class="w-6 h-6 border-2 border-gray-300 rounded-full peer-checked:border-blue-500 peer-checked:bg-blue-500 flex items-center justify-center transition-all">
-                                            <svg class="w-4 h-4 text-white opacity-0 peer-checked:opacity-100" fill="currentColor" viewBox="0 0 12 12">
-                                                <path d="M10 3L4.5 8.5L2 6"/>
+                                        <div
+                                            class="w-6 h-6 border-2 border-gray-300 rounded-full peer-checked:border-blue-500 peer-checked:bg-blue-500 flex items-center justify-center transition-all">
+                                            <svg class="w-4 h-4 text-white opacity-0 peer-checked:opacity-100"
+                                                fill="currentColor" viewBox="0 0 12 12">
+                                                <path d="M10 3L4.5 8.5L2 6" />
                                             </svg>
                                         </div>
                                     </div>
@@ -769,21 +1014,28 @@
                                 </div>
                             </label>
                             <label class="relative group cursor-pointer">
-                                <input type="radio" name="sub-type-radio" value="monthly" onchange="updateSubscriptionType('monthly')" class="sr-only peer">
-                                <div class="p-6 border-2 border-gray-200 rounded-2xl peer-checked:border-purple-500 peer-checked:bg-purple-50 transition-all hover:border-purple-300">
+                                <input type="radio" name="sub-type-radio" value="monthly"
+                                    onchange="updateSubscriptionType('monthly')" class="sr-only peer">
+                                <div
+                                    class="p-6 border-2 border-gray-200 rounded-2xl peer-checked:border-purple-500 peer-checked:bg-purple-50 transition-all hover:border-purple-300">
                                     <div class="flex items-center gap-3 mb-3">
-                                        <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
-                                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                        <div
+                                            class="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
+                                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                             </svg>
                                         </div>
                                         <div class="flex-1">
                                             <div class="font-semibold text-gray-900">每月重置</div>
                                             <div class="text-xs text-gray-500">Monthly Reset</div>
                                         </div>
-                                        <div class="w-6 h-6 border-2 border-gray-300 rounded-full peer-checked:border-purple-500 peer-checked:bg-purple-500 flex items-center justify-center transition-all">
-                                            <svg class="w-4 h-4 text-white opacity-0 peer-checked:opacity-100" fill="currentColor" viewBox="0 0 12 12">
-                                                <path d="M10 3L4.5 8.5L2 6"/>
+                                        <div
+                                            class="w-6 h-6 border-2 border-gray-300 rounded-full peer-checked:border-purple-500 peer-checked:bg-purple-500 flex items-center justify-center transition-all">
+                                            <svg class="w-4 h-4 text-white opacity-0 peer-checked:opacity-100"
+                                                fill="currentColor" viewBox="0 0 12 12">
+                                                <path d="M10 3L4.5 8.5L2 6" />
                                             </svg>
                                         </div>
                                     </div>
@@ -797,19 +1049,24 @@
                     <!-- 充值额度 -->
                     <div>
                         <div class="flex items-center gap-2 mb-4">
-                            <div class="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-lg flex items-center justify-center">
+                            <div
+                                class="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-lg flex items-center justify-center">
                                 <span class="text-white font-bold text-sm">3</span>
                             </div>
                             <h3 class="text-lg font-semibold text-gray-900">设置充值额度</h3>
                             <span class="text-red-500">*</span>
                         </div>
                         <div class="relative">
-                            <div class="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 text-xl font-semibold">$</div>
-                            <input type="number" step="0.01" id="sub-quota" placeholder="0.00" onchange="updatePreview()" class="w-full pl-12 pr-6 py-4 border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-2xl font-semibold text-gray-900 transition-all">
+                            <div class="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 text-xl font-semibold">$
+                            </div>
+                            <input type="number" step="0.01" id="sub-quota" placeholder="0.00"
+                                onchange="updatePreview()"
+                                class="w-full pl-12 pr-6 py-4 border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-2xl font-semibold text-gray-900 transition-all">
                         </div>
                         <p class="text-sm text-gray-500 mt-2 flex items-center gap-2">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                             每次重置时自动充值到用户余额
                         </p>
@@ -818,37 +1075,44 @@
                     <!-- 订阅时长 -->
                     <div>
                         <div class="flex items-center gap-2 mb-4">
-                            <div class="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-lg flex items-center justify-center">
+                            <div
+                                class="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-lg flex items-center justify-center">
                                 <span class="text-white font-bold text-sm">4</span>
                             </div>
                             <h3 class="text-lg font-semibold text-gray-900">选择订阅时长</h3>
                             <span class="text-red-500">*</span>
                         </div>
                         <div class="grid grid-cols-4 gap-3 mb-4">
-                            <button type="button" onclick="setDuration(1)" class="duration-btn group p-4 border-2 border-gray-200 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all">
+                            <button type="button" onclick="setDuration(1)"
+                                class="duration-btn group p-4 border-2 border-gray-200 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all">
                                 <div class="text-2xl font-bold text-gray-900 mb-1">1</div>
                                 <div class="text-xs text-gray-500 group-hover:text-purple-600">个月</div>
                             </button>
-                            <button type="button" onclick="setDuration(3)" class="duration-btn group p-4 border-2 border-gray-200 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all">
+                            <button type="button" onclick="setDuration(3)"
+                                class="duration-btn group p-4 border-2 border-gray-200 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all">
                                 <div class="text-2xl font-bold text-gray-900 mb-1">3</div>
                                 <div class="text-xs text-gray-500 group-hover:text-purple-600">个月</div>
                             </button>
-                            <button type="button" onclick="setDuration(6)" class="duration-btn group p-4 border-2 border-gray-200 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all">
+                            <button type="button" onclick="setDuration(6)"
+                                class="duration-btn group p-4 border-2 border-gray-200 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all">
                                 <div class="text-2xl font-bold text-gray-900 mb-1">6</div>
                                 <div class="text-xs text-gray-500 group-hover:text-purple-600">个月</div>
                             </button>
-                            <button type="button" onclick="setDuration(12)" class="duration-btn group p-4 border-2 border-gray-200 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all">
+                            <button type="button" onclick="setDuration(12)"
+                                class="duration-btn group p-4 border-2 border-gray-200 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all">
                                 <div class="text-2xl font-bold text-gray-900 mb-1">12</div>
                                 <div class="text-xs text-gray-500 group-hover:text-purple-600">个月 · 1年</div>
                             </button>
                         </div>
                         <div class="relative">
-                            <input type="number" id="sub-duration" placeholder="或输入自定义月数" onchange="updatePreview()" class="w-full px-6 py-4 border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-lg transition-all">
+                            <input type="number" id="sub-duration" placeholder="或输入自定义月数" onchange="updatePreview()"
+                                class="w-full px-6 py-4 border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-lg transition-all">
                             <span class="absolute right-6 top-1/2 -translate-y-1/2 text-gray-400 font-medium">个月</span>
                         </div>
                         <p class="text-sm text-gray-500 mt-2 flex items-center gap-2">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                             按自然月计算，例如2月10日开通1个月，到期日为3月10日（2月只有28天也是3月10日）
                         </p>
@@ -856,11 +1120,15 @@
 
                     <!-- 预览信息 -->
                     <div id="subscription-preview" class="hidden">
-                        <div class="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 border-2 border-green-200 rounded-2xl p-6 shadow-lg">
+                        <div
+                            class="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 border-2 border-green-200 rounded-2xl p-6 shadow-lg">
                             <div class="flex items-start gap-4">
-                                <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center flex-shrink-0">
-                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                <div
+                                    class="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                 </div>
                                 <div class="flex-1">
@@ -876,11 +1144,13 @@
                                         </div>
                                         <div class="bg-white/60 backdrop-blur-sm rounded-xl p-4">
                                             <div class="text-xs text-gray-600 mb-1">订阅时长</div>
-                                            <div class="text-lg font-semibold text-gray-900" id="preview-duration">-</div>
+                                            <div class="text-lg font-semibold text-gray-900" id="preview-duration">-
+                                            </div>
                                         </div>
                                         <div class="bg-white/60 backdrop-blur-sm rounded-xl p-4">
                                             <div class="text-xs text-gray-600 mb-1">到期日期</div>
-                                            <div class="text-lg font-semibold text-purple-600" id="preview-expires">-</div>
+                                            <div class="text-lg font-semibold text-purple-600" id="preview-expires">-
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="mt-4 pt-4 border-t border-green-200">
@@ -899,19 +1169,24 @@
             <!-- Footer -->
             <div class="border-t border-gray-200 bg-gray-50 p-6">
                 <div class="flex items-center justify-between gap-4">
-                    <button onclick="cancelSubscription()" class="px-5 py-2.5 bg-white border-2 border-red-200 text-red-600 rounded-xl font-medium hover:bg-red-50 hover:border-red-300 transition-all flex items-center gap-2">
+                    <button onclick="cancelSubscription()"
+                        class="px-5 py-2.5 bg-white border-2 border-red-200 text-red-600 rounded-xl font-medium hover:bg-red-50 hover:border-red-300 transition-all flex items-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
                         取消订阅
                     </button>
                     <div class="flex gap-3">
-                        <button onclick="hideModal('subscriptionModal')" class="px-6 py-2.5 bg-white border-2 border-gray-200 rounded-xl font-medium text-gray-600 hover:bg-gray-100 transition-all">
+                        <button onclick="hideModal('subscriptionModal')"
+                            class="px-6 py-2.5 bg-white border-2 border-gray-200 rounded-xl font-medium text-gray-600 hover:bg-gray-100 transition-all">
                             取消
                         </button>
-                        <button onclick="setSubscription()" class="px-8 py-2.5 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-700 hover:via-indigo-700 hover:to-blue-700 text-white rounded-xl font-semibold transition-all flex items-center gap-2 shadow-lg shadow-purple-500/30">
+                        <button onclick="setSubscription()"
+                            class="px-8 py-2.5 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-700 hover:via-indigo-700 hover:to-blue-700 text-white rounded-xl font-semibold transition-all flex items-center gap-2 shadow-lg shadow-purple-500/30">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M5 13l4 4L19 7" />
                             </svg>
                             确认设置
                         </button>
@@ -927,7 +1202,10 @@
             <div class="flex items-center justify-between p-6 border-b border-gray-100">
                 <h3 class="text-lg font-semibold text-gray-900">批量导入账号</h3>
                 <button onclick="hideModal('importModal')" class="text-gray-400 hover:text-gray-600">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
                 </button>
             </div>
             <div class="p-6 overflow-y-auto flex-1">
@@ -936,16 +1214,28 @@
                     <div class="mb-4">
                         <p class="text-sm font-medium text-gray-700 mb-2">快速模板</p>
                         <div class="flex flex-wrap gap-2">
-                            <button onclick="loadTemplate('social')" class="px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-sm font-medium transition flex items-center gap-2">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+                            <button onclick="loadTemplate('social')"
+                                class="px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-sm font-medium transition flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                                </svg>
                                 Social 模板
                             </button>
-                            <button onclick="loadTemplate('builderid')" class="px-3 py-2 bg-purple-50 hover:bg-purple-100 text-purple-600 rounded-lg text-sm font-medium transition flex items-center gap-2">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+                            <button onclick="loadTemplate('builderid')"
+                                class="px-3 py-2 bg-purple-50 hover:bg-purple-100 text-purple-600 rounded-lg text-sm font-medium transition flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                                </svg>
                                 BuilderId 模板
                             </button>
-                            <button onclick="loadTemplate('enterprise')" class="px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-lg text-sm font-medium transition flex items-center gap-2">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+                            <button onclick="loadTemplate('enterprise')"
+                                class="px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-lg text-sm font-medium transition flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                                </svg>
                                 Enterprise 模板
                             </button>
                         </div>
@@ -954,9 +1244,14 @@
                     <!-- 文件选择 -->
                     <div class="mb-4">
                         <p class="text-sm font-medium text-gray-700 mb-2">选择文件</p>
-                        <input type="file" id="import-file" accept=".json" class="hidden" onchange="handleFileSelect(event)">
-                        <button onclick="document.getElementById('import-file').click()" class="w-full bg-blue-50 hover:bg-blue-100 text-blue-600 border-2 border-dashed border-blue-200 rounded-lg py-3 text-sm font-medium transition flex items-center justify-center gap-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                        <input type="file" id="import-file" accept=".json" class="hidden"
+                            onchange="handleFileSelect(event)">
+                        <button onclick="document.getElementById('import-file').click()"
+                            class="w-full bg-blue-50 hover:bg-blue-100 text-blue-600 border-2 border-dashed border-blue-200 rounded-lg py-3 text-sm font-medium transition flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
                             选择 JSON 文件
                         </button>
                         <div id="file-name" class="text-sm text-gray-500 mt-2"></div>
@@ -989,7 +1284,8 @@
                         <p class="font-medium text-gray-700 mb-2">格式说明：</p>
                         <ul class="text-gray-600 space-y-1 text-xs">
                             <li><strong>Social 账号</strong>：需要 name, refreshToken, authMethod: "social"</li>
-                            <li><strong>IdC 账号</strong>：需要 name, refreshToken, authMethod: "idc", clientId, clientSecret, region</li>
+                            <li><strong>IdC 账号</strong>：需要 name, refreshToken, authMethod: "idc", clientId,
+                                clientSecret, region</li>
                             <li>所有 refreshToken 必须以 "aor" 开头</li>
                             <li>支持单个对象或数组格式</li>
                         </ul>
@@ -1000,7 +1296,8 @@
                     <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-xl p-4">
                         <div class="flex items-center justify-between gap-3 mb-3">
                             <h4 class="text-base font-semibold text-gray-900">导入结果</h4>
-                            <span id="import-result-status" class="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">处理中</span>
+                            <span id="import-result-status"
+                                class="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">处理中</span>
                         </div>
                         <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
                             <div class="bg-white rounded-lg p-3 border border-gray-100">
@@ -1038,10 +1335,16 @@
                 </div>
             </div>
             <div class="flex justify-end gap-3 p-6 border-t border-gray-100">
-                <button id="import-reset-btn" onclick="resetImportResultView(true)" class="hidden px-4 py-2 border border-indigo-200 bg-indigo-50 text-indigo-600 rounded-lg text-sm font-medium hover:bg-indigo-100 transition">继续导入</button>
-                <button onclick="hideModal('importModal')" class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition">取消</button>
-                <button id="import-submit-btn" onclick="importAccounts()" class="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white rounded-lg text-sm font-medium transition flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                <button id="import-reset-btn" onclick="resetImportResultView(true)"
+                    class="hidden px-4 py-2 border border-indigo-200 bg-indigo-50 text-indigo-600 rounded-lg text-sm font-medium hover:bg-indigo-100 transition">继续导入</button>
+                <button onclick="hideModal('importModal')"
+                    class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition">取消</button>
+                <button id="import-submit-btn" onclick="importAccounts()"
+                    class="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white rounded-lg text-sm font-medium transition flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
                     开始导入
                 </button>
             </div>
@@ -1056,40 +1359,57 @@
                     <p class="text-sm text-gray-500 mt-1" id="permission-username">-</p>
                 </div>
                 <button onclick="hideModal('permissionModal')" class="text-gray-400 hover:text-gray-600">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
                 </button>
             </div>
             <div class="p-6 space-y-5">
                 <div>
                     <div class="text-sm font-medium text-gray-700 mb-2">渠道权限</div>
                     <div class="flex items-center gap-4">
-                        <label class="inline-flex items-center gap-2 text-sm text-gray-700">
-                            <input type="radio" name="perm-channel" value="kiro" id="perm-channel-kiro" class="border-gray-300 text-blue-500 focus:ring-blue-500" checked>
-                            <span>Kiro</span>
+                        <label
+                            class="inline-flex items-center gap-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded transition">
+                            <input type="checkbox" name="perm-channel" value="kiro" id="perm-channel-kiro"
+                                class="rounded border-gray-300 text-blue-500 focus:ring-blue-500 channel-checkbox">
+                            <span class="font-medium">Kiro</span>
                         </label>
-                        <label class="inline-flex items-center gap-2 text-sm text-gray-700">
-                            <input type="radio" name="perm-channel" value="agt" id="perm-channel-agt" class="border-gray-300 text-indigo-500 focus:ring-indigo-500">
-                            <span>AGT</span>
+                        <label
+                            class="inline-flex items-center gap-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded transition">
+                            <input type="checkbox" name="perm-channel" value="agt" id="perm-channel-agt"
+                                class="rounded border-gray-300 text-indigo-500 focus:ring-indigo-500 channel-checkbox">
+                            <span class="font-medium">AGT</span>
                         </label>
                     </div>
                 </div>
                 <div>
                     <div class="text-sm font-medium text-gray-700 mb-2">模型白名单（可选）</div>
-                    <div id="perm-models-checkboxes" class="max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3 space-y-2 bg-white">
+                    <div id="perm-models-container"
+                        class="max-h-[60vh] overflow-y-auto border border-gray-200 rounded-xl bg-gray-50/50 p-4 space-y-4">
                         <!-- 动态生成 -->
                     </div>
-                    <div class="mt-2 flex gap-2">
-                        <button type="button" onclick="selectAllModels()" class="text-xs text-blue-600 hover:text-blue-700">全选</button>
-                        <button type="button" onclick="deselectAllModels()" class="text-xs text-gray-600 hover:text-gray-700">取消全选</button>
-                    </div>
                 </div>
-                <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 text-xs text-gray-600">
-                    留空模型白名单 = 渠道内所有模型可用；默认渠道为 Kiro。
+                <div class="bg-blue-50 border border-blue-100 rounded-lg p-3 flex items-start gap-2">
+                    <svg class="w-4 h-4 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div class="text-xs text-blue-700 leading-relaxed">
+                        <span class="font-semibold">说明：</span>
+                        <ul class="list-disc list-inside mt-1 space-y-0.5">
+                            <li>勾选渠道后，该渠道的模型配置才会生效。</li>
+                            <li>若某渠道下<strong>未勾选任何模型</strong>，则该渠道所有模型均可用（黑名单模式）。</li>
+                            <li>Kiro 渠道默认开启。</li>
+                        </ul>
+                    </div>
                 </div>
             </div>
             <div class="flex justify-end gap-3 p-6 border-t border-gray-100">
-                <button onclick="hideModal('permissionModal')" class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition">取消</button>
-                <button onclick="saveUserPermissions()" class="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-sm font-medium transition">保存权限</button>
+                <button onclick="hideModal('permissionModal')"
+                    class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition">取消</button>
+                <button onclick="saveUserPermissions()"
+                    class="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-sm font-medium transition">保存权限</button>
             </div>
         </div>
     </div>
@@ -1419,10 +1739,10 @@
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                                         </button>
                                         ${a.status === 'disabled'
-                                            ? `<button onclick="toggleAgtAccount('${a.id}', true)" class="p-1.5 text-green-600 hover:bg-green-50 rounded transition" title="启用">
+                    ? `<button onclick="toggleAgtAccount('${a.id}', true)" class="p-1.5 text-green-600 hover:bg-green-50 rounded transition" title="启用">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                               </button>`
-                                            : `<button onclick="toggleAgtAccount('${a.id}', false)" class="p-1.5 text-orange-600 hover:bg-orange-50 rounded transition" title="禁用">
+                    : `<button onclick="toggleAgtAccount('${a.id}', false)" class="p-1.5 text-orange-600 hover:bg-orange-50 rounded transition" title="禁用">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
                                               </button>`}
                                         <button onclick="removeAgtAccount('${a.id}')" class="p-1.5 text-red-600 hover:bg-red-50 rounded transition" title="删除">
@@ -1507,7 +1827,7 @@
             const bars = entries.map(([modelName, quota]) => {
                 const remaining = Number(quota?.remaining_fraction) || 0;
                 const percentage = Math.round(remaining * 100);
-                
+
                 let barColor = 'bg-red-500';
                 let textColor = 'text-red-600';
                 if (percentage > 50) {
@@ -1713,59 +2033,52 @@
                     <thead>
                         <tr class="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             <th class="px-4 py-3 rounded-tl-lg w-10"><input type="checkbox" id="selectAll" onchange="toggleSelectAll(this.checked)" class="rounded border-gray-300 text-blue-500 focus:ring-blue-500"></th>
-                            <th class="px-4 py-3">名称</th>
+                            <th class="px-4 py-3">账号信息</th>
                             <th class="px-4 py-3">状态</th>
-                            <th class="px-4 py-3">额度</th>
-                            <th class="px-4 py-3">请求</th>
-                            <th class="px-4 py-3">错误</th>
+                            <th class="px-4 py-3">额度使用</th>
+                            <th class="px-4 py-3">统计 (Req/Err)</th>
                             <th class="px-4 py-3 rounded-tr-lg">操作</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
                         ${pageAccounts.map((a, i) => `
-                            <tr class="hover:bg-gray-50 transition ${i % 2 === 1 ? 'bg-gray-50/50' : ''}">
-                                <td class="px-4 py-4"><input type="checkbox" data-id="${a.id}" onchange="toggleSelect('${a.id}', this.checked)" class="account-checkbox rounded border-gray-300 text-blue-500 focus:ring-blue-500"></td>
-                                <td class="px-4 py-4">
-                                    <div class="font-medium text-gray-900 mb-1">${a.name}</div>
-                                    <div class="flex items-center gap-1.5 flex-wrap mb-1">
-                                        ${formatMachineIdBadge(a)}
-                                        ${formatSubscriptionBadge(a.subscription_type)}
-                                        ${formatAuthMethodBadge(a.auth_method)}
-                                        ${formatResetTimeBadge(a.next_reset)}
+                            <tr class="hover:bg-gray-50 transition group ${i % 2 === 1 ? 'bg-gray-50/50' : ''}">
+                                <td class="px-4 py-4 align-top"><input type="checkbox" data-id="${a.id}" onchange="toggleSelect('${a.id}', this.checked)" class="account-checkbox rounded border-gray-300 text-blue-500 focus:ring-blue-500 mt-1"></td>
+                                <td class="px-4 py-4 align-top">
+                                    <div class="flex flex-col gap-1">
+                                        <div class="font-semibold text-gray-900 text-sm flex items-center gap-2">
+                                            <span>${a.name}</span>
+                                            ${formatSubscriptionBadge(a.subscription_type)}
+                                        </div>
+                                        <div class="flex items-center gap-2 flex-wrap text-xs">
+                                            ${formatAuthMethodBadge(a.auth_method)}
+                                            ${formatMachineIdBadge(a)}
+                                            ${formatResetTimeBadge(a.next_reset)}
+                                        </div>
+                                        ${a.user_email ? `<div class="text-xs text-gray-400 mt-0.5 flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>${a.user_email}</div>` : ''}
                                     </div>
-                                    ${a.user_email ? `<div class="text-xs text-gray-500">${a.user_email}</div>` : ''}
                                 </td>
-                                <td class="px-4 py-4">${formatStatus(a.status)}</td>
-                                <td class="px-4 py-4">${formatUsage(a)}</td>
-                                <td class="px-4 py-4 text-gray-600">${a.request_count || 0}</td>
-                                <td class="px-4 py-4 text-gray-600">${a.error_count || 0}</td>
-                                <td class="px-4 py-4">
-                                    <div class="flex items-center gap-2">
-                                        <button onclick="refreshUsage('${a.id}')" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition" title="刷新额度">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                                            </svg>
+                                <td class="px-4 py-4 align-top">${formatStatus(a.status)}</td>
+                                <td class="px-4 py-4 align-top">${formatUsage(a)}</td>
+                                <td class="px-4 py-4 align-top">
+                                    <div class="flex flex-col gap-1 text-xs">
+                                        <div class="flex items-center gap-1"><span class="text-gray-500 w-8">Req:</span> <span class="font-medium text-gray-700">${a.request_count || 0}</span></div>
+                                        <div class="flex items-center gap-1"><span class="text-gray-500 w-8">Err:</span> <span class="${(a.error_count || 0) > 0 ? 'text-red-600 font-medium' : 'text-gray-400'}">${a.error_count || 0}</span></div>
+                                    </div>
+                                </td>
+                                <td class="px-4 py-4 align-top">
+                                    <div class="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
+                                        <button onclick="refreshUsage('${a.id}')" class="p-1 text-blue-600 hover:bg-blue-50 rounded transition" title="刷新额度">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                                         </button>
-                                        <button onclick="exportAccountJson('${a.id}')" class="p-1.5 text-purple-600 hover:bg-purple-50 rounded transition" title="导出JSON">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                                            </svg>
+                                        <button onclick="exportAccountJson('${a.id}')" class="p-1 text-purple-600 hover:bg-purple-50 rounded transition" title="导出JSON">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
                                         </button>
                                         ${a.status === 'disabled'
-                                            ? `<button onclick="enableAccount('${a.id}', this)" class="p-1.5 text-green-600 hover:bg-green-50 rounded transition" title="启用">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                                </svg>
-                                            </button>`
-                                            : `<button onclick="disableAccount('${a.id}', this)" class="p-1.5 text-orange-600 hover:bg-orange-50 rounded transition" title="禁用">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
-                                                </svg>
-                                            </button>`}
-                                        <button onclick="removeAccount('${a.id}', ${a.request_log_count || 0})" class="p-1.5 rounded transition ${a.has_dependencies ? 'text-orange-600 hover:bg-orange-50' : 'text-red-600 hover:bg-red-50'}" title="${a.has_dependencies ? `强制删除：将同时删除${a.request_log_count || 0}条请求日志` : '删除'}">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                            </svg>
+                    ? `<button onclick="enableAccount('${a.id}', this)" class="p-1 text-green-600 hover:bg-green-50 rounded transition" title="启用"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></button>`
+                    : `<button onclick="disableAccount('${a.id}', this)" class="p-1 text-orange-600 hover:bg-orange-50 rounded transition" title="禁用"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg></button>`}
+                                        <button onclick="removeAccount('${a.id}', ${a.request_log_count || 0})" class="p-1 rounded transition ${a.has_dependencies ? 'text-orange-600 hover:bg-orange-50' : 'text-red-600 hover:bg-red-50'}" title="${a.has_dependencies ? `强制删除：将同时删除${a.request_log_count || 0}条请求日志` : '删除'}">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                         </button>
                                     </div>
                                 </td>
@@ -1922,58 +2235,61 @@
         function formatMachineIdBadge(account) {
             const source = account.machine_id_source || 'unavailable';
             const machineId = account.machine_id || 'N/A';
-            
+
             // 徽章配置
             const badges = {
-                explicit: { 
-                    label: 'E', 
-                    color: 'bg-green-100 text-green-700 border-green-300',
+                explicit: {
+                    label: 'ID: Expl',
+                    color: 'bg-emerald-50 text-emerald-600 border-emerald-200',
+                    dot: 'bg-emerald-400',
                     title: '显式指定',
                     desc: '凭据中直接提供的 machineId'
                 },
-                config: { 
-                    label: 'C', 
-                    color: 'bg-blue-100 text-blue-700 border-blue-300',
+                config: {
+                    label: 'ID: Conf',
+                    color: 'bg-sky-50 text-sky-600 border-sky-200',
+                    dot: 'bg-sky-400',
                     title: '配置指定',
                     desc: '从配置文件读取的 machineId'
                 },
-                derived: { 
-                    label: 'D', 
-                    color: 'bg-yellow-100 text-yellow-700 border-yellow-300',
+                derived: {
+                    label: 'ID: Auto',
+                    color: 'bg-amber-50 text-amber-600 border-amber-200',
+                    dot: 'bg-amber-400',
                     title: '自动派生',
                     desc: '从 refreshToken SHA256 派生'
                 },
-                unavailable: { 
-                    label: 'U', 
-                    color: 'bg-red-100 text-red-700 border-red-300',
+                unavailable: {
+                    label: 'ID: None',
+                    color: 'bg-slate-50 text-slate-500 border-slate-200',
+                    dot: 'bg-slate-300',
                     title: '缺失',
                     desc: '无法获取或生成 machineId'
                 }
             };
-            
+
             const badge = badges[source] || badges.unavailable;
-            
+
             return `
                 <div class="relative group inline-block">
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium border ${badge.color} cursor-help">
+                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium border ${badge.color} cursor-help transition hover:shadow-sm">
+                        <span class="w-1.5 h-1.5 rounded-full ${badge.dot}"></span>
                         ${badge.label}
                     </span>
-                    <div class="invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity absolute z-50 left-0 top-full mt-1 w-80 bg-white rounded-lg shadow-xl border border-gray-200 p-3 text-left">
-                        <div class="flex items-start justify-between mb-2">
+                    <div class="invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all duration-200 absolute z-50 left-0 top-full mt-2 w-72 bg-white rounded-xl shadow-lg border border-gray-100 p-4 text-left backdrop-blur-sm ring-1 ring-black/5">
+                        <div class="flex items-start justify-between mb-3">
                             <div>
-                                <div class="text-xs font-semibold text-gray-700 mb-0.5">🔑 Machine ID</div>
-                                <div class="text-xs text-gray-500">${badge.title} (${source})</div>
+                                <div class="text-xs font-bold text-gray-800 mb-0.5">Machine ID</div>
+                                <div class="text-[10px] font-medium text-gray-500 uppercase tracking-wide">${badge.title} (${source})</div>
                             </div>
-                            <button onclick="copyMachineId('${machineId}', event)" class="p-1 hover:bg-gray-100 rounded transition" title="复制">
-                                <svg class="w-3.5 h-3.5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                                </svg>
+                            <button onclick="copyMachineId('${machineId}', event)" class="text-gray-400 hover:text-blue-600 transition p-1" title="复制">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
                             </button>
                         </div>
-                        <div class="bg-gray-50 rounded px-2 py-1.5 mb-2 font-mono text-xs text-gray-700 break-all">
+                        <div class="bg-gray-50 rounded-lg px-3 py-2 mb-3 font-mono text-[10px] leading-relaxed text-gray-600 break-all border border-gray-100 select-all">
                             ${machineId}
                         </div>
-                        <div class="text-xs text-gray-600 leading-relaxed">
+                        <div class="text-[10px] text-gray-500 leading-relaxed border-t border-gray-100 pt-2">
                             ${badge.desc}
                         </div>
                     </div>
@@ -1983,24 +2299,24 @@
 
         function formatAuthMethodBadge(authMethod) {
             const method = (authMethod || 'social').toLowerCase();
-            
+
             const badges = {
                 social: {
                     label: 'Google',
-                    icon: '<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>',
-                    color: 'bg-blue-50 text-blue-700 border-blue-200'
+                    icon: '<svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>',
+                    color: 'bg-white text-gray-600 border-gray-200'
                 },
                 idc: {
                     label: 'BuilderID',
-                    icon: '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>',
-                    color: 'bg-purple-50 text-purple-700 border-purple-200'
+                    icon: '<svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>',
+                    color: 'bg-violet-50 text-violet-600 border-violet-200'
                 }
             };
-            
+
             const badge = badges[method] || badges.social;
-            
+
             return `
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium border ${badge.color}" title="${badge.label} 认证">
+                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium border ${badge.color}" title="${badge.label} 认证">
                     ${badge.icon}
                     <span>${badge.label}</span>
                 </span>
@@ -2009,14 +2325,14 @@
 
         function formatResetTimeBadge(nextReset) {
             if (!nextReset) return '';
-            
+
             const resetDate = new Date(nextReset);
             const now = new Date();
             const diffMs = resetDate - now;
             const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-            
+
             let label, color;
-            
+
             if (diffDays < 0) {
                 label = '已过期';
                 color = 'bg-red-50 text-red-700 border-red-200';
@@ -2033,7 +2349,7 @@
                 label = `${diffDays}天后`;
                 color = 'bg-gray-50 text-gray-700 border-gray-200';
             }
-            
+
             return `
                 <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium border ${color}" title="重置时间: ${resetDate.toLocaleString('zh-CN')}">
                     <span>${label}</span>
@@ -2051,52 +2367,54 @@
         }
 
         function formatSubscriptionBadge(subscriptionType) {
-            if (!subscriptionType) return '';
-            
+            if (!subscriptionType) {
+                return '<span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-medium bg-gray-100 text-gray-500 border border-gray-200">Free</span>';
+            }
+
             const tier = subscriptionType.toLowerCase().replace(/[_\s]/g, '');
-            
+
             const badges = {
                 free: {
                     label: 'Free',
-                    color: 'bg-gray-100 text-gray-700 border-gray-300'
+                    color: 'bg-gray-100 text-gray-600 border-gray-200'
                 },
                 pro: {
                     label: 'Pro',
-                    color: 'bg-blue-100 text-blue-700 border-blue-300'
+                    color: 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 border-blue-200'
                 },
                 'pro+': {
                     label: 'Pro+',
-                    color: 'bg-purple-100 text-purple-700 border-purple-300'
+                    color: 'bg-gradient-to-r from-purple-50 to-pink-50 text-purple-700 border-purple-200'
                 },
                 proplus: {
                     label: 'Pro+',
-                    color: 'bg-purple-100 text-purple-700 border-purple-300'
+                    color: 'bg-gradient-to-r from-purple-50 to-pink-50 text-purple-700 border-purple-200'
                 },
                 power: {
                     label: 'Power',
-                    color: 'bg-amber-100 text-amber-700 border-amber-300'
+                    color: 'bg-gradient-to-r from-amber-50 to-orange-50 text-amber-700 border-amber-200'
                 }
             };
-            
+
             const badge = badges[tier] || badges.free;
-            
+
             return `
-                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border ${badge.color}">${badge.label}</span>
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-bold border ${badge.color} shadow-sm">${badge.label}</span>
             `;
         }
 
         async function refreshUsage(id) {
             try {
                 const response = await fetchApi(`/api/admin/accounts/${id}/refresh-usage`, { method: 'POST' });
-                
+
                 if (response.data) {
                     const { usage, status } = response.data;
                     const available = usage?.available || 0;
                     const usageLimit = usage?.usageLimit || 0;
-                    
+
                     let message = '刷新成功';
                     let type = 'success';
-                    
+
                     if (status === 'depleted') {
                         message = `余额不足 (${available}/${usageLimit})，账号已标记为 depleted`;
                         type = 'warning';
@@ -2106,7 +2424,7 @@
                     } else if (available >= 5) {
                         message = `余额充足 (${available}/${usageLimit})`;
                     }
-                    
+
                     showToast(message, type);
                     await loadAccounts();
                     await loadStatus();
@@ -2351,9 +2669,9 @@
                                     <div class="font-medium text-gray-900">${u.username}</div>
                                     <div class="text-xs text-gray-500">${u.role === 'admin' ? '管理员' : '普通用户'}</div>
                                     <div class="mt-1 flex items-center gap-1.5 flex-wrap">${formatUserChannelBadges(u.allowed_channels)}</div>
-                                    ${u.subscription_type && u.subscription_type !== 'none' 
-                                        ? `<div class="mt-1"><span class="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">${u.subscription_type === 'daily' ? '每日套餐' : '每月套餐'}</span></div>`
-                                        : ''}
+                                    ${u.subscription_type && u.subscription_type !== 'none'
+                    ? `<div class="mt-1"><span class="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">${u.subscription_type === 'daily' ? '每日套餐' : '每月套餐'}</span></div>`
+                    : ''}
                                 </td>
                                 <td class="px-4 py-4">
                                     <div class="flex items-center gap-2">
@@ -2372,8 +2690,8 @@
                                 <td class="px-4 py-4 text-gray-900">$${(u.total_cost || 0).toFixed(4)}</td>
                                 <td class="px-4 py-4">
                                     ${u.status === 'active'
-                                        ? '<span class="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">活跃</span>'
-                                        : '<span class="px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs font-medium">停用</span>'}
+                    ? '<span class="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">活跃</span>'
+                    : '<span class="px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs font-medium">停用</span>'}
                                 </td>
                                 <td class="px-4 py-4">
                                     <div class="flex items-center gap-2">
@@ -2399,17 +2717,17 @@
                                             </svg>
                                         </button>
                                         ${u.status === 'active'
-                                            ? `<button onclick="toggleUserStatus('${u.id}', 'suspended')" class="p-1.5 text-orange-600 hover:bg-orange-50 rounded transition" title="禁用">
+                    ? `<button onclick="toggleUserStatus('${u.id}', 'suspended')" class="p-1.5 text-orange-600 hover:bg-orange-50 rounded transition" title="禁用">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
                                                 </svg>
                                             </button>`
-                                            : `<button onclick="toggleUserStatus('${u.id}', 'active')" class="p-1.5 text-green-600 hover:bg-green-50 rounded transition" title="启用">
+                    : `<button onclick="toggleUserStatus('${u.id}', 'active')" class="p-1.5 text-green-600 hover:bg-green-50 rounded transition" title="启用">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                                 </svg>
                                             </button>`
-                                        }
+                }
                                         <button onclick="deleteUser('${u.id}')" class="p-1.5 text-red-600 hover:bg-red-50 rounded transition" title="删除">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
@@ -2472,7 +2790,7 @@
             const username = document.getElementById('new-username').value.trim();
             const count = parseInt(document.getElementById('new-count').value) || 1;
             const preview = document.getElementById('username-preview');
-            
+
             if (username && count === 1) {
                 preview.textContent = username;
             } else if (count === 1) {
@@ -2486,7 +2804,7 @@
 
         function setSubQuota(amount) {
             document.getElementById('new-subscription-quota').value = amount;
-            
+
             // 高亮选中的按钮
             document.querySelectorAll('.sub-quota-btn').forEach(btn => {
                 btn.classList.remove('border-purple-500', 'bg-purple-50', 'text-purple-600');
@@ -2498,7 +2816,7 @@
 
         function setSubDuration(months) {
             document.getElementById('new-subscription-duration').value = months;
-            
+
             // 高亮选中的按钮
             document.querySelectorAll('.sub-duration-btn').forEach(btn => {
                 btn.classList.remove('border-purple-500', 'bg-purple-50', 'text-purple-600');
@@ -2544,12 +2862,12 @@
             try {
                 const createdUsers = [];
                 const failedUsers = [];
-                
+
                 // 显示进度提示
                 if (count > 1) {
                     showToast(`开始创建 ${count} 个用户...`, 'info');
                 }
-                
+
                 for (let i = 0; i < count; i++) {
                     try {
                         // 生成唯一用户名
@@ -2564,8 +2882,8 @@
                         // 创建用户
                         const userResult = await fetchApi('/api/admin/users', {
                             method: 'POST',
-                            body: JSON.stringify({ 
-                                username: finalUsername, 
+                            body: JSON.stringify({
+                                username: finalUsername,
                                 balance
                             })
                         });
@@ -2576,10 +2894,10 @@
                         if (withSubscription && userResult.data && userResult.data.id) {
                             await fetchApi(`/api/admin/users/${userResult.data.id}/subscription`, {
                                 method: 'POST',
-                                body: JSON.stringify({ 
-                                    type: subType, 
-                                    quota: subQuota, 
-                                    duration: subDuration 
+                                body: JSON.stringify({
+                                    type: subType,
+                                    quota: subQuota,
+                                    duration: subDuration
                                 })
                             });
                         }
@@ -2599,7 +2917,7 @@
                 toggleSubscriptionOptions();
                 updateUsernamePreview();
                 loadUsers();
-                
+
                 // 显示结果
                 if (failedUsers.length === 0) {
                     if (count === 1) {
@@ -2994,12 +3312,12 @@
             if (!newKey) { showToast('请输入新的管理密钥', 'warning'); return; }
             if (newKey.length < 6) { showToast('密钥长度至少 6 位', 'warning'); return; }
             if (!confirm('确定修改管理密钥？修改后需要重新登录。')) return;
-            try { 
-                await fetchApi('/api/admin/settings/admin-key', { 
-                    method: 'PUT', 
-                    body: JSON.stringify({ newKey: newKey }) 
-                }); 
-                showToast('修改成功！请重新登录', 'success'); 
+            try {
+                await fetchApi('/api/admin/settings/admin-key', {
+                    method: 'PUT',
+                    body: JSON.stringify({ newKey: newKey })
+                });
+                showToast('修改成功！请重新登录', 'success');
                 setTimeout(() => logout(), 1500);
             }
             catch (e) { showToast('修改失败: ' + e.message, 'error'); }
@@ -3072,24 +3390,29 @@
 
         const ALL_MODELS = {
             kiro: [
-                { id: 'claude-sonnet-4-5', name: 'Claude Sonnet 4.5' },
-                { id: 'claude-opus-4-5', name: 'Claude Opus 4.5' },
-                { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet' }
+                { id: 'claude-sonnet-4-5-20250929', name: 'Claude Sonnet 4.5' },
+                { id: 'claude-opus-4-5-20251101', name: 'Claude Opus 4.5' },
+                { id: 'claude-haiku-4-5-20251001', name: 'Claude Haiku 4.5' },
+                { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet' },
+                { id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku' }
             ],
             agt: [
                 { id: 'antigravity-gemini-3-pro', name: 'Gemini 3 Pro' },
                 { id: 'antigravity-gemini-3-flash', name: 'Gemini 3 Flash' },
+                { id: 'antigravity-gemini-2-5-flash', name: 'Gemini 2.5 Flash' },
                 { id: 'antigravity-claude-sonnet-4-5', name: 'Claude Sonnet 4.5' },
-                { id: 'antigravity-claude-sonnet-4-5-thinking', name: 'Claude Sonnet 4.5 Thinking' },
-                { id: 'antigravity-claude-opus-4-5-thinking', name: 'Claude Opus 4.5 Thinking' },
-                { id: 'antigravity-claude-opus-4-6-thinking', name: 'Claude Opus 4.6 Thinking' }
+                { id: 'antigravity-claude-sonnet-4-5-thinking', name: 'Claude Sonnet 4.5 (Thinking)' },
+                { id: 'antigravity-claude-opus-4-5-thinking', name: 'Claude Opus 4.5 (Thinking)' },
+                { id: 'antigravity-claude-opus-4-6-thinking', name: 'Claude Opus 4.6 (Thinking)' }
             ]
         };
 
         async function showPermissionModal(userId, username) {
             currentPermissionUserId = userId;
             document.getElementById('permission-username').textContent = `用户：${username}`;
-            document.getElementById('perm-channel-kiro').checked = true;
+
+            // 重置复选框
+            document.querySelectorAll('.channel-checkbox').forEach(cb => cb.checked = false);
 
             try {
                 const response = await fetchApi(`/api/admin/users/${userId}`);
@@ -3098,14 +3421,26 @@
                     ? user.allowed_channels
                     : ['kiro'];
 
-                const selectedChannel = channels[0] || 'kiro';
-                document.getElementById(`perm-channel-${selectedChannel}`).checked = true;
+                // 勾选用户拥有的渠道
+                channels.forEach(ch => {
+                    const cb = document.getElementById(`perm-channel-${ch}`);
+                    if (cb) cb.checked = true;
+                });
+
+                // 如果没有任何渠道被勾选（异常情况），默认勾选 Kiro
+                if (document.querySelectorAll('.channel-checkbox:checked').length === 0) {
+                    const kiroCb = document.getElementById('perm-channel-kiro');
+                    if (kiroCb) kiroCb.checked = true;
+                }
 
                 window.currentUserModels = Array.isArray(user.allowed_models) ? user.allowed_models : [];
                 updateModelCheckboxes();
 
-                document.getElementById('perm-channel-kiro').addEventListener('change', updateModelCheckboxes);
-                document.getElementById('perm-channel-agt').addEventListener('change', updateModelCheckboxes);
+                // 绑定事件
+                document.querySelectorAll('.channel-checkbox').forEach(cb => {
+                    cb.removeEventListener('change', updateModelCheckboxes); // 防止重复绑定
+                    cb.addEventListener('change', updateModelCheckboxes);
+                });
             } catch (e) {
                 showToast('加载权限失败: ' + e.message, 'error');
             }
@@ -3114,34 +3449,79 @@
         }
 
         function updateModelCheckboxes() {
-            const selectedChannel = document.querySelector('input[name="perm-channel"]:checked')?.value || 'kiro';
+            const container = document.getElementById('perm-models-container');
+            container.innerHTML = '';
+
+            const selectedChannels = Array.from(document.querySelectorAll('.channel-checkbox:checked')).map(cb => cb.value);
             const userModels = window.currentUserModels || [];
 
-            const modelsToShow = ALL_MODELS[selectedChannel] || [];
-
-            if (modelsToShow.length === 0) {
-                document.getElementById('perm-models-checkboxes').innerHTML = '<div class="text-sm text-gray-500 text-center py-4">该渠道暂无可用模型</div>';
+            if (selectedChannels.length === 0) {
+                container.innerHTML = '<div class="text-sm text-gray-500 text-center py-8">请先勾选上方渠道</div>';
                 return;
             }
 
-            const checkboxesHtml = modelsToShow.map(m => {
-                const checked = userModels.length === 0 || userModels.includes(m.id) ? 'checked' : '';
-                return `
-                    <label class="inline-flex items-center gap-2 text-sm text-gray-700 hover:bg-gray-50 px-2 py-1 rounded">
-                        <input type="checkbox" value="${m.id}" ${checked} class="rounded border-gray-300 text-indigo-500 focus:ring-indigo-500 model-checkbox">
-                        <span>${m.name}</span>
-                    </label>
-                `;
-            }).join('');
+            selectedChannels.forEach(channel => {
+                const models = ALL_MODELS[channel] || [];
+                if (models.length === 0) return;
 
-            document.getElementById('perm-models-checkboxes').innerHTML = checkboxesHtml;
+                const section = document.createElement('div');
+                section.className = 'bg-white rounded-lg border border-gray-100 overflow-hidden';
+
+                const channelName = channel === 'kiro' ? 'Kiro' : 'AGT';
+                const channelColor = channel === 'kiro' ? 'text-blue-600 bg-blue-50' : 'text-indigo-600 bg-indigo-50';
+                const borderColor = channel === 'kiro' ? 'border-blue-100' : 'border-indigo-100';
+
+                // Header
+                const header = document.createElement('div');
+                header.className = `px-3 py-2 ${channelColor} border-b ${borderColor} flex justify-between items-center`;
+                header.innerHTML = `
+                    <span class="font-semibold text-sm">${channelName} 模型</span>
+                    <div class="flex gap-2">
+                        <button type="button" onclick="batchSelectModels('${channel}', true)" class="text-xs hover:underline opacity-80 hover:opacity-100">全选</button>
+                        <button type="button" onclick="batchSelectModels('${channel}', false)" class="text-xs hover:underline opacity-80 hover:opacity-100">清空</button>
+                    </div>
+                `;
+                section.appendChild(header);
+
+                // Body
+                const body = document.createElement('div');
+                body.className = 'p-3 grid grid-cols-2 gap-2';
+
+                models.forEach(m => {
+                    const isChecked = userModels.includes(m.id);
+                    // 注意：如果用户列表里没有任何该渠道的模型，通常意味着全部允许。
+                    // 但为了 UI 的明确性，我们这里只反映 allowed_models 里的真实数据。
+                    // 并在下方说明 "未勾选任何模型 = 全部可用"
+
+                    const label = document.createElement('label');
+                    label.className = 'flex items-center gap-2 text-sm text-gray-700 hover:bg-gray-50 p-1.5 rounded cursor-pointer transition';
+                    label.innerHTML = `
+                        <input type="checkbox" value="${m.id}" ${isChecked ? 'checked' : ''} class="rounded border-gray-300 text-indigo-500 focus:ring-indigo-500 model-checkbox model-checkbox-${channel}">
+                        <span class="truncate" title="${m.name}">${m.name}</span>
+                    `;
+                    body.appendChild(label);
+                });
+                section.appendChild(body);
+
+                container.appendChild(section);
+            });
+        }
+
+        function batchSelectModels(channel, selectAll) {
+            document.querySelectorAll(`.model-checkbox-${channel}`).forEach(cb => {
+                cb.checked = selectAll;
+            });
         }
 
         async function saveUserPermissions() {
             if (!currentPermissionUserId) return;
 
-            const selectedChannel = document.querySelector('input[name="perm-channel"]:checked')?.value || 'kiro';
-            const channels = [selectedChannel];
+            const selectedChannels = Array.from(document.querySelectorAll('.channel-checkbox:checked')).map(cb => cb.value);
+
+            if (selectedChannels.length === 0) {
+                showToast('请至少选择一个渠道', 'warning');
+                return;
+            }
 
             const modelCheckboxes = document.querySelectorAll('.model-checkbox:checked');
             const models = Array.from(modelCheckboxes).map(cb => cb.value);
@@ -3150,7 +3530,7 @@
                 await fetchApi(`/api/admin/users/${currentPermissionUserId}`, {
                     method: 'PUT',
                     body: JSON.stringify({
-                        allowed_channels: channels,
+                        allowed_channels: selectedChannels,
                         allowed_models: models
                     })
                 });
@@ -3163,22 +3543,10 @@
             }
         }
 
-        function selectAllModels() {
-            document.querySelectorAll('.model-checkbox').forEach(cb => {
-                cb.checked = true;
-            });
-        }
-
-        function deselectAllModels() {
-            document.querySelectorAll('.model-checkbox').forEach(cb => {
-                cb.checked = false;
-            });
-        }
-
         function showSubscriptionModal(userId, username) {
             currentSubscriptionUserId = userId;
             document.getElementById('sub-username').textContent = username;
-            
+
             // 重置表单
             document.getElementById('sub-type').value = '';
             document.getElementById('sub-quota').value = '';
@@ -3187,7 +3555,7 @@
                 r.checked = false;
             });
             document.getElementById('subscription-preview').classList.add('hidden');
-            
+
             // Load current subscription info
             fetchApi(`/api/admin/users/${userId}/subscription`)
                 .then(data => {
@@ -3195,18 +3563,18 @@
                     if (sub.subscription_type && sub.subscription_type !== 'none') {
                         document.getElementById('sub-type').value = sub.subscription_type;
                         document.getElementById('sub-quota').value = sub.subscription_quota || '';
-                        
+
                         // 选中对应的 radio
                         const radio = document.querySelector(`input[name="sub-type-radio"][value="${sub.subscription_type}"]`);
                         if (radio) radio.checked = true;
-                        
+
                         updatePreview();
                     }
                 })
                 .catch(e => {
                     console.error('Load subscription error:', e);
                 });
-            
+
             showModal('subscriptionModal');
         }
 
@@ -3220,29 +3588,29 @@
             document.getElementById('sub-type').value = type;
             const radio = document.querySelector(`input[name="sub-type-radio"][value="${type}"]`);
             if (radio) radio.checked = true;
-            
+
             // 设置额度和时长
             document.getElementById('sub-quota').value = quota;
             document.getElementById('sub-duration').value = duration;
-            
+
             // 高亮选中的按钮
             document.querySelectorAll('.duration-btn').forEach(btn => {
                 btn.classList.remove('border-purple-500', 'bg-purple-50', 'text-purple-600');
             });
-            
+
             updatePreview();
             showToast('已应用套餐模板', 'success');
         }
 
         function setDuration(months) {
             document.getElementById('sub-duration').value = months;
-            
+
             // 高亮选中的按钮
             document.querySelectorAll('.duration-btn').forEach(btn => {
                 btn.classList.remove('border-purple-500', 'bg-purple-50');
             });
             event.target.closest('.duration-btn').classList.add('border-purple-500', 'bg-purple-50');
-            
+
             updatePreview();
         }
 
@@ -3250,27 +3618,27 @@
             const type = document.getElementById('sub-type').value;
             const quota = parseFloat(document.getElementById('sub-quota').value);
             const months = parseInt(document.getElementById('sub-duration').value);
-            
+
             const preview = document.getElementById('subscription-preview');
-            
+
             if (!type || !quota || !months) {
                 preview.classList.add('hidden');
                 return;
             }
-            
+
             preview.classList.remove('hidden');
-            
+
             // 更新预览信息
             const typeName = type === 'daily' ? '每日重置' : '每月重置';
             document.getElementById('preview-type').textContent = typeName;
             document.getElementById('preview-quota').textContent = '$' + quota.toFixed(2);
             document.getElementById('preview-duration').textContent = months + ' 个月';
-            
+
             // 计算到期日期（使用自然月）
             const now = new Date();
             const expiresDate = new Date(now);
             expiresDate.setMonth(expiresDate.getMonth() + months);
-            
+
             // 格式化日期，显示星期几
             const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
             const expiresStr = expiresDate.toLocaleDateString('zh-CN', {
@@ -3278,13 +3646,13 @@
                 month: 'long',
                 day: 'numeric'
             }) + ' ' + weekdays[expiresDate.getDay()];
-            
+
             document.getElementById('preview-expires').textContent = expiresStr;
-            
+
             // 计算预计总充值
             let totalResets = 0;
             let resetFrequency = '';
-            
+
             if (type === 'daily') {
                 // 每日重置：计算这几个月总共有多少天
                 let totalDays = 0;
@@ -3301,9 +3669,9 @@
                 totalResets = months;
                 resetFrequency = '每月充值一次';
             }
-            
+
             const totalAmount = quota * totalResets;
-            document.getElementById('preview-total').textContent = 
+            document.getElementById('preview-total').textContent =
                 '$' + totalAmount.toFixed(2) + ' (' + totalResets + ' 次 · ' + resetFrequency + ')';
         }
 
@@ -3377,4 +3745,5 @@
         }, 30000);
     </script>
 </body>
+
 </html>

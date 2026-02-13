@@ -25,7 +25,8 @@ const AGT_PATHS = {
 
 const AGT_SKIP_INJECTION_PATHS = [
   '/v1internal:loadCodeAssist',
-  '/v1internal:onboardUser'
+  '/v1internal:onboardUser',
+  '/v1internal:fetchAvailableModels'
 ];
 
 const AGT_MAX_RETRY = Math.max(Number.parseInt(process.env.AGT_REQUEST_RETRY || '1', 10) || 0, 0);
