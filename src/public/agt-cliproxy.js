@@ -321,7 +321,31 @@ function formatAgtQuota(account) {
         return `${month}/${day} ${hour}:${minute}`;
     };
     
-    const items = models.map(([name, info]) => {
+    // Priority models list - only display these important models
+    const priorityModels = [
+        'claude-sonnet-4-5',
+        'claude-opus-4', 
+        'claude-haiku-4',
+        'gpt-4',
+        'gpt-4-turbo',
+        'gpt-3.5-turbo',
+        'gemini-3-pro',
+        'gemini-2.5-pro',
+        'gemini-2.5-flash',
+        'gemini-2.5-flash-lite',
+        'gemini-3-flash',
+        'gemini-3-pro-image'
+    ];
+    
+    // Filter to only priority models and sort by priority order
+    const filteredModels = models.filter(([name]) => priorityModels.includes(name));
+    const sortedModels = filteredModels.sort(([keyA], [keyB]) => {
+        const indexA = priorityModels.indexOf(keyA);
+        const indexB = priorityModels.indexOf(keyB);
+        return indexA - indexB;
+    });
+    
+    const items = sortedModels.map(([name, info]) => {
         const modelName = info?.displayName || info?.display_name || info?.modelId || info?.model_id || name;
         const remainingRaw = info?.quotaInfo?.remainingFraction ?? info?.quota_info?.remaining_fraction ?? 0;
         const remaining = Number(remainingRaw);
