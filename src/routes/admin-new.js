@@ -798,6 +798,29 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
     }
   });
 
+  /**
+   * DELETE /api/admin/logs
+   * Clear all request logs
+   */
+  router.delete('/logs', (req, res) => {
+    try {
+      const result = db.db.prepare('DELETE FROM request_logs').run();
+      
+      res.json({
+        success: true,
+        message: `已清空 ${result.changes} 条日志记录`
+      });
+    } catch (error) {
+      console.error('Clear logs error:', error);
+      res.status(500).json({
+        error: {
+          type: 'internal_error',
+          message: 'Failed to clear logs.'
+        }
+      });
+    }
+  });
+
   // ==================== System Settings ====================
 
   /**
