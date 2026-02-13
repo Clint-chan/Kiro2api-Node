@@ -311,7 +311,17 @@ function formatAgtQuota(account) {
         return '<span class="text-xs text-gray-400">无数据</span>';
     }
     
-    const items = models.slice(0, 3).map(([name, info]) => {
+    const formatResetTime = (resetTime) => {
+        if (!resetTime) return '';
+        const date = new Date(resetTime);
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hour = String(date.getHours()).padStart(2, '0');
+        const minute = String(date.getMinutes()).padStart(2, '0');
+        return `${month}/${day} ${hour}:${minute}`;
+    };
+    
+    const items = models.map(([name, info]) => {
         const modelName = info?.displayName || info?.display_name || info?.modelId || info?.model_id || name;
         const remainingRaw = info?.quotaInfo?.remainingFraction ?? info?.quota_info?.remaining_fraction ?? 0;
         const remaining = Number(remainingRaw);
@@ -324,9 +334,22 @@ function formatAgtQuota(account) {
             normalizedRemainingFraction: safeRemaining
         });
         const percent = Math.round(safeRemaining * 100);
-        const color = percent > 60 ? 'text-green-600' : percent > 20 ? 'text-yellow-600' : 'text-red-600';
-        return `<span class="${color} text-xs">${modelName}: ${percent}%</span>`;
-    }).join(' · ');
+        const resetTime = info?.quotaInfo?.resetTime || info?.quota_info?.reset_time;
+        const resetDate = formatResetTime(resetTime);
+        const bgColor = percent > 60 ? 'bg-green-500' : percent > 20 ? 'bg-yellow-500' : 'bg-red-500';
+        
+        return `
+<div class="mb-3 last:mb-0">
+    <div class="flex justify-between items-center mb-1">
+        <span class="text-sm font-medium text-gray-700">${modelName}</span>
+        <span class="text-xs text-gray-500">${percent}%${resetDate ? ' · ' + resetDate : ''}</span>
+    </div>
+    <div class="w-full bg-gray-200 rounded-full h-2">
+        <div class="${bgColor} h-2 rounded-full transition-all" style="width: ${percent}%"></div>
+    </div>
+</div>
+`;
+    }).join('');
     
     return items;
 }
