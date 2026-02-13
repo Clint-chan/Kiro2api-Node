@@ -1647,17 +1647,16 @@
                     dailyStats[dateStr] = 0;
                 }
 
-                // 从数据库获取最近7天的日志统计（只获取最近7天的数据）
-                const startDateStr = startDate.toISOString();
-                const endDateStr = endDate.toISOString();
-                const logsData = await fetchApi(`/api/admin/logs?limit=1000&startDate=${startDateStr}&endDate=${endDateStr}`);
-                const logs = logsData.data || [];
+                // Get aggregated daily statistics from backend
+                const startDateStr = startDate.toISOString().split('T')[0];
+                const endDateStr = endDate.toISOString().split('T')[0];
+                const statsData = await fetchApi(`/api/admin/stats/daily?startDate=${startDateStr}&endDate=${endDateStr}`);
+                const stats = statsData.data || [];
 
-                // 统计每天的请求数
-                logs.forEach(log => {
-                    const logDate = new Date(log.timestamp).toISOString().split('T')[0];
-                    if (dailyStats.hasOwnProperty(logDate)) {
-                        dailyStats[logDate]++;
+                // Fill daily stats with backend aggregated data
+                stats.forEach(stat => {
+                    if (dailyStats.hasOwnProperty(stat.date)) {
+                        dailyStats[stat.date] = stat.count;
                     }
                 });
 

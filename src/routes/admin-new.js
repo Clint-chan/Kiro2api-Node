@@ -1782,5 +1782,50 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
     }
   });
 
+  /**
+   * GET /api/admin/stats/daily
+   * Get daily request statistics aggregated by database
+   */
+  router.get('/stats/daily', (req, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+
+      if (!startDate || !endDate) {
+        return res.status(400).json({
+          error: {
+            type: 'validation_error',
+            message: 'startDate and endDate are required'
+          }
+        });
+      }
+
+      // Use SQL aggregation to group by date
+      const query = `
+        SELECT 
+          DATE(timestamp) as date,
+          COUNT(*) as count
+        FROM request_logs
+        WHERE timestamp >= ? AND timestamp <= ?
+        GROUP BY DATE(timestamp)
+        ORDER BY date ASC
+      `;
+
+      const stats = db.db.prepare(query).all(startDate, endDate);
+
+      res.json({
+        success: true,
+        data: stats
+      });
+    } catch (error) {
+      console.error('Get daily stats error:', error);
+      res.status(500).json({
+        error: {
+          type: 'internal_error',
+          message: 'Failed to retrieve daily stats.'
+        }
+      });
+    }
+  });
+
   return router;
 }
