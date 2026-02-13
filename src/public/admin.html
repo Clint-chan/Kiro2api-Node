@@ -548,7 +548,7 @@
     <div id="createUserModal"
         class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div
-            class="bg-white rounded-3xl shadow-2xl w-full max-w-lg animate-scaleIn overflow-hidden flex flex-col max-h-[90vh]">
+            class="bg-white rounded-3xl shadow-2xl w-full max-w-3xl animate-scaleIn overflow-hidden flex flex-col max-h-[90vh]">
             <!-- Header -->
             <div class="relative bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 p-6 text-white">
                 <button onclick="hideModal('createUserModal')"
@@ -567,52 +567,76 @@
                     </div>
                     <div>
                         <h3 class="text-xl font-bold">创建用户</h3>
-                        <p class="text-sm text-white/80">快速创建用户并开通订阅</p>
+                        <p class="text-sm text-white/80">快速创建用户并配置权限</p>
                     </div>
                 </div>
             </div>
 
             <!-- Content -->
-            <div class="flex-1 overflow-y-auto p-6 space-y-5">
-                <!-- 用户名预览 -->
-                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
-                    <div class="flex items-center gap-2 mb-2">
-                        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span class="text-sm font-medium text-gray-700">用户名预览</span>
+            <div class="flex-1 overflow-y-auto p-6">
+                <div class="grid grid-cols-2 gap-6">
+                    <!-- 左列 -->
+                    <div class="space-y-5">
+                        <!-- 用户名预览 -->
+                        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
+                            <div class="flex items-center gap-2 mb-2">
+                                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span class="text-sm font-medium text-gray-700">用户名预览</span>
+                            </div>
+                            <div class="font-mono text-sm text-gray-600" id="username-preview">user_abc123</div>
+                        </div>
+
+                        <!-- 用户名 -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">自定义用户名（可选）</label>
+                            <input type="text" id="new-username" placeholder="留空自动生成" oninput="updateUsernamePreview()"
+                                class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                        </div>
+
+                        <!-- 创建数量 -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">创建数量</label>
+                            <input type="number" id="new-count" value="1" min="1" max="100" oninput="updateUsernamePreview()"
+                                class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                            <p class="text-xs text-gray-500 mt-1">批量创建时自动生成唯一用户名</p>
+                        </div>
+
+                        <!-- 初始余额 -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">初始余额 (USD)</label>
+                            <div class="relative">
+                                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-semibold">$</span>
+                                <input type="number" step="0.01" id="new-balance" value="0"
+                                    class="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">💡 开通订阅后会立即获得首次充值额度</p>
+                        </div>
+
+                        <!-- 渠道权限 -->
+                        <div class="border-2 border-gray-200 rounded-xl p-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-3">渠道权限</label>
+                            <div class="space-y-2">
+                                <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 p-2 rounded transition">
+                                    <input type="checkbox" id="new-channel-kiro" value="kiro" checked class="rounded border-gray-300 text-blue-500 focus:ring-blue-500">
+                                    <span class="font-medium">Kiro</span>
+                                </label>
+                                <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 p-2 rounded transition">
+                                    <input type="checkbox" id="new-channel-antigravity" value="antigravity" class="rounded border-gray-300 text-purple-500 focus:ring-purple-500">
+                                    <span class="font-medium">Antigravity</span>
+                                </label>
+                                <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 p-2 rounded transition">
+                                    <input type="checkbox" id="new-channel-codex" value="codex" class="rounded border-gray-300 text-green-500 focus:ring-green-500">
+                                    <span class="font-medium">Codex</span>
+                                </label>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-2">💡 默认只开通 Kiro 渠道</p>
+                        </div>
                     </div>
-                    <div class="font-mono text-sm text-gray-600" id="username-preview">user_abc123</div>
-                </div>
 
-                <!-- 用户名 -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">自定义用户名（可选）</label>
-                    <input type="text" id="new-username" placeholder="留空自动生成" oninput="updateUsernamePreview()"
-                        class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
-                </div>
-
-                <!-- 创建数量 -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">创建数量</label>
-                    <input type="number" id="new-count" value="1" min="1" max="100" oninput="updateUsernamePreview()"
-                        class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
-                    <p class="text-xs text-gray-500 mt-1">批量创建时自动生成唯一用户名</p>
-                </div>
-
-                <!-- 初始余额 -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">初始余额 (USD)</label>
-                    <div class="relative">
-                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-semibold">$</span>
-                        <input type="number" step="0.01" id="new-balance" value="0"
-                            class="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
-                    </div>
-                    <p class="text-xs text-gray-500 mt-1">💡 开通订阅后会立即获得首次充值额度</p>
-                </div>
-
-                <!-- 订阅选项 -->
+                    <!-- 右列 -->
                 <div class="border-2 border-gray-200 rounded-xl p-4">
                     <label class="flex items-center gap-3 cursor-pointer mb-4">
                         <input type="checkbox" id="new-with-subscription" onchange="toggleSubscriptionOptions()"
@@ -1182,10 +1206,11 @@
                                         <div class="flex items-center justify-between">
                                             <span class="text-sm text-gray-600">预计总充值</span>
                                             <span class="text-2xl font-bold text-blue-600" id="preview-total">-</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
                         </div>
                     </div>
                 </div>
@@ -2925,6 +2950,17 @@
             const balance = parseFloat(document.getElementById('new-balance').value) || 0;
             const withSubscription = document.getElementById('new-with-subscription').checked;
 
+            // 获取渠道权限
+            const allowedChannels = [];
+            if (document.getElementById('new-channel-kiro').checked) allowedChannels.push('kiro');
+            if (document.getElementById('new-channel-antigravity').checked) allowedChannels.push('antigravity');
+            if (document.getElementById('new-channel-codex').checked) allowedChannels.push('codex');
+
+            if (allowedChannels.length === 0) {
+                showToast('请至少选择一个渠道', 'warning');
+                return;
+            }
+
             // 获取订阅配置
             let subType, subQuota, subDuration;
             if (withSubscription) {
@@ -2967,7 +3003,8 @@
                             method: 'POST',
                             body: JSON.stringify({
                                 username: finalUsername,
-                                balance
+                                balance,
+                                allowed_channels: allowedChannels
                             })
                         });
 
@@ -2994,6 +3031,9 @@
                 document.getElementById('new-username').value = '';
                 document.getElementById('new-count').value = '1';
                 document.getElementById('new-balance').value = '0';
+                document.getElementById('new-channel-kiro').checked = true;
+                document.getElementById('new-channel-antigravity').checked = false;
+                document.getElementById('new-channel-codex').checked = false;
                 document.getElementById('new-with-subscription').checked = false;
                 document.getElementById('new-subscription-quota').value = '1800';
                 document.getElementById('new-subscription-duration').value = '12';
