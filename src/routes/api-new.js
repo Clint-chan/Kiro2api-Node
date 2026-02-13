@@ -120,7 +120,11 @@ export function createApiRouter(state) {
         res.setHeader('Content-Type', 'text/event-stream');
         res.setHeader('Cache-Control', 'no-cache');
         res.setHeader('Connection', 'keep-alive');
-        response.body.pipe(res);
+        
+        for await (const chunk of response.body) {
+          res.write(chunk);
+        }
+        res.end();
       } else {
         const data = await response.json();
         return res.json(data);
