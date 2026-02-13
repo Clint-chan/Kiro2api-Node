@@ -13,6 +13,7 @@ const AGT_TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
 const AGT_DEFAULT_USER_AGENT = process.env.AGT_USER_AGENT || 'antigravity/1.104.0 darwin/arm64';
 const AGT_API_CLIENT = 'google-cloud-sdk vscode_cloudshelleditor/0.1';
 const AGT_CLIENT_METADATA = '{"ideType":"IDE_UNSPECIFIED","platform":"PLATFORM_UNSPECIFIED","pluginType":"GEMINI"}';
+const AGT_SYSTEM_INSTRUCTION = 'You are Antigravity, a powerful agentic AI coding assistant designed by the Google Deepmind team working on Advanced Agentic Coding.You are pair programming with a USER to solve their coding task. The task may require creating a new codebase, modifying or debugging an existing codebase, or simply answering a question.**Absolute paths only****Proactiveness**';
 
 const AGT_PATHS = {
   generate: '/v1internal:generateContent',
@@ -384,11 +385,6 @@ async function requestWithFallback(token, path, body, options = {}) {
         if (index + 1 < baseUrls.length) {
           continue;
         }
-        if (attempt < AGT_MAX_RETRY) {
-          shouldRetryAttempt = true;
-          await sleep(rateLimitDelay(attempt));
-          break;
-        }
       }
 
       if (shouldRetryNoCapacity(response.status, bodyText)) {
@@ -480,9 +476,10 @@ export function convertOpenAIToAgtPayload(body, model) {
     }
   }
 
+  const upstreamModel = resolveAntigravityUpstreamModel(model);
   const payload = {
     project: '',
-    model: resolveAntigravityUpstreamModel(model),
+    model: upstreamModel,
     request: {
       contents,
       generationConfig: {}
@@ -492,9 +489,13 @@ export function convertOpenAIToAgtPayload(body, model) {
   if (systemParts.length > 0) {
     payload.request.systemInstruction = { role: 'user', parts: systemParts };
   }
+  
   if (typeof body.temperature === 'number') payload.request.generationConfig.temperature = body.temperature;
   if (typeof body.top_p === 'number') payload.request.generationConfig.topP = body.top_p;
-  if (typeof body.max_tokens === 'number') payload.request.generationConfig.maxOutputTokens = body.max_tokens;
+  
+  if (typeof body.max_tokens === 'number' && upstreamModel.includes('claude')) {
+    payload.request.generationConfig.maxOutputTokens = body.max_tokens;
+  }
 
   return payload;
 }
@@ -519,9 +520,10 @@ export function convertClaudeToAgtPayload(body, model) {
     }
   }
 
+  const upstreamModel = resolveAntigravityUpstreamModel(model);
   const payload = {
     project: '',
-    model: resolveAntigravityUpstreamModel(model),
+    model: upstreamModel,
     request: {
       contents,
       generationConfig: {}
@@ -531,9 +533,13 @@ export function convertClaudeToAgtPayload(body, model) {
   if (systemParts.length > 0) {
     payload.request.systemInstruction = { role: 'user', parts: systemParts };
   }
+  
   if (typeof body.temperature === 'number') payload.request.generationConfig.temperature = body.temperature;
   if (typeof body.top_p === 'number') payload.request.generationConfig.topP = body.top_p;
-  if (typeof body.max_tokens === 'number') payload.request.generationConfig.maxOutputTokens = body.max_tokens;
+  
+  if (typeof body.max_tokens === 'number' && upstreamModel.includes('claude')) {
+    payload.request.generationConfig.maxOutputTokens = body.max_tokens;
+  }
 
   return payload;
 }
