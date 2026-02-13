@@ -140,17 +140,16 @@ function renderCliProxyAccounts() {
                         <td class="px-4 py-4 align-middle">
                             <div class="flex flex-col gap-1">
                                 <div class="font-semibold text-gray-900 text-sm flex items-center gap-2 flex-wrap">
-                                    <span>${a.email || a.name}</span>
+                                    <span>${a.email || a.id}</span>
                                     <span class="px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${a.provider === 'codex' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}">
                                         ${a.provider === 'codex' ? 'Codex' : 'Antigravity'}
                                     </span>
                                     ${a.provider === 'codex' && a.plan_type ? `<span class="px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-green-100 text-green-700">${a.plan_type}</span>` : ''}
                                 </div>
-                                <div class="text-xs text-gray-500">${a.name}</div>
                             </div>
                         </td>
                         <td class="px-4 py-4 align-middle">
-                            <div class="flex justify-center">${a.provider === 'codex' ? formatCodexQuota(a) : formatAgtQuota(a)}</div>
+                            <div class="w-full">${a.provider === 'codex' ? formatCodexQuota(a) : formatAgtQuota(a)}</div>
                         </td>
                         <td class="px-4 py-4 align-middle">
                             <div class="flex justify-center whitespace-nowrap">${formatCliProxyStatus(a)}</div>

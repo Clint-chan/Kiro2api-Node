@@ -210,7 +210,7 @@
                             data-tab="accounts">Kiro账号池</button>
                         <button onclick="switchTab('agt-accounts')"
                             class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1 text-sm font-medium"
-                            data-tab="agt-accounts">AGT账号池</button>
+                            data-tab="agt-accounts">CLIProxy</button>
                         <button onclick="switchTab('logs')"
                             class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1 text-sm font-medium"
                             data-tab="logs">请求记录</button>
@@ -1369,9 +1369,15 @@
                         </label>
                         <label
                             class="inline-flex items-center gap-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded transition">
-                            <input type="checkbox" name="perm-channel" value="agt" id="perm-channel-agt"
-                                class="rounded border-gray-300 text-indigo-500 focus:ring-indigo-500 channel-checkbox">
-                            <span class="font-medium">AGT</span>
+                            <input type="checkbox" name="perm-channel" value="antigravity" id="perm-channel-antigravity"
+                                class="rounded border-gray-300 text-purple-500 focus:ring-purple-500 channel-checkbox">
+                            <span class="font-medium">Antigravity</span>
+                        </label>
+                        <label
+                            class="inline-flex items-center gap-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded transition">
+                            <input type="checkbox" name="perm-channel" value="codex" id="perm-channel-codex"
+                                class="rounded border-gray-300 text-blue-500 focus:ring-blue-500 channel-checkbox">
+                            <span class="font-medium">Codex</span>
                         </label>
                     </div>
                 </div>
@@ -3513,9 +3519,25 @@
                 const models = ALL_MODELS[channel] || [];
                 if (models.length === 0) return;
 
-                const channelName = channel === 'kiro' ? 'Kiro' : 'AGT';
-                const channelColor = channel === 'kiro' ? 'text-blue-600 bg-blue-50' : 'text-indigo-600 bg-indigo-50';
-                const borderColor = channel === 'kiro' ? 'border-blue-100' : 'border-indigo-100';
+                const channelNames = {
+                    'kiro': 'Kiro',
+                    'antigravity': 'Antigravity',
+                    'codex': 'Codex'
+                };
+                const channelColors = {
+                    'kiro': 'text-blue-600 bg-blue-50',
+                    'antigravity': 'text-purple-600 bg-purple-50',
+                    'codex': 'text-blue-600 bg-blue-50'
+                };
+                const borderColors = {
+                    'kiro': 'border-blue-100',
+                    'antigravity': 'border-purple-100',
+                    'codex': 'border-blue-100'
+                };
+                
+                const channelName = channelNames[channel] || channel;
+                const channelColor = channelColors[channel] || 'text-gray-600 bg-gray-50';
+                const borderColor = borderColors[channel] || 'border-gray-100';
 
                 // 构建模型复选框 HTML
                 const modelsHTML = models.map(m => {
