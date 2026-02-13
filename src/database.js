@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+import Database from 'better-sqlite3/lib/index.js';
 import path from 'path';
 import fs from 'fs';
 

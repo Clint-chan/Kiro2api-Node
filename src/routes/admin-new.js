@@ -51,8 +51,8 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
 
     const allowedModels = toStringArray(modelsRaw);
     return {
-      allowed_channels: JSON.stringify(Array.from(new Set(nextChannels))),
-      allowed_models: allowedModels.length > 0 ? JSON.stringify(Array.from(new Set(allowedModels))) : null
+      allowed_channels: Array.from(new Set(nextChannels)),
+      allowed_models: allowedModels.length > 0 ? Array.from(new Set(allowedModels)) : []
     };
   }
 
@@ -179,7 +179,9 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
   router.post('/users', (req, res) => {
     try {
       let { username, api_key, role, balance, price_input, price_output, notes } = req.body;
+      console.log('[DEBUG] req.body.allowed_channels:', req.body.allowed_channels);
       const permissions = normalizeUserPermissions(req.body.allowed_channels, req.body.allowed_models);
+      console.log('[DEBUG] permissions:', permissions);
 
       // 如果没有提供用户名，自动生成
       if (!username) {
@@ -212,8 +214,8 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
         price_input: price_input || 3.0,
         price_output: price_output || 15.0,
         notes: notes || null,
-        allowed_channels: parseJsonSafe(permissions.allowed_channels),
-        allowed_models: parseJsonSafe(permissions.allowed_models)
+        allowed_channels: permissions.allowed_channels,
+        allowed_models: permissions.allowed_models
       };
 
       db.createUser(userData);
