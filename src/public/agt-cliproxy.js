@@ -128,10 +128,10 @@ function renderCliProxyAccounts() {
         <table class="w-full">
             <thead>
                 <tr class="bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <th class="px-4 py-3 text-left rounded-tl-lg" style="width: 25%">账号信息</th>
-                    <th class="px-4 py-3 text-center" style="width: 45%">额度使用</th>
+                    <th class="px-4 py-3 text-left rounded-tl-lg" style="width: 30%">账号信息</th>
+                    <th class="px-4 py-3 text-center" style="width: 35%">额度使用</th>
                     <th class="px-4 py-3 text-center" style="width: 15%">状态</th>
-                    <th class="px-4 py-3 text-center rounded-tr-lg" style="width: 15%">操作</th>
+                    <th class="px-4 py-3 text-center rounded-tr-lg" style="width: 20%">操作</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
@@ -139,8 +139,10 @@ function renderCliProxyAccounts() {
                     <tr class="hover:bg-gray-50 transition ${i % 2 === 1 ? 'bg-gray-50/50' : ''}">
                         <td class="px-4 py-4 align-middle">
                             <div class="flex flex-col gap-1">
-                                <div class="font-semibold text-gray-900 text-sm flex items-center gap-2 flex-wrap">
-                                    <span>${a.email || a.id}</span>
+                                <div class="font-semibold text-gray-900 text-sm">
+                                    ${a.email || a.id}
+                                </div>
+                                <div class="flex items-center gap-2 flex-wrap">
                                     <span class="px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${a.provider === 'codex' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}">
                                         ${a.provider === 'codex' ? 'Codex' : 'Antigravity'}
                                     </span>
@@ -461,11 +463,6 @@ function formatCodexQuota(account) {
     };
     
     const items = [];
-    
-    if (data.plan_type) {
-        const planName = planTypeMap[data.plan_type] || data.plan_type;
-        items.push(`<div class="text-sm font-medium text-gray-700 mb-2">套餐: ${planName}</div>`);
-    }
     
     if (data.rate_limit?.primary_window) {
         const usedPercent = data.rate_limit.primary_window.used_percent || 0;
