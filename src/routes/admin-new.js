@@ -45,7 +45,7 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
 
   function normalizeUserPermissions(channelsRaw, modelsRaw) {
     const allowedChannels = toStringArray(channelsRaw);
-    const validChannels = ['kiro', 'agt'];
+    const validChannels = ['kiro', 'agt', 'antigravity', 'codex'];
     const normalizedChannels = allowedChannels.filter((channel) => validChannels.includes(channel));
     const nextChannels = normalizedChannels.length > 0 ? normalizedChannels : ['kiro'];
 
