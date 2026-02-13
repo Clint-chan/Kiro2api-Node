@@ -38,6 +38,7 @@ const AGT_EXCLUSIVE_MODELS = new Set([
   'gemini-3-pro-image',
   'gemini-3-flash',
   'gemini-2.5-flash',
+  'gemini-2.5-flash-lite',
   'claude-sonnet-4-5-thinking',
   'claude-opus-4-5-thinking',
   'claude-opus-4-6-thinking'
@@ -60,12 +61,13 @@ const MODEL_ALIAS = {
 };
 
 export const AGT_STATIC_MODELS = [
-  { id: 'antigravity-gemini-3-pro-high', upstream: 'gemini-3-pro-high', owned_by: 'antigravity', display_name: 'Antigravity Gemini 3 Pro High' },
-  { id: 'antigravity-gemini-3-flash', upstream: 'gemini-3-flash', owned_by: 'antigravity', display_name: 'Antigravity Gemini 3 Flash' },
-  { id: 'antigravity-claude-sonnet-4-5', upstream: 'claude-sonnet-4-5', owned_by: 'antigravity', display_name: 'Antigravity Claude Sonnet 4.5' },
-  { id: 'antigravity-claude-sonnet-4-5-thinking', upstream: 'claude-sonnet-4-5-thinking', owned_by: 'antigravity', display_name: 'Antigravity Claude Sonnet 4.5 Thinking' },
-  { id: 'antigravity-claude-opus-4-5-thinking', upstream: 'claude-opus-4-5-thinking', owned_by: 'antigravity', display_name: 'Antigravity Claude Opus 4.5 Thinking' },
-  { id: 'antigravity-claude-opus-4-6-thinking', upstream: 'claude-opus-4-6-thinking', owned_by: 'antigravity', display_name: 'Antigravity Claude Opus 4.6 Thinking' }
+  { id: 'gemini-3-pro-high', upstream: 'gemini-3-pro-high', owned_by: 'antigravity', display_name: 'Gemini 3 Pro High' },
+  { id: 'gemini-3-flash', upstream: 'gemini-3-flash', owned_by: 'antigravity', display_name: 'Gemini 3 Flash' },
+  { id: 'gemini-2.5-flash', upstream: 'gemini-2.5-flash', owned_by: 'antigravity', display_name: 'Gemini 2.5 Flash' },
+  { id: 'gemini-2.5-flash-lite', upstream: 'gemini-2.5-flash-lite', owned_by: 'antigravity', display_name: 'Gemini 2.5 Flash Lite' },
+  { id: 'claude-sonnet-4-5-thinking', upstream: 'claude-sonnet-4-5-thinking', owned_by: 'antigravity', display_name: 'Claude Sonnet 4.5 Thinking' },
+  { id: 'claude-opus-4-5-thinking', upstream: 'claude-opus-4-5-thinking', owned_by: 'antigravity', display_name: 'Claude Opus 4.5 Thinking' },
+  { id: 'claude-opus-4-6-thinking', upstream: 'claude-opus-4-6-thinking', owned_by: 'antigravity', display_name: 'Claude Opus 4.6 Thinking' }
 ];
 
 export function isAntigravityModel(model) {
