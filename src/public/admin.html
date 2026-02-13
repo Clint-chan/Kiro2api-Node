@@ -388,41 +388,128 @@
                             <h3 class="text-lg font-semibold text-gray-900 mb-3">API 端点</h3>
 
                             <div class="mb-4">
-                                <p class="text-xs text-gray-500 mb-2 font-medium">Anthropic 格式</p>
-                                <div class="space-y-2 font-mono text-sm">
-                                    <div class="flex items-center gap-2">
-                                        <span
-                                            class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">GET</span>
-                                        <span class="text-gray-700">/v1/models</span>
-                                        <button onclick="copyText(location.origin + '/v1/models')"
-                                            class="text-blue-500 hover:text-blue-700 text-xs">复制</button>
+                                <p class="text-xs text-gray-500 mb-2 font-medium">支持的 API 格式</p>
+                                <div class="space-y-3">
+                                    <!-- Anthropic 格式 -->
+                                    <div class="border-l-4 border-blue-500 pl-3">
+                                        <p class="text-xs font-semibold text-gray-700 mb-1">Anthropic 格式（Claude）</p>
+                                        <div class="space-y-1 font-mono text-sm">
+                                            <div class="flex items-center gap-2">
+                                                <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">POST</span>
+                                                <span class="text-gray-700">/v1/messages</span>
+                                                <button onclick="copyText(location.origin + '/v1/messages')"
+                                                    class="text-blue-500 hover:text-blue-700 text-xs">复制</button>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="flex items-center gap-2">
-                                        <span
-                                            class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">POST</span>
-                                        <span class="text-gray-700">/v1/messages</span>
-                                        <button onclick="copyText(location.origin + '/v1/messages')"
-                                            class="text-blue-500 hover:text-blue-700 text-xs">复制</button>
+                                    
+                                    <!-- OpenAI 格式 -->
+                                    <div class="border-l-4 border-green-500 pl-3">
+                                        <p class="text-xs font-semibold text-gray-700 mb-1">OpenAI 格式（GPT/Codex）</p>
+                                        <div class="space-y-1 font-mono text-sm">
+                                            <div class="flex items-center gap-2">
+                                                <span class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">POST</span>
+                                                <span class="text-gray-700">/v1/chat/completions</span>
+                                                <button onclick="copyText(location.origin + '/v1/chat/completions')"
+                                                    class="text-blue-500 hover:text-blue-700 text-xs">复制</button>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="flex items-center gap-2">
-                                        <span
-                                            class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">POST</span>
-                                        <span class="text-gray-700">/v1/chat/completions</span>
-                                        <button onclick="copyText(location.origin + '/v1/chat/completions')"
-                                            class="text-blue-500 hover:text-blue-700 text-xs">复制</button>
+                                    
+                                    <!-- Gemini 格式 -->
+                                    <div class="border-l-4 border-purple-500 pl-3">
+                                        <p class="text-xs font-semibold text-gray-700 mb-1">Gemini 格式（Antigravity）</p>
+                                        <div class="space-y-1 font-mono text-sm">
+                                            <div class="flex items-center gap-2">
+                                                <span class="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-medium">POST</span>
+                                                <span class="text-gray-700">/v1internal:generateContent</span>
+                                                <button onclick="copyText(location.origin + '/v1internal:generateContent')"
+                                                    class="text-blue-500 hover:text-blue-700 text-xs">复制</button>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="flex items-center gap-2">
-                                        <span
-                                            class="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-medium">POST</span>
-                                        <span class="text-gray-700">/v1internal:generateContent</span>
-                                        <button onclick="copyText(location.origin + '/v1internal:generateContent')"
-                                            class="text-blue-500 hover:text-blue-700 text-xs">复制</button>
+                                    
+                                    <!-- 通用端点 -->
+                                    <div class="border-l-4 border-gray-400 pl-3">
+                                        <p class="text-xs font-semibold text-gray-700 mb-1">通用端点</p>
+                                        <div class="space-y-1 font-mono text-sm">
+                                            <div class="flex items-center gap-2">
+                                                <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium">GET</span>
+                                                <span class="text-gray-700">/v1/models</span>
+                                                <button onclick="copyText(location.origin + '/v1/models')"
+                                                    class="text-blue-500 hover:text-blue-700 text-xs">复制</button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
                             <p class="text-xs text-gray-500 mt-3">Base URL: <span class="text-gray-700"
                                     id="baseUrl"></span></p>
+                        </div>
+
+                        <!-- 可用模型 ID -->
+                        <div class="mb-8 p-4 bg-gray-50 rounded-lg">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-3">可用模型 ID</h3>
+                            <div class="space-y-3">
+                                <!-- Kiro 模型 -->
+                                <div>
+                                    <p class="text-xs font-semibold text-blue-700 mb-2">Kiro 渠道</p>
+                                    <div class="grid grid-cols-1 gap-2 text-xs font-mono">
+                                        <div class="flex items-center justify-between bg-white px-3 py-2 rounded border border-gray-200">
+                                            <span class="text-gray-700">claude-sonnet-4-5-20250929</span>
+                                            <button onclick="copyText('claude-sonnet-4-5-20250929')" class="text-blue-500 hover:text-blue-700">复制</button>
+                                        </div>
+                                        <div class="flex items-center justify-between bg-white px-3 py-2 rounded border border-gray-200">
+                                            <span class="text-gray-700">claude-opus-4-5-20251101</span>
+                                            <button onclick="copyText('claude-opus-4-5-20251101')" class="text-blue-500 hover:text-blue-700">复制</button>
+                                        </div>
+                                        <div class="flex items-center justify-between bg-white px-3 py-2 rounded border border-gray-200">
+                                            <span class="text-gray-700">claude-3-5-sonnet-20241022</span>
+                                            <button onclick="copyText('claude-3-5-sonnet-20241022')" class="text-blue-500 hover:text-blue-700">复制</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Antigravity 模型 -->
+                                <div>
+                                    <p class="text-xs font-semibold text-purple-700 mb-2">Antigravity 渠道</p>
+                                    <div class="grid grid-cols-1 gap-2 text-xs font-mono">
+                                        <div class="flex items-center justify-between bg-white px-3 py-2 rounded border border-gray-200">
+                                            <span class="text-gray-700">antigravity-claude-sonnet-4-5</span>
+                                            <button onclick="copyText('antigravity-claude-sonnet-4-5')" class="text-blue-500 hover:text-blue-700">复制</button>
+                                        </div>
+                                        <div class="flex items-center justify-between bg-white px-3 py-2 rounded border border-gray-200">
+                                            <span class="text-gray-700">antigravity-gemini-3-pro</span>
+                                            <button onclick="copyText('antigravity-gemini-3-pro')" class="text-blue-500 hover:text-blue-700">复制</button>
+                                        </div>
+                                        <div class="flex items-center justify-between bg-white px-3 py-2 rounded border border-gray-200">
+                                            <span class="text-gray-700">antigravity-gemini-2-5-flash</span>
+                                            <button onclick="copyText('antigravity-gemini-2-5-flash')" class="text-blue-500 hover:text-blue-700">复制</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Codex 模型 -->
+                                <div>
+                                    <p class="text-xs font-semibold text-green-700 mb-2">Codex 渠道</p>
+                                    <div class="grid grid-cols-1 gap-2 text-xs font-mono">
+                                        <div class="flex items-center justify-between bg-white px-3 py-2 rounded border border-gray-200">
+                                            <span class="text-gray-700">codex-gpt-4o</span>
+                                            <button onclick="copyText('codex-gpt-4o')" class="text-blue-500 hover:text-blue-700">复制</button>
+                                        </div>
+                                        <div class="flex items-center justify-between bg-white px-3 py-2 rounded border border-gray-200">
+                                            <span class="text-gray-700">codex-o1</span>
+                                            <button onclick="copyText('codex-o1')" class="text-blue-500 hover:text-blue-700">复制</button>
+                                        </div>
+                                        <div class="flex items-center justify-between bg-white px-3 py-2 rounded border border-gray-200">
+                                            <span class="text-gray-700">codex-o3-mini</span>
+                                            <button onclick="copyText('codex-o3-mini')" class="text-blue-500 hover:text-blue-700">复制</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-3">💡 提示：不同渠道的模型需要使用对应的 API 格式</p>
                         </div>
 
                         <div class="mb-8">
