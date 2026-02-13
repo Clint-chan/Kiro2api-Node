@@ -345,15 +345,44 @@ function formatAgtQuota(account) {
         return indexA - indexB;
     });
     
-    const items = sortedModels.map(([name, info]) => {
-        const modelName = info?.displayName || info?.display_name || info?.modelId || info?.model_id || name;
+    // Group models: Claude/GPT together, Gemini separate
+    const groupedModels = [];
+    let claudeGptGroup = null;
+    
+    for (const [name, info] of sortedModels) {
+        if (name.startsWith('claude-') || name.startsWith('gpt-')) {
+            // Add to Claude/GPT group (use first one's data)
+            if (!claudeGptGroup) {
+                claudeGptGroup = {
+                    displayName: 'Claude/GPT',
+                    info: info
+                };
+            }
+        } else if (name.startsWith('gemini-')) {
+            // Gemini models stay separate
+            if (claudeGptGroup) {
+                groupedModels.push(claudeGptGroup);
+                claudeGptGroup = null;
+            }
+            groupedModels.push({
+                displayName: info?.displayName || info?.display_name || info?.modelId || info?.model_id || name,
+                info: info
+            });
+        }
+    }
+    
+    // Add remaining Claude/GPT group if exists
+    if (claudeGptGroup) {
+        groupedModels.push(claudeGptGroup);
+    }
+    
+    const items = groupedModels.map(({ displayName, info }) => {
         const remainingRaw = info?.quotaInfo?.remainingFraction ?? info?.quota_info?.remaining_fraction ?? 0;
         const remaining = Number(remainingRaw);
         const safeRemaining = Number.isFinite(remaining) ? remaining : 0;
         console.log('[AGT Quota] Format model item', {
             account: account.name,
-            modelKey: name,
-            displayName: modelName,
+            displayName: displayName,
             remainingFraction: remainingRaw,
             normalizedRemainingFraction: safeRemaining
         });
@@ -365,7 +394,7 @@ function formatAgtQuota(account) {
         return `
 <div class="mb-3 last:mb-0">
     <div class="flex justify-between items-center mb-1">
-        <span class="text-sm font-medium text-gray-700">${modelName}</span>
+        <span class="text-sm font-medium text-gray-700">${displayName}</span>
         <span class="text-xs text-gray-500">${percent}%${resetDate ? ' · ' + resetDate : ''}</span>
     </div>
     <div class="w-full bg-gray-200 rounded-full h-2">
