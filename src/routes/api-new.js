@@ -116,15 +116,22 @@ export function createApiRouter(state) {
         return res.status(response.status).json(error);
       }
 
-      const data = await response.json();
-      return res.json(data);
+      if (req.body.stream) {
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+        response.body.pipe(res);
+      } else {
+        const data = await response.json();
+        return res.json(data);
+      }
     } catch (error) {
-      console.error('[AGT Claude] Request failed:', error);
+      console.error('[Antigravity Claude] Request failed:', error);
       return res.status(500).json({
         type: 'error',
         error: {
           type: 'api_error',
-          message: `AGT request failed: ${error.message}`
+          message: `Antigravity request failed: ${error.message}`
         }
       });
     }
@@ -275,15 +282,6 @@ export function createApiRouter(state) {
       console.log(`[Model Router] ${req.body.model} -> ${route.channel}/${route.model} (${route.reason})`);
 
       if (route.channel === 'agt') {
-        if (req.body.stream === true) {
-          return res.status(400).json({
-            type: 'error',
-            error: {
-              type: 'invalid_request_error',
-              message: 'AGT stream via /v1/messages is not enabled yet. Use non-stream mode.'
-            }
-          });
-        }
         req.body.model = route.model;
         return await handleAgtClaudeRequest(req, res);
       }
