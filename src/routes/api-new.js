@@ -233,16 +233,7 @@ export function createApiRouter(state) {
         return res.status(400).json({
           error: {
             type: 'invalid_request_error',
-            message: 'AGT stream via /v1/chat/completions is not enabled yet. Use non-stream mode.'
-          }
-        });
-      }
-
-      if (!isAntigravityModel(req.body.model)) {
-        return res.status(400).json({
-          error: {
-            type: 'invalid_request_error',
-            message: 'Only antigravity models are supported on /v1/chat/completions currently.'
+            message: 'Stream mode via /v1/chat/completions is not enabled yet. Use non-stream mode.'
           }
         });
       }
@@ -259,7 +250,7 @@ export function createApiRouter(state) {
       return res.status(500).json({
         error: {
           type: 'api_error',
-          message: error.message || 'AGT request failed'
+          message: error.message || 'Request failed'
         }
       });
     }
