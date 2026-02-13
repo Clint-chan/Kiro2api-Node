@@ -17,6 +17,7 @@ import {
   canAccessModel,
   filterModelsByPermission
 } from '../user-permissions.js';
+import { routeModel } from '../model-router.js';
 
 // 获取模型上下文长度
 function getModelContextLength(model, config) {
@@ -270,7 +271,10 @@ export function createApiRouter(state) {
         }
       }
 
-      if (isAntigravityModel(req.body.model)) {
+      const route = routeModel(req.body.model, state.accountPool);
+      console.log(`[Model Router] ${req.body.model} -> ${route.channel}/${route.model} (${route.reason})`);
+
+      if (route.channel === 'agt') {
         if (req.body.stream === true) {
           return res.status(400).json({
             type: 'error',
@@ -280,6 +284,7 @@ export function createApiRouter(state) {
             }
           });
         }
+        req.body.model = route.model;
         return await handleAgtClaudeRequest(req, res);
       }
 
