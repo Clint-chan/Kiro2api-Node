@@ -640,7 +640,7 @@
                 <div class="border-2 border-gray-200 rounded-xl p-4">
                     <label class="flex items-center gap-3 cursor-pointer mb-4">
                         <input type="checkbox" id="new-with-subscription" onchange="toggleSubscriptionOptions()"
-                            class="w-5 h-5 text-blue-500 rounded">
+                            class="w-5 h-5 text-blue-500 rounded" checked>
                         <div class="flex-1">
                             <span class="text-sm font-semibold text-gray-900">同时开通订阅</span>
                             <p class="text-xs text-gray-500">创建用户后立即开通订阅套餐</p>
@@ -2292,12 +2292,22 @@
         }
 
         function formatUserChannelBadges(channels) {
-            const list = Array.isArray(channels) && channels.length > 0 ? channels : ['kiro', 'agt'];
+            const list = Array.isArray(channels) && channels.length > 0 ? channels : ['kiro'];
             return list.map((channel) => {
-                const label = channel === 'agt' ? 'AGT' : 'Kiro';
-                const color = channel === 'agt'
-                    ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
-                    : 'bg-blue-50 text-blue-700 border-blue-200';
+                let label, color;
+                if (channel === 'kiro') {
+                    label = 'Kiro';
+                    color = 'bg-blue-50 text-blue-700 border-blue-200';
+                } else if (channel === 'antigravity' || channel === 'agt') {
+                    label = 'Antigravity';
+                    color = 'bg-purple-50 text-purple-700 border-purple-200';
+                } else if (channel === 'codex') {
+                    label = 'Codex';
+                    color = 'bg-green-50 text-green-700 border-green-200';
+                } else {
+                    label = channel;
+                    color = 'bg-gray-50 text-gray-700 border-gray-200';
+                }
                 return `<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium border ${color}">${label}</span>`;
             }).join('');
         }
@@ -3034,7 +3044,7 @@
                 document.getElementById('new-channel-kiro').checked = true;
                 document.getElementById('new-channel-antigravity').checked = false;
                 document.getElementById('new-channel-codex').checked = false;
-                document.getElementById('new-with-subscription').checked = false;
+                document.getElementById('new-with-subscription').checked = true;
                 document.getElementById('new-subscription-quota').value = '1800';
                 document.getElementById('new-subscription-duration').value = '12';
                 toggleSubscriptionOptions();
