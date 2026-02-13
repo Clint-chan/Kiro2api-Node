@@ -236,6 +236,40 @@ async function startServer() {
           console.error('订阅检查任务失败:', error);
         }
       }, 5000); // 5秒后执行
+
+      // 自动清理超过30天的日志（每天凌晨3点执行）
+      function scheduleLogCleanup() {
+        const now = new Date();
+        const next3AM = new Date(now);
+        next3AM.setHours(3, 0, 0, 0);
+        
+        if (next3AM <= now) {
+          next3AM.setDate(next3AM.getDate() + 1);
+        }
+        
+        const msUntil3AM = next3AM - now;
+        
+        setTimeout(() => {
+          cleanupOldLogs();
+          setInterval(cleanupOldLogs, 24 * 60 * 60 * 1000); // 每24小时执行一次
+        }, msUntil3AM);
+      }
+
+      function cleanupOldLogs() {
+        try {
+          const thirtyDaysAgo = new Date();
+          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+          const cutoffDate = thirtyDaysAgo.toISOString();
+          
+          const result = db.db.prepare('DELETE FROM request_logs WHERE timestamp < ?').run(cutoffDate);
+          console.log(`[日志清理] 已删除 ${result.changes} 条超过30天的日志`);
+        } catch (error) {
+          console.error('[日志清理] 错误:', error);
+        }
+      }
+
+      // 启动日志清理调度
+      scheduleLogCleanup();
     });
 
     server.on('error', (error) => {
