@@ -59,7 +59,7 @@ const MODEL_ALIAS = {
 };
 
 export const AGT_STATIC_MODELS = [
-  { id: 'antigravity-gemini-3-pro', upstream: 'gemini-3-pro-high', owned_by: 'antigravity', display_name: 'Antigravity Gemini 3 Pro' },
+  { id: 'antigravity-gemini-3-pro-high', upstream: 'gemini-3-pro-high', owned_by: 'antigravity', display_name: 'Antigravity Gemini 3 Pro High' },
   { id: 'antigravity-gemini-3-flash', upstream: 'gemini-3-flash', owned_by: 'antigravity', display_name: 'Antigravity Gemini 3 Flash' },
   { id: 'antigravity-claude-sonnet-4-5', upstream: 'claude-sonnet-4-5', owned_by: 'antigravity', display_name: 'Antigravity Claude Sonnet 4.5' },
   { id: 'antigravity-claude-sonnet-4-5-thinking', upstream: 'claude-sonnet-4-5-thinking', owned_by: 'antigravity', display_name: 'Antigravity Claude Sonnet 4.5 Thinking' },
