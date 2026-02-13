@@ -234,7 +234,7 @@ export class AccountPool {
       const available = usage.available || 0;
       
       if (available < minBalance) {
-        if (account.status === 'active' || account.status === 'error') {
+        if (account.status === 'active' || account.status === 'error' || account.status === 'cooldown') {
           account.status = 'depleted';
           console.log(`💀 账号 ${account.name} 余额不足 (${available}/${minBalance})，已标记为 depleted`);
         }
@@ -248,9 +248,9 @@ export class AccountPool {
             account.status = 'active';
             console.log(`✓ 账号 ${account.name} 余额充足 (${available}/${minBalance})，已恢复为 active`);
           }
-        } else if (account.status === 'error') {
+        } else if (account.status === 'error' || account.status === 'cooldown') {
           account.status = 'active';
-          console.log(`✓ 账号 ${account.name} 状态从 error 恢复为 active`);
+          console.log(`✓ 账号 ${account.name} 状态从 ${account.status} 恢复为 active`);
         }
       }
 
