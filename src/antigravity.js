@@ -31,6 +31,17 @@ const AGT_SKIP_INJECTION_PATHS = [
 
 const AGT_MAX_RETRY = Math.max(Number.parseInt(process.env.AGT_REQUEST_RETRY || '1', 10) || 0, 0);
 
+const AGT_EXCLUSIVE_MODELS = new Set([
+  'gemini-3-pro-high',
+  'gemini-3-pro-low',
+  'gemini-3-pro-image',
+  'gemini-3-flash',
+  'gemini-2.5-flash',
+  'claude-sonnet-4-5-thinking',
+  'claude-opus-4-5-thinking',
+  'claude-opus-4-6-thinking'
+]);
+
 const MODEL_ALIAS = {
   'antigravity-gemini-3-pro': 'gemini-3-pro-high',
   'antigravity-gemini-3-flash': 'gemini-3-flash',
@@ -59,7 +70,17 @@ export const AGT_STATIC_MODELS = [
 export function isAntigravityModel(model) {
   const m = String(model || '').trim();
   if (!m) return false;
-  return m.startsWith('antigravity-') || Boolean(MODEL_ALIAS[m]);
+  
+  // 1. With antigravity- prefix
+  if (m.startsWith('antigravity-')) return true;
+  
+  // 2. In MODEL_ALIAS
+  if (MODEL_ALIAS[m]) return true;
+  
+  // 3. AGT-exclusive models (no prefix)
+  if (AGT_EXCLUSIVE_MODELS.has(m)) return true;
+  
+  return false;
 }
 
 export function resolveAntigravityUpstreamModel(model) {
@@ -125,23 +146,9 @@ function buildAgtRequestBody(body, projectId, skipInjection = false) {
 
   const normalizedProject = String(projectId || '').trim() || generateProjectIdFallback();
 
-  if (!nextBody.project) {
-    nextBody.project = normalizedProject;
-  }
-  if (!nextBody.userAgent) {
-    nextBody.userAgent = 'antigravity';
-  }
-  if (!nextBody.requestType) {
-    nextBody.requestType = 'agent';
-  }
-  if (!nextBody.requestId) {
-    nextBody.requestId = `agent-${uuidv4()}`;
-  }
-  if (!nextBody.request || typeof nextBody.request !== 'object') {
-    nextBody.request = {};
-  }
-  if (!nextBody.request.sessionId) {
-    nextBody.request.sessionId = generateSessionIdFallback();
+  // Only inject project_id - match CLIProxyAPI behavior
+  if (!nextBody.project_id) {
+    nextBody.project_id = normalizedProject;
   }
 
   return nextBody;
