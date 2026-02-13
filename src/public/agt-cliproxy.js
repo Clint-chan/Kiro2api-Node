@@ -3,16 +3,32 @@
 let cliproxyAgtAccounts = [];
 let cliproxyQuotaCache = {};
 let isLoadingQuota = false;
+let lastCacheUpdate = null;
 
 async function loadCliProxyAccounts() {
     try {
         const result = await fetchApi('/api/admin/cliproxy/auth-files');
         cliproxyAgtAccounts = result.files || [];
+        lastCacheUpdate = new Date();
         renderCliProxyAccounts();
         
         await refreshAllQuotas();
     } catch (e) {
         showToast('加载 CLIProxy 账号失败: ' + e.message, 'error');
+    }
+}
+
+async function forceRefreshCliProxyAccounts() {
+    try {
+        const result = await fetchApi('/api/admin/cliproxy/auth-files?refresh=true');
+        cliproxyAgtAccounts = result.files || [];
+        lastCacheUpdate = new Date();
+        renderCliProxyAccounts();
+        
+        await refreshAllQuotas();
+        showToast('账号列表已刷新', 'success');
+    } catch (e) {
+        showToast('刷新账号列表失败: ' + e.message, 'error');
     }
 }
 
@@ -102,8 +118,13 @@ function renderCliProxyAccounts() {
     }
 
     const allAccounts = cliproxyAgtAccounts;
+    
+    const cacheStatus = lastCacheUpdate 
+        ? `<div class="text-xs text-gray-500 mb-4">缓存更新时间: ${lastCacheUpdate.toLocaleString('zh-CN')}</div>`
+        : '';
 
     container.innerHTML = `
+        ${cacheStatus}
         <table class="w-full">
             <thead>
                 <tr class="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">

@@ -16,6 +16,10 @@ export class CLIProxyClient {
     if (!this.managementKey) {
       throw new Error('CLIPROXY_MANAGEMENT_KEY is required');
     }
+
+    this.authFilesCache = null;
+    this.authFilesCacheTime = 0;
+    this.authFilesCacheTTL = 5 * 60 * 1000;
   }
 
   /**
@@ -67,14 +71,43 @@ export class CLIProxyClient {
   }
 
   /**
+   * 获取缓存的认证文件列表
+   * @param {boolean} forceRefresh - 是否强制刷新缓存
+   * @returns {Promise<object>} 认证文件列表
+   */
+  async getCachedAuthFiles(forceRefresh = false) {
+    const now = Date.now();
+    const cacheExpired = now - this.authFilesCacheTime > this.authFilesCacheTTL;
+
+    if (!forceRefresh && this.authFilesCache && !cacheExpired) {
+      return this.authFilesCache;
+    }
+
+    const result = await this.listAuthFiles();
+    this.authFilesCache = result;
+    this.authFilesCacheTime = now;
+    return result;
+  }
+
+  /**
+   * 刷新认证文件缓存
+   * @returns {Promise<object>} 认证文件列表
+   */
+  async refreshAuthFilesCache() {
+    return await this.getCachedAuthFiles(true);
+  }
+
+  /**
    * 删除认证文件
    * @param {string} name - 认证文件名称
    * @returns {Promise<object>} 删除结果
    */
   async deleteAuthFile(name) {
-    return await this.request(`/auth-files?name=${encodeURIComponent(name)}`, {
+    const result = await this.request(`/auth-files?name=${encodeURIComponent(name)}`, {
       method: 'DELETE'
     });
+    this.authFilesCache = null;
+    return result;
   }
 
   /**
@@ -84,10 +117,12 @@ export class CLIProxyClient {
    * @returns {Promise<object>} 修改结果
    */
   async patchAuthFileStatus(name, disabled) {
-    return await this.request('/auth-files/status', {
+    const result = await this.request('/auth-files/status', {
       method: 'PATCH',
       body: JSON.stringify({ name, disabled })
     });
+    this.authFilesCache = null;
+    return result;
   }
 
   // ==================== OAuth 流程 ====================

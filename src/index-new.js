@@ -17,6 +17,7 @@ import { createUiRouter } from './routes/ui.js';
 import { createObservabilityRouter } from './routes/observability.js';
 import { createConfigRouter } from './routes/config.js';
 import { createCLIProxyAdminRouter } from './routes/cliproxy-admin.js';
+import { CLIProxyClient } from './cliproxy-client.js';
 import { logger } from './logger.js';
 import { metrics } from './metrics.js';
 
@@ -74,6 +75,28 @@ async function startServer() {
     }
 
     console.log('✓ 账号池初始化完成');
+
+    let cliproxyClient = null;
+    if (process.env.CLIPROXY_MANAGEMENT_URL && process.env.CLIPROXY_MANAGEMENT_KEY) {
+      try {
+        cliproxyClient = new CLIProxyClient(
+          process.env.CLIPROXY_MANAGEMENT_URL,
+          process.env.CLIPROXY_MANAGEMENT_KEY
+        );
+        
+        const authFiles = await cliproxyClient.getCachedAuthFiles(true);
+        const files = authFiles.files || [];
+        
+        const agtCount = files.filter(f => f.provider === 'antigravity').length;
+        const codexCount = files.filter(f => f.provider === 'codex').length;
+        
+        console.log('✓ CLIProxy 渠道检测完成');
+        console.log(`  - Antigravity (AGT): ${agtCount} 个账号`);
+        console.log(`  - Codex: ${codexCount} 个账号`);
+      } catch (error) {
+        console.log('⚠ CLIProxy 渠道检测失败:', error.message);
+      }
+    }
 
     // 初始化余额监控器
     const balanceMonitor = createBalanceMonitor(accountPool, config);

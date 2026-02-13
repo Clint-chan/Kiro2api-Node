@@ -9,10 +9,10 @@ export function createCLIProxyAdminRouter() {
     process.env.CLIPROXY_MANAGEMENT_KEY
   );
 
-  // 账号管理
   router.get('/auth-files', async (req, res) => {
     try {
-      const result = await client.listAuthFiles();
+      const forceRefresh = req.query.refresh === 'true';
+      const result = await client.getCachedAuthFiles(forceRefresh);
       res.json(result);
     } catch (error) {
       res.status(500).json({ error: error.message });
