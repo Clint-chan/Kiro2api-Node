@@ -319,6 +319,47 @@
                 </div>
 
                 <div id="tab-agt-accounts" class="p-6 tab-content hidden">
+                    <!-- 可用模型信息 -->
+                    <div class="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-4 mb-6">
+                        <div class="flex items-start gap-3">
+                            <svg class="w-5 h-5 text-indigo-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <div class="flex-1">
+                                <div class="font-semibold text-indigo-900 mb-2">AGT 可用模型 ID</div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 text-sm">
+                                    <div class="flex items-center gap-2">
+                                        <code class="bg-white px-2 py-1 rounded border border-indigo-200 text-indigo-700 font-mono text-xs">gemini-3-pro-high</code>
+                                        <span class="text-gray-600 text-xs">Gemini 3 Pro</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <code class="bg-white px-2 py-1 rounded border border-indigo-200 text-indigo-700 font-mono text-xs">gemini-3-flash</code>
+                                        <span class="text-gray-600 text-xs">Gemini 3 Flash</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <code class="bg-white px-2 py-1 rounded border border-indigo-200 text-indigo-700 font-mono text-xs">claude-sonnet-4-5</code>
+                                        <span class="text-gray-600 text-xs">Claude Sonnet 4.5</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <code class="bg-white px-2 py-1 rounded border border-indigo-200 text-indigo-700 font-mono text-xs">claude-sonnet-4-5-thinking</code>
+                                        <span class="text-gray-600 text-xs">Sonnet 4.5 Thinking</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <code class="bg-white px-2 py-1 rounded border border-indigo-200 text-indigo-700 font-mono text-xs">claude-opus-4-5-thinking</code>
+                                        <span class="text-gray-600 text-xs">Opus 4.5 Thinking</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <code class="bg-white px-2 py-1 rounded border border-indigo-200 text-indigo-700 font-mono text-xs">claude-opus-4-6-thinking</code>
+                                        <span class="text-gray-600 text-xs">Opus 4.6 Thinking</span>
+                                    </div>
+                                </div>
+                                <div class="mt-3 text-xs text-indigo-700">
+                                    💡 提示：使用这些模型 ID 时，需要在前面加上 <code class="bg-white px-1 rounded border border-indigo-200">antigravity-</code> 前缀，例如：<code class="bg-white px-1 rounded border border-indigo-200">antigravity-gemini-3-pro-high</code>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="flex flex-wrap items-center gap-3 mb-6">
                         <button onclick="showModal('agtImportModal')"
                             class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center">
