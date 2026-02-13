@@ -246,7 +246,8 @@ async function refreshSingleQuota(account) {
     
     try {
         if (account.provider === 'codex') {
-            const quota = await fetchCodexQuota(authIndex);
+            const accountId = account.id_token?.chatgpt_account_id;
+            const quota = await fetchCodexQuota(authIndex, accountId);
             console.log('[Codex Quota] Cache update (single)', {
                 account: account.name,
                 status: 'success'
@@ -372,8 +373,12 @@ async function fetchAgtQuota(authIndex, projectId) {
     throw new Error(`HTTP ${result.status_code || result.statusCode}`);
 }
 
-async function fetchCodexQuota(authIndex) {
-    console.log('[Codex Quota] Start fetch quota', { authIndex });
+async function fetchCodexQuota(authIndex, accountId) {
+    if (!accountId) {
+        throw new Error('accountId is required for Codex quota fetch');
+    }
+    
+    console.log('[Codex Quota] Start fetch quota', { authIndex, accountId });
 
     const result = await fetchApi('/api/admin/cliproxy/api-call', {
         method: 'POST',
@@ -384,7 +389,7 @@ async function fetchCodexQuota(authIndex) {
             header: {
                 'Authorization': 'Bearer $TOKEN$',
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                'Chatgpt-Account-Id': '$ACCOUNT_ID$'
+                'Chatgpt-Account-Id': accountId
             }
         })
     });
