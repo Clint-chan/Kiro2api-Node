@@ -329,8 +329,8 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
 
       if (req.body.allowed_channels !== undefined || req.body.allowed_models !== undefined) {
         const permissions = normalizeUserPermissions(req.body.allowed_channels, req.body.allowed_models);
-        allowedUpdates.allowed_channels = permissions.allowed_channels;
-        allowedUpdates.allowed_models = permissions.allowed_models;
+        allowedUpdates.allowed_channels = JSON.stringify(permissions.allowed_channels);
+        allowedUpdates.allowed_models = permissions.allowed_models.length > 0 ? JSON.stringify(permissions.allowed_models) : null;
       }
 
       // Remove undefined values
