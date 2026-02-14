@@ -88,7 +88,7 @@ async function startServer() {
       }
     }
 
-    console.log('✓ 账号池初始化完成');
+    logger.info('账号池初始化完成');
 
     let cliproxyClient = null;
     if (process.env.CLIPROXY_MANAGEMENT_URL && process.env.CLIPROXY_MANAGEMENT_KEY) {
@@ -104,11 +104,11 @@ async function startServer() {
         const antigravityCount = files.filter(f => f.provider === 'antigravity').length;
         const codexCount = files.filter(f => f.provider === 'codex').length;
         
-        console.log('✓ CLIProxy 渠道检测完成');
-        console.log(`  - Antigravity: ${antigravityCount} 个账号`);
-        console.log(`  - Codex: ${codexCount} 个账号`);
+        logger.info('CLIProxy 渠道检测完成');
+        logger.info('CLIProxy Antigravity账号数', { count: antigravityCount });
+        logger.info('CLIProxy Codex账号数', { count: codexCount });
       } catch (error) {
-        console.log('⚠ CLIProxy 渠道检测失败:', error.message);
+        logger.warn('CLIProxy 渠道检测失败', { error: error.message });
       }
     }
 
@@ -299,9 +299,9 @@ async function startServer() {
           const cutoffDate = thirtyDaysAgo.toISOString();
           
           const result = db.db.prepare('DELETE FROM request_logs WHERE timestamp < ?').run(cutoffDate);
-          console.log(`[日志清理] 已删除 ${result.changes} 条超过30天的日志`);
+          logger.info('日志清理完成', { deletedCount: result.changes });
         } catch (error) {
-          console.error('[日志清理] 错误:', error);
+          logger.error('日志清理错误', { error });
         }
       }
 
@@ -310,7 +310,7 @@ async function startServer() {
     });
 
     server.on('error', (error) => {
-      console.error('❌ 服务器错误:', error);
+      logger.error('服务器错误', { error });
       process.exit(1);
     });
 
