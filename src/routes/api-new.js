@@ -355,19 +355,9 @@ export function createApiRouter(state) {
         return permissionError;
       }
 
-      if (route.channel === 'antigravity') {
+      if (route.channel === 'antigravity' || route.channel === 'codex') {
         req.body.model = route.model;
         return await handleAntigravityClaudeRequest(req, res);
-      }
-
-      if (route.channel === 'codex') {
-        return res.status(400).json({
-          type: 'error',
-          error: {
-            type: 'invalid_request_error',
-            message: 'GPT/Codex models are only available via /v1/chat/completions endpoint. Please use the OpenAI-compatible format.'
-          }
-        });
       }
 
       const user = req.user;

@@ -139,7 +139,7 @@ export class BillingManager {
         newBalance,
         previousBalance: user.balance
       };
-    })();
+    });
   }
 
   /**
