@@ -10,6 +10,8 @@
  * 参考：Netflix Hystrix、AWS CloudWatch、Google SRE
  */
 
+import { logger } from './logger.js';
+
 export class BalanceMonitor {
   constructor(accountPool, options = {}) {
     this.accountPool = accountPool;
@@ -38,21 +40,21 @@ export class BalanceMonitor {
    */
   start() {
     if (!this.enabled) {
-      console.log('⚠ 余额监控器已禁用');
+      logger.warn('余额监控器已禁用');
       return;
     }
 
-    console.log(`✓ 余额监控器已启动 (刷新间隔: ${this.refreshInterval / 1000}秒)`);
+    logger.info('余额监控器已启动', { refreshIntervalSeconds: this.refreshInterval / 1000 });
     
     // 立即执行一次刷新
     this.refresh().catch(err => {
-      console.error('初始余额刷新失败:', err);
+      logger.error('初始余额刷新失败', { error: err });
     });
 
     // 定期刷新
     this.timer = setInterval(() => {
       this.refresh().catch(err => {
-        console.error('定期余额刷新失败:', err);
+        logger.error('定期余额刷新失败', { error: err });
       });
     }, this.refreshInterval);
   }
@@ -64,7 +66,7 @@ export class BalanceMonitor {
     if (this.timer) {
       clearInterval(this.timer);
       this.timer = null;
-      console.log('✓ 余额监控器已停止');
+      logger.info('余额监控器已停止');
     }
   }
 
@@ -73,7 +75,7 @@ export class BalanceMonitor {
    */
   async refresh() {
     if (this.isRefreshing) {
-      console.log('⚠ 余额刷新正在进行中，跳过');
+      logger.warn('余额刷新正在进行中，跳过');
       return;
     }
 
@@ -109,10 +111,10 @@ export class BalanceMonitor {
       this.stats.failedRefreshes += (results.length - successful);
       this.stats.lastRefreshDuration = Date.now() - startTime;
 
-      console.log(`✓ 余额刷新完成: ${successful}/${results.length} 成功 (${this.stats.lastRefreshDuration}ms)`);
+      logger.info('余额刷新完成', { successful, total: results.length, durationMs: this.stats.lastRefreshDuration });
 
     } catch (error) {
-      console.error('余额刷新失败:', error);
+      logger.error('余额刷新失败', { error });
     } finally {
       this.isRefreshing = false;
     }
@@ -127,16 +129,16 @@ export class BalanceMonitor {
       this.lastRefreshTime.set(accountId, Date.now());
       return !usage?.error;
     } catch (error) {
-      console.error(`刷新账号 ${accountId} 失败:`, error.message);
+      logger.error('刷新账号失败', { accountId, error: error.message });
       return false;
     }
   }
 
   /**
-   * 手动触发刷新
-   */
+    * 手动触发刷新
+    */
   async forceRefresh(accountId) {
-    console.log(`🔄 强制刷新账号 ${accountId}`);
+    logger.info('强制刷新账号', { accountId });
     return this.refreshAccount(accountId);
   }
 

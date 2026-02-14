@@ -3,6 +3,7 @@ import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { TokenManager } from './token.js';
 import { checkUsageLimits } from './usage.js';
+import { logger } from './logger.js';
 
 const ACCOUNTS_FILE = 'accounts.json';
 const LOGS_FILE = 'request_logs.json';
@@ -30,7 +31,7 @@ export class AccountPool {
           for (const acc of accounts) {
             // 验证必需字段
             if (!acc.refresh_token) {
-              console.log(`⚠ 跳过账号 ${acc.name}: refresh_token 为空`);
+              logger.warn('跳过账号：refresh_token为空', { accountName: acc.name });
               continue;
             }
 
@@ -75,12 +76,12 @@ export class AccountPool {
             try {
               this.tokenManagers.set(account.id, new TokenManager(this.config, account.credentials));
             } catch (e) {
-              console.log(`⚠ 无法为账号 ${acc.name} 创建 TokenManager: ${e.message}`);
+              logger.warn('无法创建TokenManager', { accountName: acc.name, error: e.message });
             }
           }
-          console.log(`✓ 加载了 ${accounts.length} 个账号`);
+          logger.info('加载账号完成', { count: accounts.length });
         } catch (e) {
-          console.error('从数据库加载账号失败:', e);
+          logger.error('从数据库加载账号失败', { error: e });
         }
       } else {
         // 兼容旧的 JSON 文件方式
@@ -99,22 +100,22 @@ export class AccountPool {
             this.accounts.set(acc.id, acc);
             this.tokenManagers.set(acc.id, new TokenManager(this.config, acc.credentials));
           }
-          if (changed) {
-            await fs.writeFile(accountsPath, JSON.stringify(accounts, null, 2));
-          }
-          console.log(`✓ 加载了 ${accounts.length} 个账号`);
-        } catch { }
-      }
+           if (changed) {
+             await fs.writeFile(accountsPath, JSON.stringify(accounts, null, 2));
+           }
+           logger.info('加载账号完成', { count: accounts.length });
+         } catch { }
+       }
 
-      // 加载日志（暂时保留，未来可以从数据库读取）
-      const logsPath = path.join(this.config.dataDir, LOGS_FILE);
-      try {
-        const content = await fs.readFile(logsPath, 'utf-8');
-        this.logs = JSON.parse(content).slice(-this.maxLogs);
-      } catch { }
-    } catch (e) {
-      console.error('加载账号池失败:', e);
-    }
+       // 加载日志（暂时保留，未来可以从数据库读取）
+       const logsPath = path.join(this.config.dataDir, LOGS_FILE);
+       try {
+         const content = await fs.readFile(logsPath, 'utf-8');
+         this.logs = JSON.parse(content).slice(-this.maxLogs);
+       } catch { }
+     } catch (e) {
+       logger.error('加载账号池失败', { error: e });
+     }
   }
 
   async save() {
@@ -163,7 +164,7 @@ export class AccountPool {
     // 同步到数据库
     if (this.db) {
       this.db.insertKiroAccount(newAccount);
-      console.log(`✓ 账号 ${newAccount.name} (${id}) 已添加到数据库`);
+      logger.info('账号已添加到数据库', { accountName: newAccount.name, accountId: id });
     }
     
     return id;
@@ -179,7 +180,7 @@ export class AccountPool {
       // 同步到数据库
       if (this.db && !skipDbDelete) {
         this.db.deleteKiroAccount(id);
-        console.log(`✓ 账号 ${id} 已从数据库删除`);
+        logger.info('账号已从数据库删除', { accountId: id });
       }
     }
     return removed;
@@ -236,7 +237,7 @@ export class AccountPool {
       if (available < minBalance) {
         if (account.status === 'active' || account.status === 'error' || account.status === 'cooldown') {
           account.status = 'depleted';
-          console.log(`💀 账号 ${account.name} 余额不足 (${available}/${minBalance})，已标记为 depleted`);
+          logger.warn('账号余额不足，标记为depleted', { accountName: account.name, available, minBalance });
         }
       } else {
         if (account.status === 'depleted') {
@@ -246,11 +247,11 @@ export class AccountPool {
 
           if (canRecover) {
             account.status = 'active';
-            console.log(`✓ 账号 ${account.name} 余额充足 (${available}/${minBalance})，已恢复为 active`);
+            logger.info('账号余额充足，恢复为active', { accountName: account.name, available, minBalance });
           }
         } else if (account.status === 'error' || account.status === 'cooldown') {
           account.status = 'active';
-          console.log(`✓ 账号 ${account.name} 状态从 ${account.status} 恢复为 active`);
+          logger.info('账号状态恢复为active', { accountName: account.name, previousStatus: account.status });
         }
       }
 
@@ -264,7 +265,7 @@ export class AccountPool {
 
       return account.usage;
     } catch (e) {
-      console.error(`刷新账号 ${id} 额度失败:`, e.message);
+      logger.error('刷新账号额度失败', { accountId: id, error: e.message });
 
       // 检查是否被封禁
       if (e.message.startsWith('BANNED:')) {
@@ -360,7 +361,7 @@ export class AccountPool {
       });
 
     if (available.length === 0) {
-      console.error('❌ 没有可用账号');
+      logger.error('没有可用账号');
       return null;
     }
 
@@ -427,11 +428,11 @@ export class AccountPool {
   async markInvalid(id) {
     const account = this.accounts.get(id);
     if (!account) {
-      console.error(`❌ 账号 ${id} 不存在于 accountPool 中`);
+      logger.error('账号不存在于accountPool', { accountId: id });
       // 即使内存中没有，也尝试更新数据库
       if (this.db) {
         this.db.updateKiroAccountStatus(id, 'error');
-        console.log(`✓ 已在数据库中标记账号 ${id} 为 error`);
+        logger.info('已在数据库中标记账号为error', { accountId: id });
         return true;
       }
       return false;
@@ -444,7 +445,7 @@ export class AccountPool {
     if (this.db) {
       this.db.updateKiroAccountStatus(id, 'error');
     }
-    console.log(`✓ 已标记账号 ${account.name} (${id}) 为 error`);
+    logger.info('已标记账号为error', { accountName: account.name, accountId: id });
   }
 
   /**
@@ -454,10 +455,10 @@ export class AccountPool {
   async markDepleted(id) {
     const account = this.accounts.get(id);
     if (!account) {
-      console.error(`❌ 账号 ${id} 不存在于 accountPool 中`);
+      logger.error('账号不存在于accountPool', { accountId: id });
       if (this.db) {
         this.db.updateKiroAccountStatus(id, 'depleted');
-        console.log(`✓ 已在数据库中标记账号 ${id} 为 depleted`);
+        logger.info('已在数据库中标记账号为depleted', { accountId: id });
         return true;
       }
       return false;
@@ -470,18 +471,18 @@ export class AccountPool {
     if (this.db) {
       this.db.updateKiroAccountStatus(id, 'depleted');
     }
-    console.log(`💀 已标记账号 ${account.name} (${id}) 为 DEPLETED（余额耗尽）`);
+    logger.warn('已标记账号为DEPLETED', { accountName: account.name, accountId: id });
     return true;
   }
 
   async enableAccount(id) {
     const account = this.accounts.get(id);
     if (!account) {
-      console.error(`❌ 账号 ${id} 不存在于 accountPool 中`);
+      logger.error('账号不存在于accountPool', { accountId: id });
       // 即使内存中没有，也尝试更新数据库
       if (this.db) {
         this.db.updateKiroAccountStatus(id, 'active');
-        console.log(`✓ 已在数据库中启用账号 ${id}`);
+        logger.info('已在数据库中启用账号', { accountId: id });
         return true;
       }
       return false;
@@ -494,18 +495,18 @@ export class AccountPool {
     if (this.db) {
       this.db.updateKiroAccountStatus(id, 'active');
     }
-    console.log(`✓ 已启用账号 ${account.name} (${id})`);
+    logger.info('已启用账号', { accountName: account.name, accountId: id });
     return true;
   }
 
   async disableAccount(id) {
     const account = this.accounts.get(id);
     if (!account) {
-      console.error(`❌ 账号 ${id} 不存在于 accountPool 中`);
+      logger.error('账号不存在于accountPool', { accountId: id });
       // 即使内存中没有，也尝试更新数据库
       if (this.db) {
         this.db.updateKiroAccountStatus(id, 'disabled');
-        console.log(`✓ 已在数据库中禁用账号 ${id}`);
+        logger.info('已在数据库中禁用账号', { accountId: id });
         return true;
       }
       return false;
@@ -518,7 +519,7 @@ export class AccountPool {
     if (this.db) {
       this.db.updateKiroAccountStatus(id, 'disabled');
     }
-    console.log(`✓ 已禁用账号 ${account.name} (${id})`);
+    logger.info('已禁用账号', { accountName: account.name, accountId: id });
     return true;
   }
 
