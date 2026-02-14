@@ -409,16 +409,12 @@ response = client.chat.completions.create(
         }
 
         function copyApiKey() {
-            navigator.clipboard.writeText(user.api_key || token).then(() => {
-                showToast('API Key 已复制', 'success');
-            });
+            copyToClipboard(user.api_key || token, 'API Key 已复制');
         }
 
         function copyBaseUrl() {
             const baseUrl = document.getElementById('baseUrl').value;
-            navigator.clipboard.writeText(baseUrl).then(() => {
-                showToast('Base URL 已复制', 'success');
-            });
+            copyToClipboard(baseUrl, 'Base URL 已复制');
         }
 
         function switchTab(tab) {
@@ -429,7 +425,9 @@ response = client.chat.completions.create(
             document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.remove('border-transparent', 'text-gray-500');
             document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.add('border-blue-500', 'text-blue-600');
 
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
             document.getElementById('tab-' + tab).classList.remove('hidden');
 
             if (tab === 'logs') loadLogs();
@@ -509,7 +507,9 @@ response = client.chat.completions.create(
             document.querySelector(`.guide-tab[data-tab="${tab}"]`).classList.add('border-blue-500', 'text-blue-600');
 
             // 切换内容
-            document.querySelectorAll('.guide-content').forEach(content => content.classList.add('hidden'));
+            document.querySelectorAll('.guide-content').forEach(content => {
+                content.classList.add('hidden');
+            });
             document.getElementById(`guide-${tab}`).classList.remove('hidden');
         }
 
@@ -529,24 +529,8 @@ response = client.chat.completions.create(
         }
 
         function fallbackCopy(text, successMessage) {
-            const textarea = document.createElement('textarea');
-            textarea.value = text;
-            textarea.style.position = 'fixed';
-            textarea.style.opacity = '0';
-            document.body.appendChild(textarea);
-            textarea.select();
-            try {
-                const successful = document.execCommand('copy');
-                if (successful) {
-                    showToast(successMessage, 'success');
-                } else {
-                    showToast('复制失败,请手动复制', 'error');
-                }
-            } catch (err) {
-                console.error('Fallback copy failed:', err);
-                showToast('复制失败,请手动复制', 'error');
-            }
-            document.body.removeChild(textarea);
+            window.prompt('复制失败，请手动复制:', String(text ?? ''));
+            showToast('复制失败，请手动复制', 'error');
         }
 
         function copyClaudeConfig() {
