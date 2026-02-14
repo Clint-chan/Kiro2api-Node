@@ -18,10 +18,11 @@ const OPUS_MODELS = new Set([
 
 /**
  * 模型到 Antigravity 的映射（fallback）
+ * 注：Claude Opus 4.5 已不可用，已升级至 Opus 4.6
  */
 const KIRO_TO_AGT_FALLBACK = {
-  'claude-opus-4-5': 'claude-opus-4-5-thinking',
-  'claude-opus-4-5-20251101': 'claude-opus-4-5-thinking',
+  'claude-opus-4-5': 'claude-opus-4-6-thinking',
+  'claude-opus-4-5-20251101': 'claude-opus-4-6-thinking',
   'claude-opus-4-6': 'claude-opus-4-6-thinking'
 };
 
