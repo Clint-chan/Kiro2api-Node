@@ -752,6 +752,7 @@
                     </div>
                 </div>
             </div>
+            </div>
 
             <!-- Footer -->
             <div class="border-t border-gray-200 bg-gray-50 p-6">
@@ -1207,11 +1208,10 @@
                                         <div class="flex items-center justify-between">
                                             <span class="text-sm text-gray-600">预计总充值</span>
                                             <span class="text-2xl font-bold text-blue-600" id="preview-total">-</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2814,17 +2814,30 @@
                                 </td>
                                 <td class="px-4 py-4">
                                     <div class="flex items-center gap-2">
-                                        <button onclick="showSubscriptionModal('${u.id}', '${u.username}')" class="p-1.5 text-purple-600 hover:bg-purple-50 rounded transition" title="订阅管理">
+                                        <button
+                                            data-user-id="${u.id}"
+                                            data-username="${escapeHtml(u.username)}"
+                                            onclick="showSubscriptionModalFromButton(this)"
+                                            class="p-1.5 text-purple-600 hover:bg-purple-50 rounded transition" title="订阅管理">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                             </svg>
                                         </button>
-                                        <button onclick="showRechargeModal('${u.id}', '${u.username}', ${u.balance})" class="p-1.5 text-green-600 hover:bg-green-50 rounded transition" title="修改额度">
+                                        <button
+                                            data-user-id="${u.id}"
+                                            data-username="${escapeHtml(u.username)}"
+                                            data-balance="${Number(u.balance) || 0}"
+                                            onclick="showRechargeModalFromButton(this)"
+                                            class="p-1.5 text-green-600 hover:bg-green-50 rounded transition" title="修改额度">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                                             </svg>
                                         </button>
-                                        <button onclick="showPermissionModal('${u.id}', '${u.username.replace(/'/g, "\\'")}')" class="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded transition" title="权限管理">
+                                        <button
+                                            data-user-id="${u.id}"
+                                            data-username="${escapeHtml(u.username)}"
+                                            onclick="showPermissionModalFromButton(this)"
+                                            class="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded transition" title="权限管理">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"/>
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422A12.083 12.083 0 0112 20.055a12.083 12.083 0 01-6.16-9.477L12 14z"/>
@@ -3160,6 +3173,23 @@
                 .replace(/>/g, '&gt;')
                 .replace(/"/g, '&quot;')
                 .replace(/'/g, '&#39;');
+        }
+
+        function showSubscriptionModalFromButton(button) {
+            showSubscriptionModal(button.dataset.userId, button.dataset.username || '');
+        }
+
+        function showRechargeModalFromButton(button) {
+            const balance = Number.parseFloat(button.dataset.balance);
+            showRechargeModal(
+                button.dataset.userId,
+                button.dataset.username || '',
+                Number.isFinite(balance) ? balance : 0
+            );
+        }
+
+        function showPermissionModalFromButton(button) {
+            showPermissionModal(button.dataset.userId, button.dataset.username || '');
         }
 
         function renderImportTypeBadge(type) {
