@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { DatabaseManager } from './database.js';
@@ -32,6 +33,11 @@ async function startServer() {
     console.log('环境变量 NODE_ENV:', process.env.NODE_ENV);
 
     const app = express();
+    
+    app.use(helmet({
+      contentSecurityPolicy: false,
+      crossOriginEmbedderPolicy: false
+    }));
     
     const corsOptions = {
       origin: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : '*',
