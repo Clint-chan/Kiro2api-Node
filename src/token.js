@@ -1,5 +1,6 @@
 import fetch from 'node-fetch';
 import crypto from 'crypto';
+import { logger } from './logger.js';
 
 export class TokenManager {
   constructor(config, credentials) {
@@ -42,7 +43,7 @@ export class TokenManager {
     this.credentials.machineId = machineId;
     const kiroVersion = this.config.kiroVersion || '1.6.0';
 
-    console.log(`[Token] 刷新 Social Token, refreshToken前缀: ${this.credentials.refreshToken?.substring(0, 20)}...`);
+    logger.info('刷新 Social Token', { refreshTokenPrefix: this.credentials.refreshToken?.substring(0, 20) });
 
     const fetchOptions = {
       method: 'POST',
@@ -61,16 +62,16 @@ export class TokenManager {
       try {
         const { HttpsProxyAgent } = await import('https-proxy-agent');
         fetchOptions.agent = new HttpsProxyAgent(this.config.proxyUrl);
-      } catch (e) {
-        console.warn('代理模块未安装，忽略代理设置');
-      }
-    }
+       } catch (e) {
+         logger.warn('代理模块未安装，忽略代理设置');
+       }
+     }
 
-    const response = await fetch(tokenUrl, fetchOptions);
+     const response = await fetch(tokenUrl, fetchOptions);
 
-    if (!response.ok) {
-      const error = await response.text();
-      console.error(`[Token] Social Token 刷新失败: ${response.status} - ${error}`);
+     if (!response.ok) {
+       const error = await response.text();
+       logger.error('Social Token 刷新失败', { status: response.status, error });
       throw new Error(`Social Token 刷新失败: ${response.status} - ${error}`);
     }
 
@@ -83,7 +84,7 @@ export class TokenManager {
       this.credentials.refreshToken = data.refreshToken || data.refresh_token;
     }
 
-    console.log(`[Token] Social Token 刷新成功, 新token前缀: ${this.accessToken?.substring(0, 20)}...`);
+     logger.info('Social Token 刷新成功', { accessTokenPrefix: this.accessToken?.substring(0, 20) });
 
     return this.accessToken;
   }
@@ -117,14 +118,14 @@ export class TokenManager {
       try {
         const { HttpsProxyAgent } = await import('https-proxy-agent');
         fetchOptions.agent = new HttpsProxyAgent(this.config.proxyUrl);
-      } catch (e) {
-        console.warn('代理模块未安装，忽略代理设置');
-      }
-    }
+       } catch (e) {
+         logger.warn('代理模块未安装，忽略代理设置');
+       }
+     }
 
-    const response = await fetch(tokenUrl, fetchOptions);
-    
-    if (!response.ok) {
+     const response = await fetch(tokenUrl, fetchOptions);
+     
+     if (!response.ok) {
       const error = await response.text();
       throw new Error(`IdC Token 刷新失败: ${response.status} - ${error}`);
     }

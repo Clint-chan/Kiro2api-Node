@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3/lib/index.js';
 import path from 'path';
 import fs from 'fs';
+import { logger } from './logger.js';
 
 /**
  * DatabaseManager - Handles all database operations
@@ -41,9 +42,9 @@ export class DatabaseManager {
       // Prepare commonly used statements
       this.prepareStatements();
 
-      console.log('✓ Database initialized successfully');
+      logger.info('Database initialized successfully');
     } catch (error) {
-      console.error('Failed to initialize database:', error);
+      logger.error('Failed to initialize database', { error });
       throw error;
     }
   }
@@ -95,7 +96,7 @@ export class DatabaseManager {
       this.db.exec('CREATE INDEX IF NOT EXISTS idx_recharge_records_user_id ON recharge_records(user_id)');
       this.db.exec('CREATE INDEX IF NOT EXISTS idx_recharge_records_created_at ON recharge_records(created_at)');
       this.db.exec('COMMIT');
-      console.log('✓ Migrated recharge_records amount constraint to support balance adjustments');
+      logger.info('Migrated recharge_records amount constraint to support balance adjustments');
     } catch (error) {
       this.db.exec('ROLLBACK');
       throw error;
@@ -118,7 +119,7 @@ export class DatabaseManager {
       return;
     }
 
-    console.log('🔧 Migrating request_logs foreign key from kiro_accounts_old to kiro_accounts...');
+    logger.info('Migrating request_logs foreign key from kiro_accounts_old to kiro_accounts');
 
     // Disable foreign keys temporarily for migration
     this.db.pragma('foreign_keys = OFF');
@@ -191,11 +192,11 @@ export class DatabaseManager {
       // Re-enable foreign keys
       this.db.pragma('foreign_keys = ON');
       
-      console.log('✓ Successfully migrated request_logs foreign key');
+      logger.info('Successfully migrated request_logs foreign key');
     } catch (error) {
       this.db.exec('ROLLBACK');
       this.db.pragma('foreign_keys = ON');
-      console.error('Failed to migrate request_logs foreign key:', error);
+      logger.error('Failed to migrate request_logs foreign key', { error });
       throw error;
     }
   }
