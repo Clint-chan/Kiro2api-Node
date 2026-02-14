@@ -3,6 +3,8 @@
  * Handles user and admin authentication
  */
 
+import { logger } from '../logger.js';
+
 /**
  * User authentication middleware
  * Validates API key and attaches user to request
@@ -46,7 +48,7 @@ export function userAuthMiddleware(db) {
       req.user = user;
       next();
     } catch (error) {
-      console.error('Authentication error:', error);
+      logger.error('User authentication failed', { error });
       return res.status(500).json({
         error: {
           type: 'internal_error',
@@ -64,7 +66,7 @@ export function userAuthMiddleware(db) {
 export function adminAuthMiddleware(db) {
   return (req, res, next) => {
     try {
-      // Extract credentials from header
+       // Extract credentials from header
       let credential = req.headers['x-admin-key'] || req.headers['x-api-key'];
 
       // Also check Authorization header
@@ -116,7 +118,7 @@ export function adminAuthMiddleware(db) {
         }
       });
     } catch (error) {
-      console.error('Admin authentication error:', error);
+      logger.error('Admin authentication failed', { error });
       return res.status(500).json({
         error: {
           type: 'internal_error',
@@ -183,7 +185,7 @@ export function dualAuthMiddleware(db) {
         }
       });
     } catch (error) {
-      console.error('Dual authentication error:', error);
+      logger.error('Dual authentication failed', { error });
       return res.status(500).json({
         error: {
           type: 'internal_error',
@@ -219,7 +221,7 @@ export function optionalAuthMiddleware(db) {
 
       next();
     } catch (error) {
-      console.error('Optional authentication error:', error);
+      logger.error('Optional authentication failed', { error });
       next();
     }
   };
