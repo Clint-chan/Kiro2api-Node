@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
+import { logger } from './logger.js';
 
 const ANTIGRAVITY_BASE_URLS = [
   process.env.ANTIGRAVITY_BASE_URL,
@@ -708,7 +709,7 @@ export async function callAntigravity(db, account, path, body) {
   const latest = db.getAgtAccountById(account.id) || account;
   const skipInjection = AGT_SKIP_INJECTION_PATHS.includes(path);
   const payload = buildAntigravityRequestBody(body || {}, latest.project_id, skipInjection);
-  console.log('[Antigravity DEBUG] Final payload:', JSON.stringify(payload, null, 2));
+  logger.debug('Antigravity final payload', { payload });
   return requestJsonWithFallback(token, path, payload);
 }
 

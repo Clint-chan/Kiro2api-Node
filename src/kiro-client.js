@@ -1,6 +1,7 @@
 import fetch from 'node-fetch';
 import crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
+import { logger } from './logger.js';
 
 export class KiroApiError extends Error {
   constructor(status, responseText, requestDebug) {
@@ -628,26 +629,20 @@ export class KiroClient {
          // 配对成功
          filteredResults.push(result);
          unpairedToolUseIds.delete(result.toolUseId);
-       } else if (allToolUseIds.has(result.toolUseId)) {
-         // tool_use 存在但已经在历史中配对过了，这是重复的 tool_result
-         console.warn(
-           `⚠ 跳过重复的 tool_result：该 tool_use 已在历史中配对，tool_use_id=${result.toolUseId}`
-         );
-       } else {
-         // 孤立 tool_result - 找不到对应的 tool_use
-         console.warn(
-           `⚠ 跳过孤立的 tool_result：找不到对应的 tool_use，tool_use_id=${result.toolUseId}`
-         );
+        } else if (allToolUseIds.has(result.toolUseId)) {
+          // tool_use 存在但已经在历史中配对过了，这是重复的 tool_result
+          logger.warn('跳过重复的tool_result：该tool_use已在历史中配对', { toolUseId: result.toolUseId });
+        } else {
+          // 孤立 tool_result - 找不到对应的 tool_use
+          logger.warn('跳过孤立的tool_result：找不到对应的tool_use', { toolUseId: result.toolUseId });
          orphanedResults.push(result.toolUseId);
        }
      }
 
-     // 5. 检测真正孤立的 tool_use（有 tool_use 但在历史和当前消息中都没有 tool_result）
-     for (const orphanedId of unpairedToolUseIds) {
-       console.warn(
-         `⚠ 检测到孤立的 tool_use：找不到对应的 tool_result，将从历史中移除，tool_use_id=${orphanedId}`
-       );
-     }
+      // 5. 检测真正孤立的 tool_use（有 tool_use 但在历史和当前消息中都没有 tool_result）
+      for (const orphanedId of unpairedToolUseIds) {
+        logger.warn('检测到孤立的tool_use：找不到对应的tool_result，将从历史中移除', { toolUseId: orphanedId });
+      }
 
       return { validatedResults: filteredResults, orphanedToolUseIds: unpairedToolUseIds };
     }
@@ -685,9 +680,9 @@ export class KiroClient {
         }
       }
       
-      if (removedCount > 0) {
-        console.warn(`⚠ 从历史中移除了 ${removedCount} 个孤立的 tool_use`);
-      }
+       if (removedCount > 0) {
+         logger.warn('从历史中移除孤立的tool_use', { removedCount });
+       }
     }
 
     /**
