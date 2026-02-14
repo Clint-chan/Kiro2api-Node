@@ -36,7 +36,7 @@ export class DatabaseManager {
       this.migrateRechargeRecordsConstraint();
       this.migrateRequestLogsForeignKey();
       this.ensureUserPermissionColumns();
-      this.ensureAgtAccountsTable();
+      this.ensureAntigravityAccountsTable();
 
       // Prepare commonly used statements
       this.prepareStatements();
@@ -681,9 +681,9 @@ export class DatabaseManager {
     return stmt.run(status, accountId);
   }
 
-  ensureAgtAccountsTable() {
+  ensureAntigravityAccountsTable() {
     this.db.exec(`
-      CREATE TABLE IF NOT EXISTS agt_accounts (
+      CREATE TABLE IF NOT EXISTS antigravity_accounts (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         email TEXT,
@@ -709,18 +709,18 @@ export class DatabaseManager {
       )
     `);
 
-    this.db.exec('CREATE INDEX IF NOT EXISTS idx_agt_accounts_status ON agt_accounts(status)');
-    this.db.exec('CREATE INDEX IF NOT EXISTS idx_agt_accounts_email ON agt_accounts(email)');
-    this.db.exec('CREATE INDEX IF NOT EXISTS idx_agt_accounts_project_id ON agt_accounts(project_id)');
+    this.db.exec('CREATE INDEX IF NOT EXISTS idx_antigravity_accounts_status ON antigravity_accounts(status)');
+    this.db.exec('CREATE INDEX IF NOT EXISTS idx_antigravity_accounts_email ON antigravity_accounts(email)');
+    this.db.exec('CREATE INDEX IF NOT EXISTS idx_antigravity_accounts_project_id ON antigravity_accounts(project_id)');
 
-    const existingColumns = this.db.prepare('PRAGMA table_info(agt_accounts)').all();
+    const existingColumns = this.db.prepare('PRAGMA table_info(antigravity_accounts)').all();
     const columnNames = new Set(existingColumns.map((column) => column.name));
     const migrations = [
-      ['plan_tier', 'ALTER TABLE agt_accounts ADD COLUMN plan_tier TEXT'],
-      ['paid_tier', 'ALTER TABLE agt_accounts ADD COLUMN paid_tier TEXT'],
-      ['next_reset', 'ALTER TABLE agt_accounts ADD COLUMN next_reset TEXT'],
-      ['model_quotas', 'ALTER TABLE agt_accounts ADD COLUMN model_quotas TEXT'],
-      ['last_usage_sync_at', 'ALTER TABLE agt_accounts ADD COLUMN last_usage_sync_at TEXT']
+      ['plan_tier', 'ALTER TABLE antigravity_accounts ADD COLUMN plan_tier TEXT'],
+      ['paid_tier', 'ALTER TABLE antigravity_accounts ADD COLUMN paid_tier TEXT'],
+      ['next_reset', 'ALTER TABLE antigravity_accounts ADD COLUMN next_reset TEXT'],
+      ['model_quotas', 'ALTER TABLE antigravity_accounts ADD COLUMN model_quotas TEXT'],
+      ['last_usage_sync_at', 'ALTER TABLE antigravity_accounts ADD COLUMN last_usage_sync_at TEXT']
     ];
 
     for (const [column, migration] of migrations) {
@@ -787,13 +787,13 @@ export class DatabaseManager {
     return stmt.run(accountId);
   }
 
-  getAgtAccountById(id) {
-    const stmt = this.db.prepare('SELECT * FROM agt_accounts WHERE id = ?');
+  getAntigravityAccountById(id) {
+    const stmt = this.db.prepare('SELECT * FROM antigravity_accounts WHERE id = ?');
     return stmt.get(id);
   }
 
-  getAllAgtAccounts(status = null) {
-    let query = 'SELECT * FROM agt_accounts';
+  getAllAntigravityAccounts(status = null) {
+    let query = 'SELECT * FROM antigravity_accounts';
     const params = [];
 
     if (status) {
@@ -805,9 +805,9 @@ export class DatabaseManager {
     return this.db.prepare(query).all(...params);
   }
 
-  insertAgtAccount(accountData) {
+  insertAntigravityAccount(accountData) {
     const query = `
-      INSERT INTO agt_accounts (
+      INSERT INTO antigravity_accounts (
         id, name, email, project_id,
         access_token, refresh_token,
         expires_in, expired, timestamp,
@@ -843,19 +843,19 @@ export class DatabaseManager {
     );
   }
 
-  updateAgtAccountStatus(accountId, status) {
+  updateAntigravityAccountStatus(accountId, status) {
     const stmt = this.db.prepare(`
-      UPDATE agt_accounts
+      UPDATE antigravity_accounts
       SET status = ?, updated_at = ?
       WHERE id = ?
     `);
     return stmt.run(status, new Date().toISOString(), accountId);
   }
 
-  updateAgtAccountStats(accountId, isError = false) {
+  updateAntigravityAccountStats(accountId, isError = false) {
     const now = new Date().toISOString();
     const stmt = this.db.prepare(`
-      UPDATE agt_accounts
+      UPDATE antigravity_accounts
       SET request_count = request_count + 1,
           error_count = error_count + ?,
           last_used_at = ?,
@@ -865,9 +865,9 @@ export class DatabaseManager {
     return stmt.run(isError ? 1 : 0, now, now, accountId);
   }
 
-  updateAgtAccountTokens(accountId, updates) {
+  updateAntigravityAccountTokens(accountId, updates) {
     const stmt = this.db.prepare(`
-      UPDATE agt_accounts
+      UPDATE antigravity_accounts
       SET access_token = ?,
           refresh_token = ?,
           expires_in = ?,
@@ -892,9 +892,9 @@ export class DatabaseManager {
     );
   }
 
-  updateAgtAccountUsageMeta(accountId, updates) {
+  updateAntigravityAccountUsageMeta(accountId, updates) {
     const stmt = this.db.prepare(`
-      UPDATE agt_accounts
+      UPDATE antigravity_accounts
       SET plan_tier = ?,
           paid_tier = ?,
           next_reset = ?,
@@ -915,8 +915,8 @@ export class DatabaseManager {
     );
   }
 
-  deleteAgtAccount(accountId) {
-    const stmt = this.db.prepare('DELETE FROM agt_accounts WHERE id = ?');
+  deleteAntigravityAccount(accountId) {
+    const stmt = this.db.prepare('DELETE FROM antigravity_accounts WHERE id = ?');
     return stmt.run(accountId);
   }
 
