@@ -4,7 +4,7 @@ import { TokenManager } from '../token.js';
 import {
   callAntigravity,
   fetchAntigravityModelsWithMeta,
-  normalizeImportedAgtAccount
+  normalizeImportedAntigravityAccount
 } from '../antigravity.js';
 
 /**
@@ -45,7 +45,7 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
 
   function normalizeUserPermissions(channelsRaw, modelsRaw) {
     const allowedChannels = toStringArray(channelsRaw);
-    const validChannels = ['kiro', 'agt', 'antigravity', 'codex'];
+    const validChannels = ['kiro', 'antigravity', 'codex'];
     const normalizedChannels = allowedChannels.filter((channel) => validChannels.includes(channel));
     const nextChannels = normalizedChannels.length > 0 ? normalizedChannels : ['kiro'];
 
@@ -64,7 +64,7 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
     };
   }
 
-  function normalizeAgtTier(usage) {
+  function normalizeAntigravityTier(usage) {
     const paidTier = usage?.paidTier?.id || usage?.paidTier || null;
     const currentTier = usage?.currentTier?.id || usage?.currentTier || null;
     return {
@@ -1366,25 +1366,25 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
     }
   });
 
-  router.get('/agt-accounts', (req, res) => {
+  router.get('/antigravity-accounts', (req, res) => {
     try {
-      const accounts = db.getAllAgtAccounts().map((account) => ({
+      const accounts = db.getAllAntigravityAccounts().map((account) => ({
         ...account,
         model_quotas: parseJsonSafe(account.model_quotas)
       }));
       res.json({ success: true, data: accounts });
     } catch (error) {
-      console.error('Get AGT accounts error:', error);
+      console.error('Get Antigravity accounts error:', error);
       res.status(500).json({
         error: {
           type: 'internal_error',
-          message: 'Failed to retrieve AGT accounts.'
+          message: 'Failed to retrieve Antigravity accounts.'
         }
       });
     }
   });
 
-  router.post('/agt-accounts/import', async (req, res) => {
+  router.post('/antigravity-accounts/import', async (req, res) => {
     try {
       const { raw_json } = req.body;
       if (!raw_json) {
@@ -1410,8 +1410,8 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
       for (let i = 0; i < records.length; i++) {
         const raw = records[i];
         try {
-          const normalized = normalizeImportedAgtAccount(raw, i);
-          db.insertAgtAccount(normalized);
+          const normalized = normalizeImportedAntigravityAccount(raw, i);
+          db.insertAntigravityAccount(normalized);
           results.push({ success: true, id: normalized.id, name: normalized.name });
         } catch (e) {
           results.push({
@@ -1430,7 +1430,7 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
         results
       });
     } catch (error) {
-      console.error('Import AGT accounts error:', error);
+      console.error('Import Antigravity accounts error:', error);
       res.status(400).json({
         error: {
           type: 'validation_error',
@@ -1440,90 +1440,90 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
     }
   });
 
-  router.post('/agt-accounts/:id/enable', (req, res) => {
+  router.post('/antigravity-accounts/:id/enable', (req, res) => {
     try {
       const { id } = req.params;
-      const account = db.getAgtAccountById(id);
+      const account = db.getAntigravityAccountById(id);
       if (!account) {
         return res.status(404).json({
           error: {
             type: 'not_found',
-            message: 'AGT account not found.'
+            message: 'Antigravity account not found.'
           }
         });
       }
-      db.updateAgtAccountStatus(id, 'active');
-      res.json({ success: true, message: 'AGT account enabled successfully' });
+      db.updateAntigravityAccountStatus(id, 'active');
+      res.json({ success: true, message: 'Antigravity account enabled successfully' });
     } catch (error) {
-      console.error('Enable AGT account error:', error);
+      console.error('Enable Antigravity account error:', error);
       res.status(500).json({
         error: {
           type: 'internal_error',
-          message: `Failed to enable AGT account: ${error.message}`
+          message: `Failed to enable Antigravity account: ${error.message}`
         }
       });
     }
   });
 
-  router.post('/agt-accounts/:id/disable', (req, res) => {
+  router.post('/antigravity-accounts/:id/disable', (req, res) => {
     try {
       const { id } = req.params;
-      const account = db.getAgtAccountById(id);
+      const account = db.getAntigravityAccountById(id);
       if (!account) {
         return res.status(404).json({
           error: {
             type: 'not_found',
-            message: 'AGT account not found.'
+            message: 'Antigravity account not found.'
           }
         });
       }
-      db.updateAgtAccountStatus(id, 'disabled');
-      res.json({ success: true, message: 'AGT account disabled successfully' });
+      db.updateAntigravityAccountStatus(id, 'disabled');
+      res.json({ success: true, message: 'Antigravity account disabled successfully' });
     } catch (error) {
-      console.error('Disable AGT account error:', error);
+      console.error('Disable Antigravity account error:', error);
       res.status(500).json({
         error: {
           type: 'internal_error',
-          message: `Failed to disable AGT account: ${error.message}`
+          message: `Failed to disable Antigravity account: ${error.message}`
         }
       });
     }
   });
 
-  router.delete('/agt-accounts/:id', (req, res) => {
+  router.delete('/antigravity-accounts/:id', (req, res) => {
     try {
       const { id } = req.params;
-      const account = db.getAgtAccountById(id);
+      const account = db.getAntigravityAccountById(id);
       if (!account) {
         return res.status(404).json({
           error: {
             type: 'not_found',
-            message: 'AGT account not found.'
+            message: 'Antigravity account not found.'
           }
         });
       }
-      db.deleteAgtAccount(id);
-      res.json({ success: true, message: 'AGT account deleted successfully' });
+      db.deleteAntigravityAccount(id);
+      res.json({ success: true, message: 'Antigravity account deleted successfully' });
     } catch (error) {
-      console.error('Delete AGT account error:', error);
+      console.error('Delete Antigravity account error:', error);
       res.status(500).json({
         error: {
           type: 'internal_error',
-          message: 'Failed to delete AGT account.'
+          message: 'Failed to delete Antigravity account.'
         }
       });
     }
   });
 
-  router.post('/agt-accounts/:id/refresh-models', async (req, res) => {
+  router.post('/antigravity-accounts/:id/refresh-models', async (req, res) => {
     try {
       const { id } = req.params;
-      const account = db.getAgtAccountById(id);
+      const account = db.getAntigravityAccountById(id);
       if (!account) {
         return res.status(404).json({
           error: {
             type: 'not_found',
-            message: 'AGT account not found.'
+            message: 'Antigravity account not found.'
           }
         });
       }
@@ -1531,33 +1531,33 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
       const modelMap = await fetchAntigravityModelsWithMeta(db, account);
       const models = Object.keys(modelMap || {});
       const quotaMeta = extractQuotaMeta(modelMap);
-      db.updateAgtAccountUsageMeta(id, {
+      db.updateAntigravityAccountUsageMeta(id, {
         model_quotas: quotaMeta.model_quotas,
         next_reset: quotaMeta.next_reset
       });
-      db.updateAgtAccountStats(id, false);
+      db.updateAntigravityAccountStats(id, false);
       res.json({ success: true, data: { models, next_reset: quotaMeta.next_reset } });
     } catch (error) {
-      console.error('Refresh AGT models error:', error);
-      db.updateAgtAccountStats(req.params.id, true);
+      console.error('Refresh Antigravity models error:', error);
+      db.updateAntigravityAccountStats(req.params.id, true);
       res.status(500).json({
         error: {
           type: 'internal_error',
-          message: error.message || 'Failed to refresh AGT models.'
+          message: error.message || 'Failed to refresh Antigravity models.'
         }
       });
     }
   });
 
-  router.post('/agt-accounts/:id/refresh-usage', async (req, res) => {
+  router.post('/antigravity-accounts/:id/refresh-usage', async (req, res) => {
     try {
       const { id } = req.params;
-      const account = db.getAgtAccountById(id);
+      const account = db.getAntigravityAccountById(id);
       if (!account) {
         return res.status(404).json({
           error: {
             type: 'not_found',
-            message: 'AGT account not found.'
+            message: 'Antigravity account not found.'
           }
         });
       }
@@ -1571,12 +1571,12 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
       });
 
       const projectId = usage?.cloudaicompanionProject?.id || usage?.cloudaicompanionProject || account.project_id || null;
-      const tierMeta = normalizeAgtTier(usage);
+      const tierMeta = normalizeAntigravityTier(usage);
       
       const modelMap = await fetchAntigravityModelsWithMeta(db, account);
       const quotaMeta = extractQuotaMeta(modelMap);
       
-      db.updateAgtAccountTokens(id, {
+      db.updateAntigravityAccountTokens(id, {
         access_token: account.access_token,
         refresh_token: account.refresh_token,
         expires_in: account.expires_in,
@@ -1586,22 +1586,22 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
         email: account.email
       });
 
-      db.updateAgtAccountUsageMeta(id, {
+      db.updateAntigravityAccountUsageMeta(id, {
         plan_tier: tierMeta.plan_tier,
         paid_tier: tierMeta.paid_tier,
         next_reset: quotaMeta.next_reset,
         model_quotas: quotaMeta.model_quotas
       });
 
-      db.updateAgtAccountStats(id, false);
+      db.updateAntigravityAccountStats(id, false);
       res.json({ success: true, data: { usage, project_id: projectId, ...tierMeta, ...quotaMeta } });
     } catch (error) {
-      console.error('Refresh AGT usage error:', error);
-      db.updateAgtAccountStats(req.params.id, true);
+      console.error('Refresh Antigravity usage error:', error);
+      db.updateAntigravityAccountStats(req.params.id, true);
       res.status(500).json({
         error: {
           type: 'internal_error',
-          message: error.message || 'Failed to refresh AGT usage.'
+          message: error.message || 'Failed to refresh Antigravity usage.'
         }
       });
     }

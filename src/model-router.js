@@ -22,7 +22,7 @@ const OPUS_MODELS = new Set([
  * 模型到 Antigravity 的映射（fallback）
  * 注：Claude Opus 4.5 已不可用，已升级至 Opus 4.6
  */
-const KIRO_TO_AGT_FALLBACK = {
+const KIRO_TO_ANTIGRAVITY_FALLBACK = {
   'claude-opus-4-5': 'claude-opus-4-6-thinking',
   'claude-opus-4-5-20251101': 'claude-opus-4-6-thinking',
   'claude-opus-4-6': 'claude-opus-4-6-thinking'
@@ -51,7 +51,7 @@ function hasAntigravityPermission(user) {
     return false;
   }
 
-  const hasPermission = channels.includes('antigravity') || channels.includes('agt');
+  const hasPermission = channels.includes('antigravity');
   console.log('[hasAntigravityPermission] Channels:', channels, 'Has permission:', hasPermission);
   return hasPermission;
 }
@@ -91,13 +91,13 @@ export function hasKiroAccountForModel(accountPool, model) {
  * @param {string} model - 模型名称
  * @param {object} accountPool - 账号池对象
  * @param {object} user - 用户对象（用于权限检查）
- * @returns {object} { channel: 'kiro'|'agt'|'codex', model: string, reason: string }
+ * @returns {object} { channel: 'kiro'|'antigravity'|'codex', model: string, reason: string }
  */
 export function routeModel(model, accountPool, user = null) {
-  // 1. 如果已经是 Antigravity 专属模型，直接使用 AGT
+  // 1. 如果已经是 Antigravity 专属模型，直接使用 Antigravity
   if (isAntigravityModel(model)) {
     return {
-      channel: 'agt',
+      channel: 'antigravity',
       model: model,
       reason: 'antigravity_exclusive'
     };
@@ -147,10 +147,10 @@ export function routeModel(model, accountPool, user = null) {
     };
   }
 
-  const agtModel = KIRO_TO_AGT_FALLBACK[model] || `${model}-thinking`;
+  const antigravityModel = KIRO_TO_ANTIGRAVITY_FALLBACK[model] || `${model}-thinking`;
   return {
-    channel: 'agt',
-    model: agtModel,
+    channel: 'antigravity',
+    model: antigravityModel,
     reason: 'kiro_pro_unavailable_fallback'
   };
 }

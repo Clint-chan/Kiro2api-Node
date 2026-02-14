@@ -9,7 +9,7 @@ import fsSync from 'fs';
 import path from 'path';
 import { recordApiStart, recordApiSuccess, recordApiFailure } from './api-new-metrics.js';
 import {
-  AGT_STATIC_MODELS,
+  ANTIGRAVITY_STATIC_MODELS,
   fetchAntigravityModels,
   isAntigravityModel,
   resolveAntigravityUpstreamModel
@@ -98,7 +98,7 @@ export function createApiRouter(state) {
     return remaining > 0;
   }
 
-  async function handleAgtClaudeRequest(req, res) {
+  async function handleAntigravityClaudeRequest(req, res) {
     const cliproxyUrl = process.env.CLIPROXY_URL || 'http://localhost:19865';
     const cliproxyApiKey = process.env.CLIPROXY_API_KEY || 'zxc123';
 
@@ -143,7 +143,7 @@ export function createApiRouter(state) {
     }
   }
 
-  async function handleAgtOpenAIRequest(req, res) {
+  async function handleAntigravityOpenAIRequest(req, res) {
     const cliproxyUrl = process.env.CLIPROXY_URL || 'http://localhost:19865';
     const cliproxyApiKey = process.env.CLIPROXY_API_KEY || 'zxc123';
 
@@ -183,7 +183,7 @@ export function createApiRouter(state) {
             res.write(chunk);
           }
         } catch (streamError) {
-          console.error('[AGT OpenAI] Stream error:', streamError);
+          console.error('[Antigravity OpenAI] Stream error:', streamError);
         } finally {
           res.end();
         }
@@ -194,18 +194,18 @@ export function createApiRouter(state) {
       const data = await response.json();
       return res.json(data);
     } catch (error) {
-      console.error('[AGT OpenAI] Request failed:', error);
+      console.error('[Antigravity OpenAI] Request failed:', error);
       return res.status(500).json({
         error: {
           type: 'api_error',
-          message: `AGT request failed: ${error.message}`
+          message: `Antigravity request failed: ${error.message}`
         }
       });
     }
   }
 
   function resolveModelChannel(modelId) {
-    if (isAntigravityModel(modelId)) return 'agt';
+    if (isAntigravityModel(modelId)) return 'antigravity';
     if (isCodexModel(modelId)) return 'codex';
     return 'kiro';
   }
@@ -223,7 +223,7 @@ export function createApiRouter(state) {
 
   // GET /v1/models
   router.get('/models', (req, res) => {
-    const agtModels = AGT_STATIC_MODELS.map((model) => ({
+    const antigravityModels = ANTIGRAVITY_STATIC_MODELS.map((model) => ({
       id: model.id,
       object: 'model',
       created: 1737158400,
@@ -244,7 +244,7 @@ export function createApiRouter(state) {
     }));
 
     const allModels = [
-      ...agtModels,
+      ...antigravityModels,
       ...codexModels,
       {
         id: 'claude-sonnet-4-5-20250929',
@@ -311,11 +311,11 @@ export function createApiRouter(state) {
         return permissionError;
       }
 
-      if (route.channel === 'agt') {
+      if (route.channel === 'antigravity') {
         req.body.model = route.model;
       }
 
-      return await handleAgtOpenAIRequest(req, res);
+      return await handleAntigravityOpenAIRequest(req, res);
     } catch (error) {
       return res.status(500).json({
         error: {
@@ -355,9 +355,9 @@ export function createApiRouter(state) {
         return permissionError;
       }
 
-      if (route.channel === 'agt') {
+      if (route.channel === 'antigravity') {
         req.body.model = route.model;
-        return await handleAgtClaudeRequest(req, res);
+        return await handleAntigravityClaudeRequest(req, res);
       }
 
       if (route.channel === 'codex') {
@@ -521,7 +521,7 @@ export function createApiRouter(state) {
     }
   });
 
-  router.post('/agt/models/refresh', async (req, res) => {
+  router.post('/antigravity/models/refresh', async (req, res) => {
     try {
       const account = await selectAgtAccount();
       const models = await fetchAntigravityModels(state.db, account);
@@ -530,7 +530,7 @@ export function createApiRouter(state) {
       return res.status(500).json({
         error: {
           type: 'api_error',
-          message: error.message || 'Failed to fetch AGT models'
+          message: error.message || 'Failed to fetch Antigravity models'
         }
       });
     }
