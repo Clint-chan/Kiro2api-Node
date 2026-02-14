@@ -9,6 +9,8 @@
  * 3. 本地软限流 (Soft Limit Prediction)
  */
 
+import { logger } from './logger.js';
+
 export class FailoverHandler {
   constructor(accountPool, options = {}) {
     this.accountPool = accountPool;
@@ -65,7 +67,7 @@ export class FailoverHandler {
         
         // 成功，返回结果
         if (attempt > 0) {
-          console.log(`✓ 故障转移成功 (尝试 ${attempt + 1}/${this.maxRetries})`);
+          logger.info('故障转移成功', { attempt: attempt + 1, maxRetries: this.maxRetries });
         }
         
         return result;
@@ -75,7 +77,7 @@ export class FailoverHandler {
         
         // 流式请求已开始，不能重试（避免重复内容）
         if (hasStartedStreaming) {
-          console.error(`❌ 流式请求已开始输出，无法重试`);
+          logger.error('流式请求已开始输出，无法重试');
           throw error;
         }
         
@@ -84,12 +86,12 @@ export class FailoverHandler {
         
         if (errorType === 'PERMANENT') {
           // 第二道防线：永久性错误，判"死刑"
-          console.log(`⚠ 检测到永久性错误: ${error.message}`);
+          logger.warn('检测到永久性错误', { error: error.message });
           await this.handlePermanentError(error, currentAccount?.id || context.accountId);
           
           // 继续尝试其他账号
           if (attempt < this.maxRetries - 1) {
-            console.log(`🔄 切换到其他账号重试 (${attempt + 1}/${this.maxRetries})`);
+            logger.info('切换到其他账号重试', { attempt: attempt + 1, maxRetries: this.maxRetries });
             // 指数退避 + 抖动
             const delay = this.calculateBackoff(attempt);
             await this.sleep(delay);
@@ -97,11 +99,11 @@ export class FailoverHandler {
           }
         } else if (errorType === 'TEMPORARY') {
           // 临时性错误，短暂延迟后重试
-          console.log(`⚠ 检测到临时性错误: ${error.message}`);
+          logger.warn('检测到临时性错误', { error: error.message });
           await this.handleTemporaryError(error, currentAccount?.id || context.accountId);
           
           if (attempt < this.maxRetries - 1) {
-            console.log(`⏳ 延迟后重试 (${attempt + 1}/${this.maxRetries})`);
+            logger.info('延迟后重试', { attempt: attempt + 1, maxRetries: this.maxRetries });
             // 指数退避 + 抖动
             const delay = this.calculateBackoff(attempt);
             await this.sleep(delay);
@@ -109,14 +111,14 @@ export class FailoverHandler {
           }
         } else {
           // 未知错误，不重试
-          console.error(`❌ 未知错误: ${error.message}`);
+          logger.error('未知错误', { error: error.message });
           break;
         }
       }
     }
 
     // 所有重试都失败了
-    console.error(`❌ 故障转移失败，已尝试 ${this.maxRetries} 次`);
+    logger.error('故障转移失败', { maxRetries: this.maxRetries });
     throw lastError;
   }
 
@@ -198,12 +200,12 @@ export class FailoverHandler {
       
       // 异步刷新余额（不阻塞）
       this.accountPool.refreshAccountUsage(accountId).catch(err => {
-        console.error(`刷新账号 ${accountId} 余额失败:`, err.message);
+        logger.error('刷新账号余额失败', { accountId, error: err.message });
       });
       
-      console.log(`💀 账号 ${accountId} 已标记为 DEPLETED，缓存已更新`);
+      logger.warn('账号已标记为DEPLETED，缓存已更新', { accountId });
     } catch (err) {
-      console.error(`处理永久性错误失败:`, err);
+      logger.error('处理永久性错误失败', { error: err });
     }
   }
 
@@ -219,9 +221,9 @@ export class FailoverHandler {
       const isRateLimit = error.message?.includes('rate') || error.message?.includes('limit');
       await this.accountPool.recordError(accountId, isRateLimit);
       
-      console.log(`⏸️ 账号 ${accountId} 进入冷却期`);
+      logger.info('账号进入冷却期', { accountId });
     } catch (err) {
-      console.error(`处理临时性错误失败:`, err);
+      logger.error('处理临时性错误失败', { error: err });
     }
   }
 
