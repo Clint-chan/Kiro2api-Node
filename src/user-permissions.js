@@ -35,11 +35,7 @@ export function isChannelAllowed(user, channel) {
   
   const allowedChannels = getAllowedChannels(user);
   
-  // 'agt' 和 'antigravity' 是同义词
-  if (normalizedChannel === 'agt' || normalizedChannel === 'antigravity') {
-    return allowedChannels.includes('agt') || allowedChannels.includes('antigravity');
-  }
-  
+  // 'antigravity' 频道
   return allowedChannels.includes(normalizedChannel);
 }
 

@@ -1,6 +1,6 @@
-// CLIProxyAPI AGT Management Functions
+// CLIProxyAPI Antigravity Management Functions
 
-let cliproxyAgtAccounts = [];
+let cliproxyAntigravityAccounts = [];
 let cliproxyQuotaCache = {};
 let isLoadingQuota = false;
 let lastCacheUpdate = null;
@@ -8,7 +8,7 @@ let lastCacheUpdate = null;
 async function loadCliProxyAccounts() {
     try {
         const result = await fetchApi('/api/admin/cliproxy/auth-files');
-        cliproxyAgtAccounts = result.files || [];
+        cliproxyAntigravityAccounts = result.files || [];
         lastCacheUpdate = new Date();
         renderCliProxyAccounts();
         
@@ -21,7 +21,7 @@ async function loadCliProxyAccounts() {
 async function forceRefreshCliProxyAccounts() {
     try {
         const result = await fetchApi('/api/admin/cliproxy/auth-files?refresh=true');
-        cliproxyAgtAccounts = result.files || [];
+        cliproxyAntigravityAccounts = result.files || [];
         lastCacheUpdate = new Date();
         renderCliProxyAccounts();
         
@@ -40,8 +40,8 @@ async function loadCliProxyAgtAccounts() {
 async function refreshAllQuotas() {
     if (isLoadingQuota) return;
     
-    const agtAccounts = cliproxyAgtAccounts.filter(f => f.provider === 'antigravity' && !f.disabled);
-    const codexAccounts = cliproxyAgtAccounts.filter(f => f.provider === 'codex' && !f.disabled);
+    const agtAccounts = cliproxyAntigravityAccounts.filter(f => f.provider === 'antigravity' && !f.disabled);
+    const codexAccounts = cliproxyAntigravityAccounts.filter(f => f.provider === 'codex' && !f.disabled);
     
     if (agtAccounts.length === 0 && codexAccounts.length === 0) return;
     
@@ -86,14 +86,14 @@ async function refreshAllQuotas() {
     
     [...agtResults, ...codexResults].forEach(result => {
         if (result.status === 'success') {
-            console.log(`[${result.provider === 'antigravity' ? 'AGT' : 'Codex'} Quota] Cache update (batch)`, {
+            console.log(`[${result.provider === 'antigravity' ? 'Antigravity' : 'Codex'} Quota] Cache update (batch)`, {
                 account: result.name,
                 status: 'success',
                 dataKeys: Object.keys(result.data || {}).length
             });
             cliproxyQuotaCache[result.name] = { status: 'success', data: result.data, provider: result.provider };
         } else {
-            console.log(`[${result.provider === 'antigravity' ? 'AGT' : 'Codex'} Quota] Cache update (batch)`, {
+            console.log(`[${result.provider === 'antigravity' ? 'Antigravity' : 'Codex'} Quota] Cache update (batch)`, {
                 account: result.name,
                 status: 'error',
                 error: result.error
@@ -112,15 +112,15 @@ async function refreshAllAgtQuotas() {
 }
 
 function renderCliProxyAccounts() {
-    const container = document.getElementById('cliproxy-agt-accounts-table');
+    const container = document.getElementById('cliproxy-antigravity-accounts-table');
     if (!container) return;
 
-    if (!cliproxyAgtAccounts.length) {
+    if (!cliproxyAntigravityAccounts.length) {
         container.innerHTML = '<div class="text-center py-10 text-gray-500">暂无 CLIProxy 账号，点击上方按钮上传凭证</div>';
         return;
     }
 
-    const allAccounts = cliproxyAgtAccounts;
+    const allAccounts = cliproxyAntigravityAccounts;
     
     const cacheStatus = lastCacheUpdate 
         ? `<div class="text-xs text-gray-500 mb-4">缓存更新时间: ${lastCacheUpdate.toLocaleString('zh-CN')}</div>`
@@ -259,7 +259,7 @@ async function refreshSingleQuota(account) {
         } else {
             const projectId = 'bamboo-precept-lgxtn';
             const quota = await fetchAgtQuota(authIndex, projectId);
-            console.log('[AGT Quota] Cache update (single)', {
+            console.log('[Antigravity Quota] Cache update (single)', {
                 account: account.name,
                 status: 'success',
                 modelCount: Object.keys(quota || {}).length
@@ -267,7 +267,7 @@ async function refreshSingleQuota(account) {
             cliproxyQuotaCache[account.name] = { status: 'success', data: quota, provider: 'antigravity' };
         }
     } catch (e) {
-        console.log(`[${account.provider === 'codex' ? 'Codex' : 'AGT'} Quota] Cache update (single)`, {
+        console.log(`[${account.provider === 'codex' ? 'Codex' : 'Antigravity'} Quota] Cache update (single)`, {
             account: account.name,
             status: 'error',
             error: e.message
@@ -283,7 +283,7 @@ async function refreshSingleAgtQuota(account) {
 }
 
 async function fetchAgtQuota(authIndex, projectId) {
-    console.log('[AGT Quota] Start fetch quota', { authIndex, projectId });
+    console.log('[Antigravity Quota] Start fetch quota', { authIndex, projectId });
 
     const result = await fetchApi('/api/admin/cliproxy/api-call', {
         method: 'POST',
@@ -300,7 +300,7 @@ async function fetchAgtQuota(authIndex, projectId) {
         })
     });
 
-    console.log('[AGT Quota] Raw API call result', {
+    console.log('[Antigravity Quota] Raw API call result', {
         statusCode: result?.status_code || result?.statusCode,
         bodyType: typeof result?.body
     });
@@ -310,7 +310,7 @@ async function fetchAgtQuota(authIndex, projectId) {
         try {
             return JSON.parse(value);
         } catch (error) {
-            console.log('[AGT Quota] JSON parse failed', { label, error: error.message, valueSnippet: value.slice(0, 240) });
+            console.log('[Antigravity Quota] JSON parse failed', { label, error: error.message, valueSnippet: value.slice(0, 240) });
             throw new Error(`解析额度数据失败: ${label}`);
         }
     };
@@ -359,7 +359,7 @@ async function fetchAgtQuota(authIndex, projectId) {
     
     if ((result.status_code || result.statusCode) >= 200 && (result.status_code || result.statusCode) < 300) {
         const models = extractModelsFromPayload(result.body);
-        console.log('[AGT Quota] Parsed models', {
+        console.log('[Antigravity Quota] Parsed models', {
             authIndex,
             modelCount: Object.keys(models).length,
             modelKeys: Object.keys(models).slice(0, 10)
@@ -367,7 +367,7 @@ async function fetchAgtQuota(authIndex, projectId) {
         return models;
     }
 
-    console.log('[AGT Quota] API call failed', {
+    console.log('[Antigravity Quota] API call failed', {
         authIndex,
         projectId,
         statusCode: result?.status_code || result?.statusCode,
@@ -628,7 +628,7 @@ function formatAgtQuota(account) {
         const remainingRaw = info?.quotaInfo?.remainingFraction ?? info?.quota_info?.remaining_fraction ?? 0;
         const remaining = Number(remainingRaw);
         const safeRemaining = Number.isFinite(remaining) ? remaining : 0;
-        console.log('[AGT Quota] Format model item', {
+         console.log('[Antigravity Quota] Format model item', {
             account: account.name,
             displayName: displayName,
             remainingFraction: remainingRaw,

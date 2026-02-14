@@ -10,7 +10,7 @@ import { SubscriptionManager } from './subscription.js';
 import { createBalanceMonitor } from './balance-monitor.js';
 import { userAuthMiddleware, adminAuthMiddleware, dualAuthMiddleware } from './middleware/auth.js';
 import { createApiRouter } from './routes/api-new.js';
-import { createAgtNativeRouter } from './routes/agt-native.js';
+import { createAntigravityNativeRouter } from './routes/antigravity-native.js';
 import { createAdminRouter } from './routes/admin-new.js';
 import { createUserRouter } from './routes/user.js';
 import { createUiRouter } from './routes/ui.js';
@@ -87,11 +87,11 @@ async function startServer() {
         const authFiles = await cliproxyClient.getCachedAuthFiles(true);
         const files = authFiles.files || [];
         
-        const agtCount = files.filter(f => f.provider === 'antigravity').length;
+        const antigravityCount = files.filter(f => f.provider === 'antigravity').length;
         const codexCount = files.filter(f => f.provider === 'codex').length;
         
         console.log('✓ CLIProxy 渠道检测完成');
-        console.log(`  - Antigravity (AGT): ${agtCount} 个账号`);
+        console.log(`  - Antigravity: ${antigravityCount} 个账号`);
         console.log(`  - Codex: ${codexCount} 个账号`);
       } catch (error) {
         console.log('⚠ CLIProxy 渠道检测失败:', error.message);
@@ -197,7 +197,7 @@ async function startServer() {
     // Claude API routes (requires user authentication with billing)
     app.use('/v1', createApiRouter(state));
 
-    app.use('/', createAgtNativeRouter(state));
+    app.use('/', createAntigravityNativeRouter(state));
 
     // UI routes - redirect root to login
     app.get('/', (req, res) => res.redirect('/login.html'));
