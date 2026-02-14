@@ -1,4 +1,5 @@
 import express from 'express';
+import { logger } from '../logger.js';
 
 /**
  * User API Routes
@@ -41,7 +42,7 @@ export function createUserRouter(db, billing, subscription) {
         }
       });
     } catch (error) {
-      console.error('Get profile error:', error);
+      logger.error('Get profile error', { error });
       res.status(500).json({
         error: {
           type: 'internal_error',
@@ -64,7 +65,7 @@ export function createUserRouter(db, billing, subscription) {
         data: balanceInfo
       });
     } catch (error) {
-      console.error('Get balance error:', error);
+      logger.error('Get balance error', { error });
       res.status(500).json({
         error: {
           type: 'internal_error',
@@ -102,7 +103,7 @@ export function createUserRouter(db, billing, subscription) {
         }
       });
     } catch (error) {
-      console.error('Get stats error:', error);
+      logger.error('Get stats error', { error });
       res.status(500).json({
         error: {
           type: 'internal_error',
@@ -127,7 +128,7 @@ export function createUserRouter(db, billing, subscription) {
         data: modelStats
       });
     } catch (error) {
-      console.error('Get model stats error:', error);
+      logger.error('Get model stats error', { error });
       res.status(500).json({
         error: {
           type: 'internal_error',
@@ -161,7 +162,7 @@ export function createUserRouter(db, billing, subscription) {
         data: dailyStats
       });
     } catch (error) {
-      console.error('Get daily stats error:', error);
+      logger.error('Get daily stats error', { error });
       res.status(500).json({
         error: {
           type: 'internal_error',
@@ -202,7 +203,7 @@ export function createUserRouter(db, billing, subscription) {
         }
       });
     } catch (error) {
-      console.error('Get logs error:', error);
+      logger.error('Get logs error', { error });
       res.status(500).json({
         error: {
           type: 'internal_error',
@@ -243,7 +244,7 @@ export function createUserRouter(db, billing, subscription) {
         }
       });
     } catch (error) {
-      console.error('Get recharges error:', error);
+      logger.error('Get recharges error', { error });
       res.status(500).json({
         error: {
           type: 'internal_error',
@@ -279,7 +280,7 @@ export function createUserRouter(db, billing, subscription) {
         data: bill
       });
     } catch (error) {
-      console.error('Generate bill error:', error);
+      logger.error('Generate bill error', { error });
       res.status(500).json({
         error: {
           type: 'internal_error',
@@ -329,7 +330,7 @@ export function createUserRouter(db, billing, subscription) {
         }
       });
     } catch (error) {
-      console.error('Estimate cost error:', error);
+      logger.error('Estimate cost error', { error });
       res.status(500).json({
         error: {
           type: 'internal_error',
@@ -361,7 +362,7 @@ export function createUserRouter(db, billing, subscription) {
         }
       });
     } catch (error) {
-      console.error('Get subscription error:', error);
+      logger.error('Get subscription error', { error });
       res.status(500).json({
         error: {
           type: 'internal_error',
@@ -400,7 +401,7 @@ export function createUserRouter(db, billing, subscription) {
         }
       });
     } catch (error) {
-      console.error('Get reset logs error:', error);
+      logger.error('Get reset logs error', { error });
       res.status(500).json({
         error: {
           type: 'internal_error',

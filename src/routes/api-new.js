@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { logger } from '../logger.js';
 import { KiroClient, KiroApiError } from '../kiro-client.js';
 import { EventStreamDecoder, parseKiroEvent } from '../event-parser.js';
 import { countTokens, countMessagesTokens, countToolUseTokens } from '../tokenizer.js';
@@ -105,7 +106,7 @@ export function createApiRouter(state) {
         return res.json(data);
       }
     } catch (error) {
-      console.error('[Antigravity Claude] Request failed:', error);
+      logger.error('Antigravity Claude request failed', { error });
       return res.status(500).json({
         type: 'error',
         error: {
@@ -156,7 +157,7 @@ export function createApiRouter(state) {
             res.write(chunk);
           }
         } catch (streamError) {
-          console.error('[Antigravity OpenAI] Stream error:', streamError);
+          logger.error('Antigravity OpenAI stream error', { error: streamError });
         } finally {
           res.end();
         }
@@ -167,7 +168,7 @@ export function createApiRouter(state) {
       const data = await response.json();
       return res.json(data);
     } catch (error) {
-      console.error('[Antigravity OpenAI] Request failed:', error);
+      logger.error('Antigravity OpenAI request failed', { error });
       return res.status(500).json({
         error: {
           type: 'api_error',
@@ -256,21 +257,21 @@ export function createApiRouter(state) {
     });
   });
 
-  router.post('/chat/completions', async (req, res) => {
-    try {
-      if (!req.body.model) {
-        return res.status(400).json({
-          error: {
-            type: 'invalid_request_error',
-            message: 'Model is required'
-          }
-        });
-      }
+   router.post('/chat/completions', async (req, res) => {
+     try {
+       if (!req.body.model) {
+         return res.status(400).json({
+           error: {
+             type: 'invalid_request_error',
+             message: 'Model is required'
+           }
+         });
+       }
 
-      const route = routeModel(req.body.model, state.accountPool, req.user);
-      console.log(`[Model Router] ${req.body.model} -> ${route.channel}/${route.model} (${route.reason})`);
+       const route = routeModel(req.body.model, state.accountPool, req.user);
+       logger.info('Model router decision', { requestedModel: req.body.model, channel: route.channel, routedModel: route.model, reason: route.reason });
 
-      if (route.error) {
+       if (route.error) {
         return res.status(403).json({
           error: {
             type: 'permission_error',
@@ -305,19 +306,19 @@ export function createApiRouter(state) {
     let selected = null;
     let inputTokens = 0;
 
-    try {
-      const route = routeModel(req.body.model, state.accountPool, req.user);
-      console.log(`[Model Router] ${req.body.model} -> ${route.channel}/${route.model} (${route.reason})`);
+     try {
+       const route = routeModel(req.body.model, state.accountPool, req.user);
+       logger.info('Model router decision', { requestedModel: req.body.model, channel: route.channel, routedModel: route.model, reason: route.reason });
 
-      if (route.error) {
-        return res.status(403).json({
-          type: 'error',
-          error: {
-            type: 'permission_error',
-            message: route.error
-          }
-        });
-      }
+       if (route.error) {
+         return res.status(403).json({
+           type: 'error',
+           error: {
+             type: 'permission_error',
+             message: route.error
+           }
+         });
+       }
 
       const permissionError = checkModelPermission(req, res, route.model, route.channel);
       if (permissionError !== true) {
@@ -339,13 +340,13 @@ export function createApiRouter(state) {
         stream: req.body.stream
       });
 
-      // Estimate input tokens
-      try {
-        inputTokens = countMessagesTokens(req.body.messages || []);
-      } catch (e) {
-        console.warn('Failed to estimate input tokens:', e);
-        inputTokens = 1000; // Fallback estimate
-      }
+       // Estimate input tokens
+       try {
+         inputTokens = countMessagesTokens(req.body.messages || []);
+       } catch (e) {
+         logger.warn('Failed to estimate input tokens', { error: e });
+         inputTokens = 1000; // Fallback estimate
+       }
 
       // Check balance before making request
       const balanceCheck = state.billing.checkBalance(user, inputTokens);
@@ -426,15 +427,15 @@ export function createApiRouter(state) {
            error.message?.includes('reached the limit') ||
            error.message?.includes('insufficient_balance'));
         
-        if (isMonthlyLimit) {
-          // 将账号标记为不可用
-          console.log(`⚠ 账号 ${selected.name} (${selected.id}) 已达月度请求上限或余额不足，标记为不可用`);
-          await state.accountPool.markInvalid(selected.id);
-          
-          // 异步刷新该账号的余额信息，以便下次启动时能正确识别
-          state.accountPool.refreshAccountUsage(selected.id).catch(err => {
-            console.error(`刷新账号 ${selected.id} 余额失败:`, err.message);
-          });
+         if (isMonthlyLimit) {
+           // 将账号标记为不可用
+           logger.warn('账号已达月度请求上限或余额不足，标记为不可用', { accountName: selected.name, accountId: selected.id });
+           await state.accountPool.markInvalid(selected.id);
+           
+           // 异步刷新该账号的余额信息，以便下次启动时能正确识别
+           state.accountPool.refreshAccountUsage(selected.id).catch(err => {
+             logger.error('刷新账号余额失败', { accountId: selected.id, error: err.message });
+           });
         } else {
           // 增加账号错误计数
           const isRateLimit = error.status === 429 || error.message?.includes('rate') || error.message?.includes('limit');
@@ -890,7 +891,7 @@ async function handleStreamResponseWithBilling(res, response, toolNameMap, selec
       console.log(`✓ Billed user ${user.username}: $${billingResult.cost.toFixed(6)} (${model})`);
       recordMetrics(inputTokens, outputTokens, billingResult.cost);
     } catch (billingError) {
-      console.error('Billing error:', billingError);
+      logger.error('Billing error', { error: billingError });
       // Note: Response already sent, but billing failed
       // This should be logged for manual review
     }
@@ -1056,7 +1057,7 @@ async function handleNonStreamResponseWithBilling(res, response, toolNameMap, se
       });
 
     } catch (billingError) {
-      console.error('Billing error:', billingError);
+      logger.error('Billing error', { error: billingError });
       // Note: Response already sent, but billing failed
       // This should be logged for manual review
     }
