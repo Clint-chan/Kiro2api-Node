@@ -530,7 +530,7 @@
             <div class="p-6 space-y-4">
                 <div class="flex items-center justify-between">
                     <p class="text-sm text-gray-600">支持单对象、数组或 { accounts: [] } 格式</p>
-                    <button onclick="loadAgtTemplate()" class="text-sm text-blue-600 hover:text-blue-700">加载模板</button>
+                    <button onclick="loadAntigravityTemplate()" class="text-sm text-blue-600 hover:text-blue-700">加载模板</button>
                 </div>
                 <textarea id="antigravity-import-json" rows="12"
                     class="w-full px-3 py-2 border border-gray-200 rounded-lg font-mono text-xs resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -1529,7 +1529,6 @@
         }
 
         let selectedAccounts = new Set();
-        let selectedAntigravityAccounts = new Set();
         let autoRefreshInterval = null;
         let serverStartTime = null;
         let uptimeInterval = null;
@@ -1541,7 +1540,6 @@
         let usersCurrentPage = 1;
         let usersPageSize = 15;
         let allUsers = [];
-        let allAntigravityAccounts = [];
         let logsCurrentPage = 1;
         let logsPageSize = 20;
         let allLogs = [];
@@ -1791,180 +1789,9 @@
         }
 
         async function loadAgtAccounts() {
-            try {
-                const data = await fetchApi('/api/admin/antigravity-accounts');
-                allAntigravityAccounts = data.data || [];
-                renderAntigravityAccounts();
-            } catch (e) {
-                showToast('加载 Antigravity 账号失败: ' + e.message, 'error');
+            if (typeof loadCliProxyAccounts === 'function') {
+                await loadCliProxyAccounts();
             }
-        }
-
-        function renderAntigravityAccounts() {
-            const container = document.getElementById('cliproxy-antigravity-accounts-table');
-            if (!container) return;
-            if (!allAntigravityAccounts.length) {
-                container.innerHTML = '<div class="text-center py-10 text-gray-500">暂无 Antigravity 账号</div>';
-                return;
-            }
-
-            container.innerHTML = `
-                <table class="w-full">
-                    <thead>
-                        <tr class="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            <th class="px-4 py-3 rounded-tl-lg w-10"><input type="checkbox" id="selectAllAntigravity" onchange="toggleSelectAllAntigravity(this.checked)" class="rounded border-gray-300 text-indigo-500 focus:ring-indigo-500"></th>
-                            <th class="px-4 py-3">名称</th>
-                            <th class="px-4 py-3">状态</th>
-                            <th class="px-4 py-3 w-72">额度</th>
-                            <th class="px-4 py-3">请求</th>
-                            <th class="px-4 py-3">错误</th>
-                            <th class="px-4 py-3 rounded-tr-lg">操作</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100">
-                        ${allAntigravityAccounts.map((a, i) => `
-                            <tr class="hover:bg-gray-50 transition ${i % 2 === 1 ? 'bg-gray-50/50' : ''}">
-                                <td class="px-4 py-4"><input type="checkbox" data-id="${a.id}" onchange="toggleSelectAntigravity('${a.id}', this.checked)" class="antigravity-account-checkbox rounded border-gray-300 text-indigo-500 focus:ring-indigo-500"></td>
-                                <td class="px-4 py-4">
-                                    <div class="flex items-center gap-2 mb-1">
-                                        <div class="font-medium text-gray-900">${a.name || '-'}</div>
-                                        ${formatAgtTierBadge(a.paid_tier || a.plan_tier)}
-                                    </div>
-                                </td>
-                                <td class="px-4 py-4">${formatStatus(a.status)}</td>
-                                <td class="px-4 py-4">
-                                    <div class="space-y-2 text-xs">
-                                        ${formatAgtQuotaDetails(a.model_quotas, a.next_reset)}
-                                    </div>
-                                </td>
-                                <td class="px-4 py-4 text-gray-600">${a.request_count || 0}</td>
-                                <td class="px-4 py-4 text-gray-600">${a.error_count || 0}</td>
-                                <td class="px-4 py-4">
-                                    <div class="flex items-center gap-2">
-                                        <button onclick="refreshAntigravityUsage('${a.id}')" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition" title="刷新额度">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                                        </button>
-                                        <button onclick="exportAccountJson('${a.id}')" class="p-1.5 text-purple-600 hover:bg-purple-50 rounded transition" title="导出JSON">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-                                        </button>
-                                        ${a.status === 'disabled'
-                    ? `<button onclick="toggleAntigravityAccount('${a.id}', true)" class="p-1.5 text-green-600 hover:bg-green-50 rounded transition" title="启用">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                              </button>`
-                    : `<button onclick="toggleAntigravityAccount('${a.id}', false)" class="p-1.5 text-orange-600 hover:bg-orange-50 rounded transition" title="禁用">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
-                                              </button>`}
-                                        <button onclick="removeAntigravityAccount('${a.id}')" class="p-1.5 text-red-600 hover:bg-red-50 rounded transition" title="删除">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>`;
-        }
-
-        function formatAgtTierBadge(tier) {
-            if (!tier) return '';
-            const normalized = String(tier).toLowerCase();
-            let label = tier;
-            let color = 'bg-gray-100 text-gray-700 border-gray-200';
-
-            if (normalized.includes('ultra') || normalized.includes('power')) {
-                label = 'Power';
-                color = 'bg-amber-100 text-amber-700 border-amber-300';
-            } else if (normalized.includes('proplus') || normalized.includes('pro+')) {
-                label = 'Pro+';
-                color = 'bg-purple-100 text-purple-700 border-purple-300';
-            } else if (normalized.includes('pro') || normalized.includes('standard')) {
-                label = 'Pro';
-                color = 'bg-blue-100 text-blue-700 border-blue-300';
-            } else if (normalized.includes('free')) {
-                label = 'Free';
-                color = 'bg-gray-100 text-gray-700 border-gray-300';
-            }
-
-            return `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border ${color}" title="来源: ${tier}">${label}</span>`;
-        }
-
-        function formatAgtNextResetBadge(nextReset) {
-            if (!nextReset) return '';
-            return formatResetTimeBadge(nextReset);
-        }
-
-        function formatAgtQuotaSummary(modelQuotas) {
-            const quotas = modelQuotas && typeof modelQuotas === 'object' ? modelQuotas : null;
-            if (!quotas) return '<span class="text-gray-400">未同步</span>';
-
-            const entries = Object.entries(quotas);
-            if (!entries.length) return '<span class="text-gray-400">无模型配额</span>';
-
-            let availableCount = 0;
-            let exhaustedCount = 0;
-            for (const [, quota] of entries) {
-                const remaining = Number(quota?.remaining_fraction);
-                if (Number.isFinite(remaining) && remaining > 0) {
-                    availableCount += 1;
-                } else {
-                    exhaustedCount += 1;
-                }
-            }
-
-            return `<div class="space-y-0.5"><div>模型: ${entries.length}</div><div class="text-green-600">可用: ${availableCount}</div><div class="text-red-500">耗尽: ${exhaustedCount}</div></div>`;
-        }
-
-        function formatAgtQuotaDetails(modelQuotas, nextReset) {
-            const quotas = modelQuotas && typeof modelQuotas === 'object' ? modelQuotas : null;
-            if (!quotas) return '<span class="text-gray-400">未同步</span>';
-
-            const entries = Object.entries(quotas);
-            if (!entries.length) return '<span class="text-gray-400">无模型配额</span>';
-
-            let resetInfo = '';
-            if (nextReset) {
-                const resetTime = new Date(nextReset);
-                const now = new Date();
-                const diffMs = resetTime - now;
-                if (diffMs > 0) {
-                    const hours = Math.floor(diffMs / (1000 * 60 * 60));
-                    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-                    resetInfo = `<div class="text-gray-500 mb-1.5">🔄 ${hours}h ${minutes}m 后重置</div>`;
-                }
-            }
-
-            const bars = entries.map(([modelName, quota]) => {
-                const remaining = Number(quota?.remaining_fraction) || 0;
-                const percentage = Math.round(remaining * 100);
-
-                let barColor = 'bg-red-500';
-                let textColor = 'text-red-600';
-                if (percentage > 50) {
-                    barColor = 'bg-green-500';
-                    textColor = 'text-green-600';
-                } else if (percentage >= 20) {
-                    barColor = 'bg-yellow-500';
-                    textColor = 'text-yellow-600';
-                }
-
-                const displayName = modelName
-                    .replace('claude-sonnet-', 'CS-')
-                    .replace('claude-opus-', 'CO-')
-                    .replace('gemini-', 'G-')
-                    .replace('-thinking', '-T');
-
-                return `
-                    <div class="flex items-center gap-2">
-                        <div class="w-32 text-gray-600 truncate text-xs" title="${modelName}">${modelName}</div>
-                        <div class="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden">
-                            <div class="${barColor} h-full transition-all" style="width: ${percentage}%"></div>
-                        </div>
-                        <div class="w-10 text-right ${textColor} font-medium text-xs">${percentage}%</div>
-                    </div>
-                `;
-            }).join('');
-
-            return resetInfo + bars;
         }
 
         function loadAntigravityTemplate() {
@@ -2005,106 +1832,6 @@
             } catch (e) {
                 showToast('Antigravity 导入失败: ' + e.message, 'error');
             }
-        }
-
-        async function refreshAntigravityModels(id) {
-            try {
-                const result = await fetchApi(`/api/admin/antigravity-accounts/${id}/refresh-models`, { method: 'POST' });
-                const count = Array.isArray(result?.data?.models) ? result.data.models.length : 0;
-                showToast(`已刷新模型，数量: ${count}`, 'success');
-                await loadAgtAccounts();
-            } catch (e) {
-                showToast('刷新 Antigravity 模型失败: ' + e.message, 'error');
-            }
-        }
-
-        async function refreshAntigravityUsage(id) {
-            try {
-                const result = await fetchApi(`/api/admin/antigravity-accounts/${id}/refresh-usage`, { method: 'POST' });
-                const projectId = result?.data?.project_id || '-';
-                showToast(`Antigravity 额度信息已刷新，Project: ${projectId}`, 'success');
-                await loadAgtAccounts();
-            } catch (e) {
-                showToast('刷新 Antigravity 额度失败: ' + e.message, 'error');
-            }
-        }
-
-        async function refreshAllAntigravityUsage() {
-            if (!allAntigravityAccounts.length) {
-                showToast('暂无 Antigravity 账号可刷新', 'warning');
-                return;
-            }
-
-            showToast('正在刷新 Antigravity 额度，请稍候...', 'info');
-            let success = 0;
-
-            for (const account of allAntigravityAccounts) {
-                try {
-                    await fetchApi(`/api/admin/antigravity-accounts/${account.id}/refresh-usage`, { method: 'POST' });
-                    success += 1;
-                } catch {
-                }
-            }
-
-            await loadAgtAccounts();
-            const failed = allAntigravityAccounts.length - success;
-            showToast(`Antigravity 额度刷新完成：成功 ${success}，失败 ${failed}`, failed > 0 ? 'warning' : 'success');
-        }
-
-        async function refreshAllAntigravityModels() {
-            if (!allAntigravityAccounts.length) {
-                showToast('暂无 Antigravity 账号可刷新', 'warning');
-                return;
-            }
-
-            showToast('正在刷新 Antigravity 模型，请稍候...', 'info');
-            let success = 0;
-
-            for (const account of allAntigravityAccounts) {
-                try {
-                    await fetchApi(`/api/admin/antigravity-accounts/${account.id}/refresh-models`, { method: 'POST' });
-                    success += 1;
-                } catch {
-                }
-            }
-
-            await loadAgtAccounts();
-            const failed = allAntigravityAccounts.length - success;
-            showToast(`Antigravity 模型刷新完成：成功 ${success}，失败 ${failed}`, failed > 0 ? 'warning' : 'success');
-        }
-
-        async function toggleAntigravityAccount(id, enable) {
-            try {
-                await fetchApi(`/api/admin/antigravity-accounts/${id}/${enable ? 'enable' : 'disable'}`, { method: 'POST' });
-                showToast(enable ? 'Antigravity 账号已启用' : 'Antigravity 账号已禁用', enable ? 'success' : 'warning');
-                await loadAgtAccounts();
-            } catch (e) {
-                showToast((enable ? '启用' : '禁用') + '失败: ' + e.message, 'error');
-            }
-        }
-
-        async function removeAntigravityAccount(id) {
-            if (!confirm('确定删除此 Antigravity 账号？')) return;
-            try {
-                await fetchApi(`/api/admin/antigravity-accounts/${id}`, { method: 'DELETE' });
-                showToast('Antigravity 账号已删除', 'success');
-                await loadAgtAccounts();
-            } catch (e) {
-                showToast('删除失败: ' + e.message, 'error');
-            }
-        }
-
-        function toggleSelectAntigravity(id, checked) {
-            if (checked) selectedAntigravityAccounts.add(id);
-            else selectedAntigravityAccounts.delete(id);
-        }
-
-        function toggleSelectAllAntigravity(checked) {
-            document.querySelectorAll('.antigravity-account-checkbox').forEach(cb => {
-                cb.checked = checked;
-                if (checked) selectedAntigravityAccounts.add(cb.dataset.id);
-                else selectedAntigravityAccounts.delete(cb.dataset.id);
-            });
         }
 
         function renderAccountsPage() {
@@ -3907,7 +3634,7 @@
             }
         }
 
-        async function refresh() { loadStatus(); loadUsers(); loadAccounts(); loadAgtAccounts(); }
+        async function refresh() { loadStatus(); loadUsers(); loadAccounts(); }
 
         (async () => {
             if (!token) {
