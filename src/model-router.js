@@ -26,6 +26,21 @@ const KIRO_TO_AGT_FALLBACK = {
 };
 
 /**
+ * 检查用户是否有 Antigravity 权限
+ */
+function hasAntigravityPermission(user) {
+  if (!user || !user.allowed_channels) {
+    return false;
+  }
+
+  const channels = Array.isArray(user.allowed_channels)
+    ? user.allowed_channels
+    : String(user.allowed_channels).split(',').map(c => c.trim());
+
+  return channels.includes('antigravity') || channels.includes('agt');
+}
+
+/**
  * 检查模型是否需要 Pro 级别账号
  */
 export function requiresProAccount(model) {
@@ -57,9 +72,12 @@ export function hasKiroAccountForModel(accountPool, model) {
 
 /**
  * 智能路由：决定使用哪个渠道
+ * @param {string} model - 模型名称
+ * @param {object} accountPool - 账号池对象
+ * @param {object} user - 用户对象（用于权限检查）
  * @returns {object} { channel: 'kiro'|'agt', model: string, reason: string }
  */
-export function routeModel(model, accountPool) {
+export function routeModel(model, accountPool, user = null) {
   // 1. 如果已经是 Antigravity 专属模型，直接使用 AGT
   if (isAntigravityModel(model)) {
     return {
@@ -88,6 +106,16 @@ export function routeModel(model, accountPool) {
   }
 
   // 4. Kiro 没有 Pro 账号，fallback 到 Antigravity
+  // 检查用户是否有 Antigravity 权限
+  if (!user || !hasAntigravityPermission(user)) {
+    return {
+      channel: 'kiro',
+      model: model,
+      reason: 'kiro_pro_unavailable_fallback',
+      error: 'User does not have Antigravity permission'
+    };
+  }
+
   const agtModel = KIRO_TO_AGT_FALLBACK[model] || `${model}-thinking`;
   return {
     channel: 'agt',

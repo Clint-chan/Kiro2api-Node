@@ -282,12 +282,22 @@ export function createApiRouter(state) {
         }
       }
 
-      const route = routeModel(req.body.model, state.accountPool);
+      const route = routeModel(req.body.model, state.accountPool, req.user);
       console.log(`[Model Router] ${req.body.model} -> ${route.channel}/${route.model} (${route.reason})`);
 
       if (route.channel === 'agt') {
         req.body.model = route.model;
         return await handleAgtClaudeRequest(req, res);
+      }
+
+      if (route.error) {
+        return res.status(403).json({
+          type: 'error',
+          error: {
+            type: 'permission_error',
+            message: route.error
+          }
+        });
       }
 
       const user = req.user;
