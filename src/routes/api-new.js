@@ -5,6 +5,7 @@ import { countTokens, countMessagesTokens, countToolUseTokens } from '../tokeniz
 import { createFailoverHandler } from '../failover-handler.js';
 import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs/promises';
+import fsSync from 'fs';
 import path from 'path';
 import { recordApiStart, recordApiSuccess, recordApiFailure } from './api-new-metrics.js';
 import {
@@ -18,6 +19,7 @@ import {
   filterModelsByPermission
 } from '../user-permissions.js';
 import { routeModel } from '../model-router.js';
+import { isCodexModel, CODEX_STATIC_MODELS } from '../codex.js';
 
 // 获取模型上下文长度
 function getModelContextLength(model, config) {
@@ -156,10 +158,39 @@ export function createApiRouter(state) {
       });
 
       if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        return res.status(response.status).json(error);
+        const errorText = await response.text().catch(() => '');
+        let errorJson;
+        try { errorJson = JSON.parse(errorText); } catch { errorJson = { error: { type: 'api_error', message: errorText || 'Unknown error' } }; }
+        return res.status(response.status).json(errorJson);
       }
 
+      const contentType = response.headers.get('content-type') || '';
+
+      // Stream response: pipe SSE directly to client
+      if (contentType.includes('text/event-stream') || req.body.stream) {
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            const chunk = decoder.decode(value, { stream: true });
+            res.write(chunk);
+          }
+        } catch (streamError) {
+          console.error('[AGT OpenAI] Stream error:', streamError);
+        } finally {
+          res.end();
+        }
+        return;
+      }
+
+      // Non-stream response: parse JSON normally
       const data = await response.json();
       return res.json(data);
     } catch (error) {
@@ -174,12 +205,14 @@ export function createApiRouter(state) {
   }
 
   function resolveModelChannel(modelId) {
-    return isAntigravityModel(modelId) ? 'agt' : 'kiro';
+    if (isAntigravityModel(modelId)) return 'agt';
+    if (isCodexModel(modelId)) return 'codex';
+    return 'kiro';
   }
 
-  function checkModelPermission(req, res, modelId) {
-    const channel = resolveModelChannel(modelId);
-    const permission = canAccessModel(req.user, modelId, channel);
+  function checkModelPermission(req, res, modelId, channel = null) {
+    const targetChannel = channel || resolveModelChannel(modelId);
+    const permission = canAccessModel(req.user, modelId, targetChannel);
     if (permission.allowed) return true;
 
     return res.status(403).json({
@@ -200,8 +233,19 @@ export function createApiRouter(state) {
       max_tokens: 64000
     }));
 
+    const codexModels = CODEX_STATIC_MODELS.map((model) => ({
+      id: model.id,
+      object: 'model',
+      created: 1737158400,
+      owned_by: model.owned_by,
+      display_name: model.display_name,
+      model_type: 'chat',
+      max_tokens: 64000
+    }));
+
     const allModels = [
       ...agtModels,
+      ...codexModels,
       {
         id: 'claude-sonnet-4-5-20250929',
         object: 'model',
@@ -241,20 +285,34 @@ export function createApiRouter(state) {
 
   router.post('/chat/completions', async (req, res) => {
     try {
-      if (req.body.stream === true) {
+      if (!req.body.model) {
         return res.status(400).json({
           error: {
             type: 'invalid_request_error',
-            message: 'Stream mode via /v1/chat/completions is not enabled yet. Use non-stream mode.'
+            message: 'Model is required'
           }
         });
       }
 
-      if (req.body.model) {
-        const permissionError = checkModelPermission(req, res, req.body.model);
-        if (permissionError !== true) {
-          return permissionError;
-        }
+      const route = routeModel(req.body.model, state.accountPool, req.user);
+      console.log(`[Model Router] ${req.body.model} -> ${route.channel}/${route.model} (${route.reason})`);
+
+      if (route.error) {
+        return res.status(403).json({
+          error: {
+            type: 'permission_error',
+            message: route.error
+          }
+        });
+      }
+
+      const permissionError = checkModelPermission(req, res, route.model, route.channel);
+      if (permissionError !== true) {
+        return permissionError;
+      }
+
+      if (route.channel === 'agt') {
+        req.body.model = route.model;
       }
 
       return await handleAgtOpenAIRequest(req, res);
@@ -275,20 +333,12 @@ export function createApiRouter(state) {
     let inputTokens = 0;
 
     try {
-      if (req.body.model) {
-        const permissionError = checkModelPermission(req, res, req.body.model);
-        if (permissionError !== true) {
-          return permissionError;
-        }
-      }
-
+      fsSync.appendFileSync('./logs/debug.log', `[api-new] User: ${req.user?.username}, allowed_channels: ${req.user?.allowed_channels}\n`);
+      
       const route = routeModel(req.body.model, state.accountPool, req.user);
       console.log(`[Model Router] ${req.body.model} -> ${route.channel}/${route.model} (${route.reason})`);
-
-      if (route.channel === 'agt') {
-        req.body.model = route.model;
-        return await handleAgtClaudeRequest(req, res);
-      }
+      
+      fsSync.appendFileSync('./logs/debug.log', `[api-new] Route result: ${JSON.stringify(route)}\n`);
 
       if (route.error) {
         return res.status(403).json({
@@ -296,6 +346,26 @@ export function createApiRouter(state) {
           error: {
             type: 'permission_error',
             message: route.error
+          }
+        });
+      }
+
+      const permissionError = checkModelPermission(req, res, route.model, route.channel);
+      if (permissionError !== true) {
+        return permissionError;
+      }
+
+      if (route.channel === 'agt') {
+        req.body.model = route.model;
+        return await handleAgtClaudeRequest(req, res);
+      }
+
+      if (route.channel === 'codex') {
+        return res.status(400).json({
+          type: 'error',
+          error: {
+            type: 'invalid_request_error',
+            message: 'GPT/Codex models are only available via /v1/chat/completions endpoint. Please use the OpenAI-compatible format.'
           }
         });
       }

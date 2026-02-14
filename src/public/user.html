@@ -151,16 +151,31 @@
                     <h3 class="text-lg font-semibold text-gray-900">如何使用</h3>
                 </div>
 
+                <!-- 模型选择器 -->
+                <div class="flex items-center gap-3 mb-4">
+                    <label class="text-sm font-medium text-gray-700">选择模型</label>
+                    <select id="modelSelector" onchange="updateModelInExamples()" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="claude-sonnet-4-5-20250929">Claude Sonnet 4.5</option>
+                    </select>
+                    <span class="text-xs text-gray-400" id="modelCount"></span>
+                </div>
+
                 <!-- 标签页导航 -->
-                <div class="flex gap-2 mb-4 border-b border-blue-200">
+                <div class="flex gap-2 mb-4 border-b border-blue-200 flex-wrap">
                     <button onclick="switchGuideTab('claude')" class="guide-tab px-4 py-2 text-sm font-medium border-b-2 border-blue-500 text-blue-600" data-tab="claude">
                         Claude Code
                     </button>
                     <button onclick="switchGuideTab('python')" class="guide-tab px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-600 hover:text-gray-900" data-tab="python">
-                        Python
+                        Anthropic Python
                     </button>
                     <button onclick="switchGuideTab('curl')" class="guide-tab px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-600 hover:text-gray-900" data-tab="curl">
-                        cURL
+                        Anthropic cURL
+                    </button>
+                    <button onclick="switchGuideTab('openai-python')" class="guide-tab px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-600 hover:text-gray-900" data-tab="openai-python">
+                        OpenAI Python
+                    </button>
+                    <button onclick="switchGuideTab('openai-curl')" class="guide-tab px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-600 hover:text-gray-900" data-tab="openai-curl">
+                        OpenAI cURL
                     </button>
                 </div>
 
@@ -231,6 +246,56 @@ response = client.messages.create(
   -H <span class="text-green-300">"x-api-key: <span id="curlApiKey"></span>"</span> \
   -d <span class="text-green-300">'{
     "model": "claude-sonnet-4-5-20250929",
+    "max_tokens": 1024,
+    "messages": [{"role": "user", "content": "Hello!"}]
+  }'</span></code></pre>
+                    </div>
+                </div>
+
+                <!-- OpenAI Python 标签页 -->
+                <div id="guide-openai-python" class="guide-content hidden">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="text-sm text-gray-600">使用 OpenAI Python SDK</div>
+                        <button onclick="copyOpenAIPythonCode()" class="text-gray-500 hover:text-blue-600 transition" title="复制代码">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                        <pre class="text-xs text-gray-100 font-mono"><code><span class="text-purple-300">from</span> openai <span class="text-purple-300">import</span> OpenAI
+
+client = OpenAI(
+    api_key=<span class="text-green-300">"<span id="openaiPythonApiKey"></span>"</span>,
+    base_url=<span class="text-yellow-300">"<span id="openaiPythonBaseUrl"></span>"</span>
+)
+
+response = client.chat.completions.create(
+    model=<span class="text-green-300">"<span id="openaiPythonModel">claude-sonnet-4-5-20250929</span>"</span>,
+    max_tokens=<span class="text-blue-300">1024</span>,
+    messages=[{<span class="text-green-300">"role"</span>: <span class="text-green-300">"user"</span>, <span class="text-green-300">"content"</span>: <span class="text-green-300">"Hello!"</span>}]
+)
+
+<span class="text-purple-300">print</span>(response.choices[<span class="text-blue-300">0</span>].message.content)</code></pre>
+                    </div>
+                </div>
+
+                <!-- OpenAI cURL 标签页 -->
+                <div id="guide-openai-curl" class="guide-content hidden">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="text-sm text-gray-600">使用 cURL (OpenAI 格式)</div>
+                        <button onclick="copyOpenAICurlCode()" class="text-gray-500 hover:text-blue-600 transition" title="复制命令">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                        <pre class="text-xs text-gray-100 font-mono"><code>curl -X POST <span class="text-yellow-300"><span id="openaiCurlBaseUrl"></span>/v1/chat/completions</span> \
+  -H <span class="text-green-300">"Content-Type: application/json"</span> \
+  -H <span class="text-green-300">"Authorization: Bearer <span id="openaiCurlApiKey"></span>"</span> \
+  -d <span class="text-green-300">'{
+    "model": "<span id="openaiCurlModel">claude-sonnet-4-5-20250929</span>",
     "max_tokens": 1024,
     "messages": [{"role": "user", "content": "Hello!"}]
   }'</span></code></pre>
@@ -398,6 +463,15 @@ response = client.messages.create(
                 document.getElementById('curlApiKey').textContent = apiKey;
                 document.getElementById('curlBaseUrl').textContent = window.location.origin;
 
+                // 更新 OpenAI 代码示例中的值
+                document.getElementById('openaiPythonApiKey').textContent = apiKey;
+                document.getElementById('openaiPythonBaseUrl').textContent = baseUrl;
+                document.getElementById('openaiCurlApiKey').textContent = apiKey;
+                document.getElementById('openaiCurlBaseUrl').textContent = window.location.origin;
+
+                // 加载可用模型列表
+                loadModels();
+
                 // 加载订阅信息
                 loadSubscriptionInfo();
             } catch (error) {
@@ -513,6 +587,119 @@ print(response.content[0].text)`;
     "messages": [{"role": "user", "content": "Hello!"}]
   }'`;
             copyToClipboard(code, 'cURL 命令已复制');
+        }
+
+        function copyOpenAIPythonCode() {
+            const selectedModel = document.getElementById('modelSelector')?.value || 'claude-sonnet-4-5-20250929';
+            const code = `from openai import OpenAI
+
+client = OpenAI(
+    api_key="${user.api_key || token}",
+    base_url="${window.location.origin}/v1"
+)
+
+response = client.chat.completions.create(
+    model="${selectedModel}",
+    max_tokens=1024,
+    messages=[{"role": "user", "content": "Hello!"}]
+)
+
+print(response.choices[0].message.content)`;
+            copyToClipboard(code, 'OpenAI Python 代码已复制');
+        }
+
+        function copyOpenAICurlCode() {
+            const selectedModel = document.getElementById('modelSelector')?.value || 'claude-sonnet-4-5-20250929';
+            const code = `curl -X POST ${window.location.origin}/v1/chat/completions \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer ${user.api_key || token}" \\
+  -d '{
+    "model": "${selectedModel}",
+    "max_tokens": 1024,
+    "messages": [{"role": "user", "content": "Hello!"}]
+  }'`;
+            copyToClipboard(code, 'OpenAI cURL 命令已复制');
+        }
+
+        function updateModelInExamples() {
+            const selector = document.getElementById('modelSelector');
+            if (!selector) return;
+            const model = selector.value;
+
+            // Update Anthropic Python model
+            const pythonCode = document.querySelector('#guide-python code');
+            if (pythonCode) {
+                pythonCode.innerHTML = pythonCode.innerHTML.replace(
+                    /model=<span class="text-green-300">"[^"]*"<\/span>/,
+                    `model=<span class="text-green-300">"${model}"</span>`
+                );
+            }
+
+            // Update Anthropic cURL model
+            const curlCode = document.querySelector('#guide-curl code');
+            if (curlCode) {
+                curlCode.innerHTML = curlCode.innerHTML.replace(
+                    /"model": "[^"]*"/,
+                    `"model": "${model}"`
+                );
+            }
+
+            // Update OpenAI Python model
+            const openaiPythonModel = document.getElementById('openaiPythonModel');
+            if (openaiPythonModel) openaiPythonModel.textContent = model;
+
+            // Update OpenAI cURL model
+            const openaiCurlModel = document.getElementById('openaiCurlModel');
+            if (openaiCurlModel) openaiCurlModel.textContent = model;
+        }
+
+        async function loadModels() {
+            try {
+                const resp = await fetchApi('/v1/models');
+                const models = resp.data || [];
+                const selector = document.getElementById('modelSelector');
+                if (!selector || models.length === 0) return;
+
+                selector.innerHTML = '';
+
+                // Group by owned_by
+                const groups = {};
+                models.forEach(m => {
+                    const group = m.owned_by || 'other';
+                    if (!groups[group]) groups[group] = [];
+                    groups[group].push(m);
+                });
+
+                // Render optgroups
+                const groupLabels = {
+                    'anthropic': 'Anthropic (Kiro)',
+                    'antigravity': 'Antigravity',
+                    'codex': 'Codex (GPT)',
+                    'other': 'Other'
+                };
+
+                for (const [groupKey, groupModels] of Object.entries(groups)) {
+                    const optgroup = document.createElement('optgroup');
+                    optgroup.label = groupLabels[groupKey] || groupKey;
+                    groupModels.forEach(m => {
+                        const option = document.createElement('option');
+                        option.value = m.id;
+                        option.textContent = m.display_name || m.id;
+                        optgroup.appendChild(option);
+                    });
+                    selector.appendChild(optgroup);
+                }
+
+                // Default select claude-sonnet if available
+                const defaultModel = models.find(m => m.id === 'claude-sonnet-4-5-20250929');
+                if (defaultModel) {
+                    selector.value = defaultModel.id;
+                }
+
+                document.getElementById('modelCount').textContent = `${models.length} 个可用模型`;
+            } catch (error) {
+                console.error('Load models error:', error);
+            }
         }
 
         async function loadStats() {

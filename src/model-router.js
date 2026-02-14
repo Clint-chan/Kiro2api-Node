@@ -4,6 +4,8 @@
  */
 
 import { isAntigravityModel } from './antigravity.js';
+import { isCodexModel } from './codex.js';
+import fs from 'fs';
 
 /**
  * Opus 模型需要 Pro 或更高级别的 Kiro 账号
@@ -31,14 +33,27 @@ const KIRO_TO_AGT_FALLBACK = {
  */
 function hasAntigravityPermission(user) {
   if (!user || !user.allowed_channels) {
+    console.log('[hasAntigravityPermission] No user or allowed_channels:', { user: !!user, allowed_channels: user?.allowed_channels });
     return false;
   }
 
-  const channels = Array.isArray(user.allowed_channels)
-    ? user.allowed_channels
-    : String(user.allowed_channels).split(',').map(c => c.trim());
+  let channels;
+  if (Array.isArray(user.allowed_channels)) {
+    channels = user.allowed_channels;
+  } else if (typeof user.allowed_channels === 'string') {
+    try {
+      const parsed = JSON.parse(user.allowed_channels);
+      channels = Array.isArray(parsed) ? parsed : [user.allowed_channels];
+    } catch {
+      channels = String(user.allowed_channels).split(',').map(c => c.trim());
+    }
+  } else {
+    return false;
+  }
 
-  return channels.includes('antigravity') || channels.includes('agt');
+  const hasPermission = channels.includes('antigravity') || channels.includes('agt');
+  console.log('[hasAntigravityPermission] Channels:', channels, 'Has permission:', hasPermission);
+  return hasPermission;
 }
 
 /**
@@ -76,7 +91,7 @@ export function hasKiroAccountForModel(accountPool, model) {
  * @param {string} model - 模型名称
  * @param {object} accountPool - 账号池对象
  * @param {object} user - 用户对象（用于权限检查）
- * @returns {object} { channel: 'kiro'|'agt', model: string, reason: string }
+ * @returns {object} { channel: 'kiro'|'agt'|'codex', model: string, reason: string }
  */
 export function routeModel(model, accountPool, user = null) {
   // 1. 如果已经是 Antigravity 专属模型，直接使用 AGT
@@ -85,6 +100,15 @@ export function routeModel(model, accountPool, user = null) {
       channel: 'agt',
       model: model,
       reason: 'antigravity_exclusive'
+    };
+  }
+
+  // 1.5. Codex 模型直接使用 codex channel
+  if (isCodexModel(model)) {
+    return {
+      channel: 'codex',
+      model: model,
+      reason: 'codex_model'
     };
   }
 
@@ -108,7 +132,13 @@ export function routeModel(model, accountPool, user = null) {
 
   // 4. Kiro 没有 Pro 账号，fallback 到 Antigravity
   // 检查用户是否有 Antigravity 权限
-  if (!user || !hasAntigravityPermission(user)) {
+  fs.appendFileSync('./logs/debug.log', `[routeModel] User: ${user?.username}, allowed_channels: ${user?.allowed_channels}\n`);
+  
+  const hasPermission = hasAntigravityPermission(user);
+  fs.appendFileSync('./logs/debug.log', `[routeModel] hasPermission result: ${hasPermission}\n`);
+  
+  if (!user || !hasPermission) {
+    fs.appendFileSync('./logs/debug.log', `[routeModel] Permission denied\n`);
     return {
       channel: 'kiro',
       model: model,

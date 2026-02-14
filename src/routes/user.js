@@ -4,6 +4,8 @@ import express from 'express';
  * User API Routes
  * Handles user-facing operations
  */
+import { getAllowedChannels, getAllowedModels } from '../user-permissions.js';
+
 export function createUserRouter(db, billing, subscription) {
   const router = express.Router();
 
@@ -33,7 +35,9 @@ export function createUserRouter(db, billing, subscription) {
           total_output_tokens: user.total_output_tokens,
           total_cost: user.total_cost,
           created_at: user.created_at,
-          last_used_at: user.last_used_at
+          last_used_at: user.last_used_at,
+          allowed_channels: getAllowedChannels(user),
+          allowed_models: getAllowedModels(user)
         }
       });
     } catch (error) {
