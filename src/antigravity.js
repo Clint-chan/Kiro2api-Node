@@ -907,7 +907,7 @@ export async function fetchAntigravityModelsWithMeta(db, account) {
   return result?.models || {};
 }
 
-export function normalizeImportedAgtAccount(raw, index = 0) {
+export function normalizeImportedAntigravityAccount(raw, index = 0) {
   const now = Date.now();
   const email = String(raw?.email || '').trim();
   const refreshToken = String(raw?.refresh_token || '').trim();
