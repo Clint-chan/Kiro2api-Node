@@ -32,7 +32,15 @@ export function getAllowedModels(user) {
 export function isChannelAllowed(user, channel) {
   const normalizedChannel = String(channel || '').trim();
   if (!normalizedChannel) return false;
-  return getAllowedChannels(user).includes(normalizedChannel);
+  
+  const allowedChannels = getAllowedChannels(user);
+  
+  // 'agt' 和 'antigravity' 是同义词
+  if (normalizedChannel === 'agt' || normalizedChannel === 'antigravity') {
+    return allowedChannels.includes('agt') || allowedChannels.includes('antigravity');
+  }
+  
+  return allowedChannels.includes(normalizedChannel);
 }
 
 export function isModelAllowed(user, model) {
