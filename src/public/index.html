@@ -524,7 +524,9 @@
             document.querySelectorAll('.tab-btn').forEach(t => { t.classList.remove('border-blue-500', 'text-blue-600'); t.classList.add('border-transparent', 'text-gray-500'); });
             document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.remove('border-transparent', 'text-gray-500');
             document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.add('border-blue-500', 'text-blue-600');
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+            document.querySelectorAll('.tab-content').forEach(c => {
+                c.classList.add('hidden');
+            });
             document.getElementById('tab-' + tab).classList.remove('hidden');
             if (tab === 'logs') {
                 loadLogs();
@@ -621,7 +623,17 @@
         }
 
         function copyText(text) {
-            navigator.clipboard.writeText(text).then(() => showToast('已复制到剪贴板', 'success')).catch(() => prompt('复制失败，请手动复制:', text));
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showToast('已复制到剪贴板', 'success');
+                }).catch(() => {
+                    window.prompt('复制失败，请手动复制:', String(text ?? ''));
+                    showToast('复制失败，请手动复制', 'error');
+                });
+            } else {
+                window.prompt('复制失败，请手动复制:', String(text ?? ''));
+                showToast('复制失败，请手动复制', 'error');
+            }
         }
 
         async function refresh() { loadStatus(); loadAccounts(); loadStrategy(); }
