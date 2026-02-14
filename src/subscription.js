@@ -3,6 +3,8 @@
  * 处理用户订阅、自动重置额度等功能
  */
 
+import { logger } from './logger.js';
+
 export class SubscriptionManager {
   constructor(db) {
     this.db = db;
@@ -217,9 +219,9 @@ export class SubscriptionManager {
           const result = this.resetUserQuota(user, now);
           results.push({ userId: user.id, username: user.username, ...result });
         }
-      } catch (error) {
-        console.error(`重置用户 ${user.id} 额度失败:`, error);
-        results.push({ userId: user.id, username: user.username, error: error.message });
+       } catch (error) {
+         logger.error('重置用户额度失败', { userId: user.id, error });
+         results.push({ userId: user.id, username: user.username, error: error.message });
       }
     }
 
@@ -314,8 +316,8 @@ export class SubscriptionManager {
           expired: true,
           expiresAt: user.subscription_expires_at
         });
-      } catch (error) {
-        console.error(`处理过期订阅失败 ${user.id}:`, error);
+       } catch (error) {
+         logger.error('处理过期订阅失败', { userId: user.id, error });
       }
     }
 

@@ -5,6 +5,7 @@
 
 import { isAntigravityModel } from './antigravity.js';
 import { isCodexModel } from './codex.js';
+import { logger } from './logger.js';
 import fs from 'fs';
 
 /**
@@ -32,29 +33,29 @@ const KIRO_TO_ANTIGRAVITY_FALLBACK = {
  * 检查用户是否有 Antigravity 权限
  */
 function hasAntigravityPermission(user) {
-  if (!user || !user.allowed_channels) {
-    console.log('[hasAntigravityPermission] No user or allowed_channels:', { user: !!user, allowed_channels: user?.allowed_channels });
-    return false;
-  }
+   if (!user || !user.allowed_channels) {
+     logger.debug('hasAntigravityPermission check', { hasUser: !!user, allowedChannels: user?.allowed_channels });
+     return false;
+   }
 
-  let channels;
-  if (Array.isArray(user.allowed_channels)) {
-    channels = user.allowed_channels;
-  } else if (typeof user.allowed_channels === 'string') {
-    try {
-      const parsed = JSON.parse(user.allowed_channels);
-      channels = Array.isArray(parsed) ? parsed : [user.allowed_channels];
-    } catch {
-      channels = String(user.allowed_channels).split(',').map(c => c.trim());
-    }
-  } else {
-    return false;
-  }
+   let channels;
+   if (Array.isArray(user.allowed_channels)) {
+     channels = user.allowed_channels;
+   } else if (typeof user.allowed_channels === 'string') {
+     try {
+       const parsed = JSON.parse(user.allowed_channels);
+       channels = Array.isArray(parsed) ? parsed : [user.allowed_channels];
+     } catch {
+       channels = String(user.allowed_channels).split(',').map(c => c.trim());
+     }
+   } else {
+     return false;
+   }
 
-  const hasPermission = channels.includes('antigravity');
-  console.log('[hasAntigravityPermission] Channels:', channels, 'Has permission:', hasPermission);
-  return hasPermission;
-}
+   const hasPermission = channels.includes('antigravity');
+   logger.debug('hasAntigravityPermission result', { channels, hasPermission });
+   return hasPermission;
+ }
 
 /**
  * 检查模型是否需要 Pro 级别账号

@@ -1,5 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
+import { logger } from './logger.js';
 
 const SETTINGS_FILE = 'settings.json';
 
@@ -17,21 +18,21 @@ export class SettingsManager {
       await fs.mkdir(this.dataDir, { recursive: true });
       const filePath = path.join(this.dataDir, SETTINGS_FILE);
       
-      try {
-        const content = await fs.readFile(filePath, 'utf-8');
-        const loaded = JSON.parse(content);
-        this.settings.adminKey = loaded.adminKey;
-        this.settings.apiKeys = new Set(loaded.apiKeys || []);
-        console.log('✓ 从文件加载了系统设置');
-      } catch {
-        // 文件不存在，使用默认值
-        this.settings.adminKey = defaultAdminKey;
-        this.settings.apiKeys.add(defaultApiKey);
-        await this.save();
-        console.log('✓ 使用默认值初始化系统设置');
-      }
-    } catch (e) {
-      console.error('初始化设置失败:', e);
+       try {
+         const content = await fs.readFile(filePath, 'utf-8');
+         const loaded = JSON.parse(content);
+         this.settings.adminKey = loaded.adminKey;
+         this.settings.apiKeys = new Set(loaded.apiKeys || []);
+         logger.info('从文件加载了系统设置');
+       } catch {
+         // 文件不存在，使用默认值
+         this.settings.adminKey = defaultAdminKey;
+         this.settings.apiKeys.add(defaultApiKey);
+         await this.save();
+         logger.info('使用默认值初始化系统设置');
+       }
+     } catch (e) {
+       logger.error('初始化设置失败', { error: e });
     }
   }
 
