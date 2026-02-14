@@ -4,6 +4,13 @@
 - Do not copy files directly from `reference_project/` into this project.
 - Implement changes using this repository's existing architecture and coding patterns.
 
+## Context Retrieval Priority (Highest)
+
+- For any task that needs repository context, you MUST use `ace-tool_search_context` first.
+- Treat `ace-tool_search_context` as the default starting point for codebase exploration.
+- Only use `grep`, `glob`, and direct `read` after `ace-tool_search_context` has been used, for targeted follow-up.
+- If context is unclear, run another `ace-tool_search_context` query before trying alternative search methods.
+
 ## Service Management
 
 ### Restart PM2 Service (Required after code changes)
