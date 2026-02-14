@@ -18,26 +18,32 @@
             }
         }
 
-        function setSubQuota(amount) {
+        function setSubQuota(amount, evt) {
             document.getElementById('new-subscription-quota').value = amount;
 
             document.querySelectorAll('.sub-quota-btn').forEach(btn => {
                 btn.classList.remove('border-purple-500', 'bg-purple-50', 'text-purple-600');
                 btn.classList.add('border-gray-200');
             });
-            event.target.classList.remove('border-gray-200');
-            event.target.classList.add('border-purple-500', 'bg-purple-50', 'text-purple-600');
+            const target = evt && evt.target ? evt.target : null;
+            if (target) {
+                target.classList.remove('border-gray-200');
+                target.classList.add('border-purple-500', 'bg-purple-50', 'text-purple-600');
+            }
         }
 
-        function setSubDuration(months) {
+        function setSubDuration(months, evt) {
             document.getElementById('new-subscription-duration').value = months;
 
             document.querySelectorAll('.sub-duration-btn').forEach(btn => {
                 btn.classList.remove('border-purple-500', 'bg-purple-50', 'text-purple-600');
                 btn.classList.add('border-gray-200');
             });
-            event.target.classList.remove('border-gray-200');
-            event.target.classList.add('border-purple-500', 'bg-purple-50', 'text-purple-600');
+            const target = evt && evt.target ? evt.target : null;
+            if (target) {
+                target.classList.remove('border-gray-200');
+                target.classList.add('border-purple-500', 'bg-purple-50', 'text-purple-600');
+            }
         }
 
         function toggleSubscriptionOptions() {
@@ -460,13 +466,17 @@
             showToast('已应用套餐模板', 'success');
         }
 
-        function setDuration(months) {
+        function setDuration(months, evt) {
             document.getElementById('sub-duration').value = months;
 
             document.querySelectorAll('.duration-btn').forEach(btn => {
                 btn.classList.remove('border-purple-500', 'bg-purple-50');
             });
-            event.target.closest('.duration-btn').classList.add('border-purple-500', 'bg-purple-50');
+            const target = evt && evt.target ? evt.target : null;
+            const button = target ? target.closest('.duration-btn') : null;
+            if (button) {
+                button.classList.add('border-purple-500', 'bg-purple-50');
+            }
 
             updatePreview();
         }

@@ -71,20 +71,7 @@
 
         function renderLogsPageNumbers(totalPages) {
             const container = document.getElementById('logs-page-numbers');
-            const maxVisible = 5;
-            let pages = [];
-
-            if (totalPages <= maxVisible) {
-                pages = Array.from({ length: totalPages }, (_, i) => i + 1);
-            } else {
-                if (logsCurrentPage <= 3) {
-                    pages = [1, 2, 3, 4, '...', totalPages];
-                } else if (logsCurrentPage >= totalPages - 2) {
-                    pages = [1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
-                } else {
-                    pages = [1, '...', logsCurrentPage - 1, logsCurrentPage, logsCurrentPage + 1, '...', totalPages];
-                }
-            }
+            const pages = getPaginationPages(logsCurrentPage, totalPages);
 
             container.innerHTML = pages.map(p => {
                 if (p === '...') {

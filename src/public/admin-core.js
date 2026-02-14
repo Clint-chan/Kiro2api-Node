@@ -1,5 +1,3 @@
-        let token = localStorage.getItem('kiro_token');
-        let adminKey = token || '';
         let selectedAccounts = new Set();
         let autoRefreshInterval = null;
         let serverStartTime = null;
@@ -8,16 +6,6 @@
         let pageSize = 15;
         let allAccounts = [];
         let weeklyChart = null;
-
-        function showToast(message, type = 'info') {
-            const container = document.getElementById('toast-container');
-            const colors = { success: 'bg-green-500', error: 'bg-red-500', info: 'bg-blue-500', warning: 'bg-yellow-500' };
-            const toast = document.createElement('div');
-            toast.className = `${colors[type]} text-white px-4 py-3 rounded-lg shadow-lg text-sm font-medium animate-slideIn`;
-            toast.textContent = message;
-            container.appendChild(toast);
-            setTimeout(() => { toast.classList.add('animate-slideOut'); setTimeout(() => toast.remove(), 300); }, 3000);
-        }
 
         function startUptimeCounter() {
             if (uptimeInterval) {
@@ -34,19 +22,6 @@
             }, 1000);
         }
 
-        async function fetchApi(url, options = {}) {
-            const res = await fetch(url, { ...options, headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey, ...options.headers } });
-            if (res.status === 401) { logout(); throw new Error('认证失败'); }
-            if (!res.ok && res.status !== 204) {
-                const error = await res.json().catch(() => ({}));
-                const err = new Error(error.error?.message || res.statusText);
-                err.status = res.status;
-                err.payload = error;
-                throw err;
-            }
-            return res.status === 204 ? null : res.json();
-        }
-
         function logout() {
             if (autoRefreshInterval) clearInterval(autoRefreshInterval);
             if (uptimeInterval) clearInterval(uptimeInterval);
@@ -54,6 +29,8 @@
             localStorage.removeItem('kiro_user');
             window.location.href = '/login.html';
         }
+
+        setAdminLogoutHandler(logout);
 
         function showMainPanel() {
             document.getElementById('loginPage').classList.add('hidden');
@@ -379,20 +356,7 @@
 
         function renderPageNumbers(totalPages) {
             const container = document.getElementById('page-numbers');
-            const maxVisible = 5;
-            let pages = [];
-
-            if (totalPages <= maxVisible) {
-                pages = Array.from({ length: totalPages }, (_, i) => i + 1);
-            } else {
-                if (currentPage <= 3) {
-                    pages = [1, 2, 3, 4, '...', totalPages];
-                } else if (currentPage >= totalPages - 2) {
-                    pages = [1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
-                } else {
-                    pages = [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
-                }
-            }
+            const pages = getPaginationPages(currentPage, totalPages);
 
             container.innerHTML = pages.map(p => {
                 if (p === '...') {
@@ -823,15 +787,6 @@
             catch (e) { showToast('添加失败: ' + e.message, 'error'); }
         }
 
-        function escapeHtml(value) {
-            return String(value || '')
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#39;');
-        }
-
         function renderImportTypeBadge(type) {
             if (type === 'IdC/BuilderId/Enterprise') {
                 return '<span class="px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700">IdC/BuilderId/Enterprise</span>';
@@ -1148,36 +1103,6 @@
             if (!confirm('确定删除此 API 密钥？')) return;
             try { await fetchApi('/api/settings/api-keys', { method: 'DELETE', body: JSON.stringify({ key }) }); loadApiKeys(); showToast('删除成功', 'success'); }
             catch (e) { showToast('删除失败: ' + e.message, 'error'); }
-        }
-
-        function copyText(text) {
-            // Check if Clipboard API is available (requires HTTPS)
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(text).then(() => {
-                    showToast('已复制到剪贴板', 'success');
-                }).catch(() => {
-                    fallbackCopy(text);
-                });
-            } else {
-                // Fallback for HTTP or older browsers
-                fallbackCopy(text);
-            }
-        }
-
-        function fallbackCopy(text) {
-            const textarea = document.createElement('textarea');
-            textarea.value = text;
-            textarea.style.position = 'fixed';
-            textarea.style.opacity = '0';
-            document.body.appendChild(textarea);
-            textarea.select();
-            try {
-                document.execCommand('copy');
-                showToast('已复制到剪贴板', 'success');
-            } catch (err) {
-                showToast('复制失败，请手动复制', 'error');
-            }
-            document.body.removeChild(textarea);
         }
 
         async function refresh() { loadStatus(); loadUsers(); loadAccounts(); }

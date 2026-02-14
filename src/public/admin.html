@@ -690,11 +690,11 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">充值额度 (USD)</label>
                             <div class="grid grid-cols-2 gap-2 mb-2">
-                                <button type="button" onclick="setSubQuota(1800)"
+                                <button type="button" onclick="setSubQuota(1800, event)"
                                     class="sub-quota-btn px-4 py-2 border-2 border-purple-500 bg-purple-50 text-purple-600 rounded-lg text-sm font-medium transition hover:bg-purple-100">
                                     $1800
                                 </button>
-                                <button type="button" onclick="setSubQuota(3600)"
+                                <button type="button" onclick="setSubQuota(3600, event)"
                                     class="sub-quota-btn px-4 py-2 border-2 border-gray-200 rounded-lg text-sm font-medium transition hover:border-purple-500 hover:bg-purple-50">
                                     $3600
                                 </button>
@@ -712,19 +712,19 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">开通时长</label>
                             <div class="grid grid-cols-4 gap-2 mb-2">
-                                <button type="button" onclick="setSubDuration(1)"
+                                <button type="button" onclick="setSubDuration(1, event)"
                                     class="sub-duration-btn px-3 py-2 border-2 border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 text-sm font-medium transition">
                                     1个月
                                 </button>
-                                <button type="button" onclick="setSubDuration(3)"
+                                <button type="button" onclick="setSubDuration(3, event)"
                                     class="sub-duration-btn px-3 py-2 border-2 border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 text-sm font-medium transition">
                                     3个月
                                 </button>
-                                <button type="button" onclick="setSubDuration(6)"
+                                <button type="button" onclick="setSubDuration(6, event)"
                                     class="sub-duration-btn px-3 py-2 border-2 border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 text-sm font-medium transition">
                                     6个月
                                 </button>
-                                <button type="button" onclick="setSubDuration(12)"
+                                <button type="button" onclick="setSubDuration(12, event)"
                                     class="sub-duration-btn px-3 py-2 border-2 border-purple-500 bg-purple-50 text-purple-600 rounded-lg text-sm font-medium transition">
                                     12个月
                                 </button>
@@ -1470,6 +1470,7 @@
         </div>
     </div>
 
+    <script src="/admin-shared.js"></script>
     <script src="/admin-core.js"></script>
     <script src="/admin-users.js"></script>
     <script src="/admin-user-actions.js"></script>

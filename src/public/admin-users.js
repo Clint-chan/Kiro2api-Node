@@ -145,20 +145,7 @@
 
         function renderUsersPageNumbers(totalPages) {
             const container = document.getElementById('users-page-numbers');
-            const maxVisible = 5;
-            let pages = [];
-
-            if (totalPages <= maxVisible) {
-                pages = Array.from({ length: totalPages }, (_, i) => i + 1);
-            } else {
-                if (usersCurrentPage <= 3) {
-                    pages = [1, 2, 3, 4, '...', totalPages];
-                } else if (usersCurrentPage >= totalPages - 2) {
-                    pages = [1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
-                } else {
-                    pages = [1, '...', usersCurrentPage - 1, usersCurrentPage, usersCurrentPage + 1, '...', totalPages];
-                }
-            }
+            const pages = getPaginationPages(usersCurrentPage, totalPages);
 
             container.innerHTML = pages.map(p => {
                 if (p === '...') {
