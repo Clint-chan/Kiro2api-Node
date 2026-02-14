@@ -132,13 +132,10 @@ export function routeModel(model, accountPool, user = null) {
 
   // 4. Kiro 没有 Pro 账号，fallback 到 Antigravity
   // 检查用户是否有 Antigravity 权限
-  fs.appendFileSync('./logs/debug.log', `[routeModel] User: ${user?.username}, allowed_channels: ${user?.allowed_channels}\n`);
   
   const hasPermission = hasAntigravityPermission(user);
-  fs.appendFileSync('./logs/debug.log', `[routeModel] hasPermission result: ${hasPermission}\n`);
   
   if (!user || !hasPermission) {
-    fs.appendFileSync('./logs/debug.log', `[routeModel] Permission denied\n`);
     return {
       channel: 'kiro',
       model: model,

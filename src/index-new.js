@@ -32,7 +32,15 @@ async function startServer() {
     console.log('环境变量 NODE_ENV:', process.env.NODE_ENV);
 
     const app = express();
-    app.use(cors());
+    
+    const corsOptions = {
+      origin: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : '*',
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key', 'x-admin-key']
+    };
+    app.use(cors(corsOptions));
+    
     app.use(express.json({ limit: '50mb' }));
 
     // 配置

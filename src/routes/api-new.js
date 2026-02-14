@@ -3,9 +3,9 @@ import { KiroClient, KiroApiError } from '../kiro-client.js';
 import { EventStreamDecoder, parseKiroEvent } from '../event-parser.js';
 import { countTokens, countMessagesTokens, countToolUseTokens } from '../tokenizer.js';
 import { createFailoverHandler } from '../failover-handler.js';
+import { userAuthMiddleware } from '../middleware/auth.js';
 import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs/promises';
-import fsSync from 'fs';
 import path from 'path';
 import { recordApiStart, recordApiSuccess, recordApiFailure } from './api-new-metrics.js';
 import {
@@ -50,34 +50,7 @@ export function createApiRouter(state) {
   // 创建故障转移处理器
   const failoverHandler = createFailoverHandler(state.accountPool);
 
-  // User authentication middleware (replaces old API key check)
-  const authMiddleware = (req, res, next) => {
-    const apiKey = req.headers['x-api-key'] ||
-                   req.headers['authorization']?.replace('Bearer ', '');
-
-    if (!apiKey) {
-      return res.status(401).json({
-        type: 'error',
-        error: { type: 'authentication_error', message: 'API key is required' }
-      });
-    }
-
-    // Get user from database
-    const user = state.db.getUserByApiKey(apiKey, 'active');
-
-    if (!user) {
-      return res.status(401).json({
-        type: 'error',
-        error: { type: 'authentication_error', message: 'Invalid API key or user is not active' }
-      });
-    }
-
-    // Attach user to request
-    req.user = user;
-    next();
-  };
-
-  router.use(authMiddleware);
+  router.use(userAuthMiddleware(state.db));
 
   function parseJsonSafe(value) {
     if (typeof value !== 'string') return null;
@@ -333,12 +306,8 @@ export function createApiRouter(state) {
     let inputTokens = 0;
 
     try {
-      fsSync.appendFileSync('./logs/debug.log', `[api-new] User: ${req.user?.username}, allowed_channels: ${req.user?.allowed_channels}\n`);
-      
       const route = routeModel(req.body.model, state.accountPool, req.user);
       console.log(`[Model Router] ${req.body.model} -> ${route.channel}/${route.model} (${route.reason})`);
-      
-      fsSync.appendFileSync('./logs/debug.log', `[api-new] Route result: ${JSON.stringify(route)}\n`);
 
       if (route.error) {
         return res.status(403).json({
