@@ -2163,21 +2163,3 @@
 
         async function refresh() { loadStatus(); loadUsers(); loadAccounts(); }
 
-        (async () => {
-            if (!token) {
-                window.location.href = '/login.html';
-                return;
-            }
-
-            document.getElementById('loadingPage').classList.add('hidden');
-            document.getElementById('mainPanel').classList.remove('hidden');
-            updateUsernamePreview(); // 初始化用户名预览
-            refresh();
-        })();
-
-        // 自动刷新统计数据（每30秒）
-        setInterval(() => {
-            if (token && !document.getElementById('mainPanel').classList.contains('hidden')) {
-                loadStatus();
-            }
-        }, 30000);
