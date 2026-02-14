@@ -85,7 +85,7 @@ CREATE TABLE IF NOT EXISTS kiro_accounts (
 CREATE INDEX IF NOT EXISTS idx_kiro_accounts_status ON kiro_accounts(status);
 CREATE INDEX IF NOT EXISTS idx_kiro_accounts_user_email ON kiro_accounts(user_email);
 
-CREATE TABLE IF NOT EXISTS agt_accounts (
+CREATE TABLE IF NOT EXISTS antigravity_accounts (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     email TEXT,
@@ -111,9 +111,9 @@ CREATE TABLE IF NOT EXISTS agt_accounts (
     CHECK (status IN ('active', 'inactive', 'error', 'disabled'))
 );
 
-CREATE INDEX IF NOT EXISTS idx_agt_accounts_status ON agt_accounts(status);
-CREATE INDEX IF NOT EXISTS idx_agt_accounts_email ON agt_accounts(email);
-CREATE INDEX IF NOT EXISTS idx_agt_accounts_project_id ON agt_accounts(project_id);
+CREATE INDEX IF NOT EXISTS idx_antigravity_accounts_status ON antigravity_accounts(status);
+CREATE INDEX IF NOT EXISTS idx_antigravity_accounts_email ON antigravity_accounts(email);
+CREATE INDEX IF NOT EXISTS idx_antigravity_accounts_project_id ON antigravity_accounts(project_id);
 
 -- Request logs table
 CREATE TABLE IF NOT EXISTS request_logs (
