@@ -9,6 +9,9 @@
     "dev": "node --watch src/index-new.js",
     "migrate": "node src/migrate.js",
     "verify": "node verify-migration.js",
+    "lint": "biome check src/",
+    "lint:fix": "biome check --write src/",
+    "format": "biome format --write src/",
     "pm2": "pm2 start ecosystem.config.cjs",
     "pm2:start": "pm2 start ecosystem.config.cjs",
     "pm2:stop": "pm2 stop kiro2api-node",
@@ -36,5 +39,8 @@
     "node-fetch": "^3.3.2",
     "tiktoken": "^1.0.22",
     "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.3.15"
   }
 }
