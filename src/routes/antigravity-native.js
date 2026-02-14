@@ -3,7 +3,7 @@ import { callAntigravity, callAntigravityStream, resolveAntigravityUpstreamModel
 import { isChannelAllowed } from '../user-permissions.js';
 import { userAuthMiddleware } from '../middleware/auth.js';
 
-export function createAgtNativeRouter(state) {
+export function createAntigravityNativeRouter(state) {
   const router = Router();
 
   router.use([
@@ -32,8 +32,8 @@ export function createAgtNativeRouter(state) {
     return remaining > 0;
   }
 
-  function getEligibleAgtAccounts(modelId, excludedIds = new Set()) {
-    const accounts = state.db.getAllAgtAccounts('active') || [];
+  function getEligibleAntigravityAccounts(modelId, excludedIds = new Set()) {
+    const accounts = state.db.getAllAntigravityAccounts('active') || [];
     const upstreamModel = resolveAntigravityUpstreamModel(modelId);
 
     const filtered = accounts.filter((account) => {
@@ -51,7 +51,7 @@ export function createAgtNativeRouter(state) {
     return filtered;
   }
 
-  function isAgtRateLimit(error) {
+  function isAntigravityRateLimit(error) {
     if (error?.status === 429) return true;
     const msg = String(error?.message || '').toLowerCase();
     return msg.includes('resource has been exhausted') || msg.includes('rate limit') || msg.includes('rate_limit');
@@ -62,18 +62,18 @@ export function createAgtNativeRouter(state) {
     let lastError = null;
 
     while (true) {
-      const accounts = getEligibleAgtAccounts(modelId, excluded);
+      const accounts = getEligibleAntigravityAccounts(modelId, excluded);
       if (accounts.length === 0) break;
 
       const account = accounts[0];
       try {
         const result = await executor(account);
-        state.db.updateAgtAccountStats(account.id, false);
+        state.db.updateAntigravityAccountStats(account.id, false);
         return result;
       } catch (error) {
         lastError = error;
-        state.db.updateAgtAccountStats(account.id, true);
-        if (isAgtRateLimit(error)) {
+        state.db.updateAntigravityAccountStats(account.id, true);
+        if (isAntigravityRateLimit(error)) {
           excluded.add(account.id);
           continue;
         }
@@ -82,15 +82,15 @@ export function createAgtNativeRouter(state) {
     }
 
     if (lastError) throw lastError;
-    throw new Error('No active AGT accounts available');
+    throw new Error('No active Antigravity accounts available');
   }
 
   async function executeNative(path, req, res) {
-    if (!isChannelAllowed(req.user, 'agt')) {
+    if (!isChannelAllowed(req.user, 'antigravity')) {
       return res.status(403).json({
         error: {
           type: 'permission_error',
-          message: "Channel 'agt' is not enabled for this API key."
+          message: "Channel 'antigravity' is not enabled for this API key."
         }
       });
     }
@@ -101,11 +101,11 @@ export function createAgtNativeRouter(state) {
     return res.json(response);
   }
 
-  router.post('/v1internal:generateContent', async (req, res) => {
+   router.post('/v1internal:generateContent', async (req, res) => {
     try {
       return await executeNative('/v1internal:generateContent', req, res);
     } catch (error) {
-      return res.status(500).json({ error: error.message || 'AGT generateContent failed' });
+      return res.status(500).json({ error: error.message || 'Antigravity generateContent failed' });
     }
   });
 
@@ -113,7 +113,7 @@ export function createAgtNativeRouter(state) {
     try {
       return await executeNative('/v1internal:countTokens', req, res);
     } catch (error) {
-      return res.status(500).json({ error: error.message || 'AGT countTokens failed' });
+      return res.status(500).json({ error: error.message || 'Antigravity countTokens failed' });
     }
   });
 
@@ -121,18 +121,18 @@ export function createAgtNativeRouter(state) {
     try {
       return await executeNative('/v1internal:fetchAvailableModels', req, res);
     } catch (error) {
-      return res.status(500).json({ error: error.message || 'AGT fetchAvailableModels failed' });
+      return res.status(500).json({ error: error.message || 'Antigravity fetchAvailableModels failed' });
     }
   });
 
   router.post('/v1internal:streamGenerateContent', async (req, res) => {
     let selectedAccount = null;
     try {
-      if (!isChannelAllowed(req.user, 'agt')) {
+      if (!isChannelAllowed(req.user, 'antigravity')) {
         return res.status(403).json({
           error: {
             type: 'permission_error',
-            message: "Channel 'agt' is not enabled for this API key."
+            message: "Channel 'antigravity' is not enabled for this API key."
           }
         });
       }
@@ -141,7 +141,7 @@ export function createAgtNativeRouter(state) {
         selectedAccount = account;
         const response = await callAntigravityStream(state.db, account, '/v1internal:streamGenerateContent', req.body || {});
         if (!response.body) {
-          throw new Error('AGT stream body unavailable');
+          throw new Error('Antigravity stream body unavailable');
         }
         return response;
       });
@@ -157,7 +157,7 @@ export function createAgtNativeRouter(state) {
 
       return res.end();
     } catch (error) {
-      return res.status(500).json({ error: error.message || 'AGT streamGenerateContent failed' });
+      return res.status(500).json({ error: error.message || 'Antigravity streamGenerateContent failed' });
     }
   });
 
