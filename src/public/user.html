@@ -499,8 +499,8 @@ response = client.chat.completions.create(
                 
                 if (sub.subscription_type && sub.subscription_type !== 'none') {
                     const typeName = sub.subscription_type === 'daily' ? '每日' : '每月';
-                    const nextReset = sub.next_reset ? new Date(sub.next_reset).toLocaleDateString() : '未知';
-                    badge.innerHTML = `<span class="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">${typeName}套餐 · 下次重置: ${nextReset}</span>`;
+                    const nextReset = sub.next_reset ? new Date(sub.next_reset).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' }) : '未知';
+                    badge.innerHTML = `<span class="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-medium whitespace-nowrap">${typeName}套餐 <span class="text-purple-500">·</span> ${nextReset}</span>`;
                 } else {
                     badge.textContent = '余额不足请联系管理员充值';
                 }
