@@ -1,4 +1,5 @@
 import express from 'express';
+import { logger } from '../../logger.js';
 
 export function createSubscriptionsAdminRouter(db, subscription) {
   const router = express.Router();
@@ -45,7 +46,7 @@ export function createSubscriptionsAdminRouter(db, subscription) {
         data: result
       });
     } catch (error) {
-      console.error('Set subscription error:', error);
+      logger.error('Set subscription error', { error });
       res.status(500).json({
         error: {
           type: 'internal_error',
@@ -68,7 +69,7 @@ export function createSubscriptionsAdminRouter(db, subscription) {
         message: '订阅已取消'
       });
     } catch (error) {
-      console.error('Cancel subscription error:', error);
+      logger.error('Cancel subscription error', { error });
       res.status(500).json({
         error: {
           type: 'internal_error',
@@ -102,7 +103,7 @@ export function createSubscriptionsAdminRouter(db, subscription) {
         data: result
       });
     } catch (error) {
-      console.error('Renew subscription error:', error);
+      logger.error('Renew subscription error', { error });
       res.status(500).json({
         error: {
           type: 'internal_error',
@@ -140,7 +141,7 @@ export function createSubscriptionsAdminRouter(db, subscription) {
         }
       });
     } catch (error) {
-      console.error('Get subscription error:', error);
+      logger.error('Get subscription error', { error });
       res.status(500).json({
         error: {
           type: 'internal_error',
@@ -168,7 +169,7 @@ export function createSubscriptionsAdminRouter(db, subscription) {
         data: history
       });
     } catch (error) {
-      console.error('Get subscription history error:', error);
+      logger.error('Get subscription history error', { error });
       res.status(500).json({
         error: {
           type: 'internal_error',

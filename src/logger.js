@@ -20,19 +20,37 @@ class Logger {
   _log(level, message, meta = {}) {
     if (LOG_LEVELS[level] > this.level) return;
 
+    // Serialize Error objects in meta
+    const serializedMeta = {};
+    for (const [key, value] of Object.entries(meta)) {
+      if (value instanceof Error) {
+        serializedMeta[key] = {
+          name: value.name,
+          message: value.message,
+          stack: value.stack
+        };
+      } else {
+        serializedMeta[key] = value;
+      }
+    }
+
     const logEntry = {
       timestamp: new Date().toISOString(),
       level,
       service: this.service,
       message,
-      ...meta
+      ...serializedMeta
     };
 
+    // Determine output stream based on log level
+    const isError = level === 'ERROR' || level === 'WARN';
+    const outputFn = isError ? console.error : console.log;
+
     if (this.format === 'json') {
-      console.log(JSON.stringify(logEntry));
+      outputFn(JSON.stringify(logEntry));
     } else {
-      const metaStr = Object.keys(meta).length > 0 ? ` ${JSON.stringify(meta)}` : '';
-      console.log(`[${logEntry.timestamp}] ${level}: ${message}${metaStr}`);
+      const metaStr = Object.keys(serializedMeta).length > 0 ? ` ${JSON.stringify(serializedMeta)}` : '';
+      outputFn(`[${logEntry.timestamp}] ${level}: ${message}${metaStr}`);
     }
   }
 

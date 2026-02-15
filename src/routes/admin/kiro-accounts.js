@@ -1,4 +1,5 @@
 import express from 'express';
+import { logger } from '../../logger.js';
 import { TokenManager } from '../../token.js';
 
 export function createKiroAccountsAdminRouter(db, accountPool) {
@@ -43,7 +44,7 @@ export function createKiroAccountsAdminRouter(db, accountPool) {
         data: accountsWithDependencies
       });
     } catch (error) {
-      console.error('Get Kiro accounts error:', error);
+      logger.error('Get Kiro accounts error', { error });
       res.status(500).json({
         error: {
           type: 'internal_error',
@@ -94,7 +95,7 @@ export function createKiroAccountsAdminRouter(db, accountPool) {
         }
       });
     } catch (error) {
-      console.error('Refresh usage error:', error);
+      logger.error('Refresh usage error', { error });
       res.status(500).json({
         error: {
           type: 'internal_error',
@@ -134,7 +135,7 @@ export function createKiroAccountsAdminRouter(db, accountPool) {
         data: results
       });
     } catch (error) {
-      console.error('Refresh all usage error:', error);
+      logger.error('Refresh all usage error', { error });
       res.status(500).json({
         error: {
           type: 'internal_error',
@@ -169,7 +170,7 @@ export function createKiroAccountsAdminRouter(db, accountPool) {
       // Update accountPool if available
       if (accountPool) {
         const result = await accountPool.enableAccount(id);
-        console.log(`AccountPool enable result for ${id}:`, result);
+        logger.info('AccountPool enable result', { accountId: id, result });
       }
       
       res.json({
@@ -177,7 +178,7 @@ export function createKiroAccountsAdminRouter(db, accountPool) {
         message: 'Account enabled successfully'
       });
     } catch (error) {
-      console.error('Enable account error:', error);
+      logger.error('Enable account error', { error });
       res.status(500).json({
         error: {
           type: 'internal_error',
@@ -212,7 +213,7 @@ export function createKiroAccountsAdminRouter(db, accountPool) {
       // Update accountPool if available
       if (accountPool) {
         const result = await accountPool.disableAccount(id);
-        console.log(`AccountPool disable result for ${id}:`, result);
+        logger.info('AccountPool disable result', { accountId: id, result });
       }
       
       res.json({
@@ -220,7 +221,7 @@ export function createKiroAccountsAdminRouter(db, accountPool) {
         message: 'Account disabled successfully'
       });
     } catch (error) {
-      console.error('Disable account error:', error);
+      logger.error('Disable account error', { error });
       res.status(500).json({
         error: {
           type: 'internal_error',
@@ -303,7 +304,7 @@ export function createKiroAccountsAdminRouter(db, accountPool) {
         message: 'Account deleted successfully'
       });
     } catch (error) {
-      console.error('Delete account error:', error);
+      logger.error('Delete account error', { error });
       res.status(500).json({
         error: {
           type: 'internal_error',
@@ -443,7 +444,7 @@ export function createKiroAccountsAdminRouter(db, accountPool) {
         results
       });
     } catch (error) {
-      console.error('Import accounts error:', error);
+      logger.error('Import accounts error', { error });
       res.status(400).json({
         error: {
           type: 'validation_error',

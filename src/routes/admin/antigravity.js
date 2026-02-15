@@ -1,4 +1,5 @@
 import express from 'express';
+import { logger } from '../../logger.js';
 import {
   callAntigravity,
   fetchAntigravityModelsWithMeta,
@@ -18,7 +19,7 @@ export function createAntigravityAdminRouter(db) {
       }));
       res.json({ success: true, data: accounts });
     } catch (error) {
-      console.error('Get Antigravity accounts error:', error);
+      logger.error('Get Antigravity accounts error', { error });
       res.status(500).json({
         error: {
           type: 'internal_error',
@@ -75,7 +76,7 @@ export function createAntigravityAdminRouter(db) {
         results
       });
     } catch (error) {
-      console.error('Import Antigravity accounts error:', error);
+      logger.error('Import Antigravity accounts error', { error });
       res.status(400).json({
         error: {
           type: 'validation_error',
@@ -101,7 +102,7 @@ export function createAntigravityAdminRouter(db) {
       db.updateAntigravityAccountStatus(id, 'active');
       res.json({ success: true, message: 'Antigravity account enabled successfully' });
     } catch (error) {
-      console.error('Enable Antigravity account error:', error);
+      logger.error('Enable Antigravity account error', { error });
       res.status(500).json({
         error: {
           type: 'internal_error',
@@ -127,7 +128,7 @@ export function createAntigravityAdminRouter(db) {
       db.updateAntigravityAccountStatus(id, 'disabled');
       res.json({ success: true, message: 'Antigravity account disabled successfully' });
     } catch (error) {
-      console.error('Disable Antigravity account error:', error);
+      logger.error('Disable Antigravity account error', { error });
       res.status(500).json({
         error: {
           type: 'internal_error',
@@ -153,7 +154,7 @@ export function createAntigravityAdminRouter(db) {
       db.deleteAntigravityAccount(id);
       res.json({ success: true, message: 'Antigravity account deleted successfully' });
     } catch (error) {
-      console.error('Delete Antigravity account error:', error);
+      logger.error('Delete Antigravity account error', { error });
       res.status(500).json({
         error: {
           type: 'internal_error',
@@ -187,7 +188,7 @@ export function createAntigravityAdminRouter(db) {
       db.updateAntigravityAccountStats(id, false);
       res.json({ success: true, data: { models, next_reset: quotaMeta.next_reset } });
     } catch (error) {
-      console.error('Refresh Antigravity models error:', error);
+      logger.error('Refresh Antigravity models error', { error });
       db.updateAntigravityAccountStats(req.params.id, true);
       res.status(500).json({
         error: {
@@ -246,7 +247,7 @@ export function createAntigravityAdminRouter(db) {
       db.updateAntigravityAccountStats(id, false);
       res.json({ success: true, data: { usage, project_id: projectId, ...tierMeta, ...quotaMeta } });
     } catch (error) {
-      console.error('Refresh Antigravity usage error:', error);
+      logger.error('Refresh Antigravity usage error', { error });
       db.updateAntigravityAccountStats(req.params.id, true);
       res.status(500).json({
         error: {

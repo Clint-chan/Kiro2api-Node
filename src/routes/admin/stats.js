@@ -1,4 +1,5 @@
 import express from 'express';
+import { logger } from '../../logger.js';
 
 export function createStatsAdminRouter(db) {
   const router = express.Router();
@@ -80,7 +81,7 @@ export function createStatsAdminRouter(db) {
         }
       });
     } catch (error) {
-      console.error('Get overview stats error:', error);
+      logger.error('Get overview stats error', { error });
       res.status(500).json({
         error: {
           type: 'internal_error',
@@ -121,7 +122,7 @@ export function createStatsAdminRouter(db) {
         data: users
       });
     } catch (error) {
-      console.error('Get user stats error:', error);
+      logger.error('Get user stats error', { error });
       res.status(500).json({
         error: {
           type: 'internal_error',
@@ -174,7 +175,7 @@ export function createStatsAdminRouter(db) {
         data: stats
       });
     } catch (error) {
-      console.error('Get model stats error:', error);
+      logger.error('Get model stats error', { error });
       res.status(500).json({
         error: {
           type: 'internal_error',
@@ -211,7 +212,7 @@ export function createStatsAdminRouter(db) {
         data: accountStats
       });
     } catch (error) {
-      console.error('Get account stats error:', error);
+      logger.error('Get account stats error', { error });
       res.status(500).json({
         error: {
           type: 'internal_error',
@@ -256,7 +257,7 @@ export function createStatsAdminRouter(db) {
         data: stats
       });
     } catch (error) {
-      console.error('Get daily stats error:', error);
+      logger.error('Get daily stats error', { error });
       res.status(500).json({
         error: {
           type: 'internal_error',

@@ -1,4 +1,5 @@
 import express from 'express';
+import { logger } from '../../logger.js';
 
 export function createLogsAdminRouter(db) {
   const router = express.Router();
@@ -93,7 +94,7 @@ export function createLogsAdminRouter(db) {
         }
       });
     } catch (error) {
-      console.error('Get logs error:', error);
+      logger.error('Get logs error', { error });
       res.status(500).json({
         error: {
           type: 'internal_error',
@@ -116,7 +117,7 @@ export function createLogsAdminRouter(db) {
         message: `已清空 ${result.changes} 条日志记录`
       });
     } catch (error) {
-      console.error('Clear logs error:', error);
+      logger.error('Clear logs error', { error });
       res.status(500).json({
         error: {
           type: 'internal_error',

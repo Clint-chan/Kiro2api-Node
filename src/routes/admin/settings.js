@@ -1,4 +1,5 @@
 import express from 'express';
+import { logger } from '../../logger.js';
 
 export function createSettingsAdminRouter(db) {
   const router = express.Router();
@@ -21,7 +22,7 @@ export function createSettingsAdminRouter(db) {
         data: settingsObj
       });
     } catch (error) {
-      console.error('Get settings error:', error);
+      logger.error('Get settings error', { error });
       res.status(500).json({
         error: {
           type: 'internal_error',
@@ -48,7 +49,7 @@ export function createSettingsAdminRouter(db) {
         message: 'Settings updated successfully.'
       });
     } catch (error) {
-      console.error('Update settings error:', error);
+      logger.error('Update settings error', { error });
       res.status(500).json({
         error: {
           type: 'internal_error',
@@ -83,7 +84,7 @@ export function createSettingsAdminRouter(db) {
         message: '管理密钥已更新'
       });
     } catch (error) {
-      console.error('Update admin key error:', error);
+      logger.error('Update admin key error', { error });
       res.status(500).json({
         error: {
           type: 'internal_error',

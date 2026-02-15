@@ -1,5 +1,6 @@
 import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
+import { logger } from '../../logger.js';
 import { normalizeUserPermissions, serializeUser } from './helpers.js';
 
 export function createUserAdminRouter(db, billing) {
@@ -47,7 +48,7 @@ export function createUserAdminRouter(db, billing) {
         count: sanitizedUsers.length
       });
     } catch (error) {
-      console.error('Get users error:', error);
+      logger.error('Get users error', { error });
       res.status(500).json({
         error: {
           type: 'internal_error',
@@ -64,9 +65,9 @@ export function createUserAdminRouter(db, billing) {
   router.post('/users', (req, res) => {
     try {
       let { username, api_key, role, balance, price_input, price_output, notes } = req.body;
-      console.log('[DEBUG] req.body.allowed_channels:', req.body.allowed_channels);
+      logger.debug('Request body allowed_channels', { allowedChannels: req.body.allowed_channels });
       const permissions = normalizeUserPermissions(req.body.allowed_channels, req.body.allowed_models);
-      console.log('[DEBUG] permissions:', permissions);
+      logger.debug('Normalized permissions', { permissions });
 
       // 如果没有提供用户名，自动生成
       if (!username) {
@@ -124,7 +125,7 @@ export function createUserAdminRouter(db, billing) {
         })
       });
     } catch (error) {
-      console.error('Create user error:', error);
+      logger.error('Create user error', { error });
       res.status(500).json({
         error: {
           type: 'internal_error',
@@ -175,7 +176,7 @@ export function createUserAdminRouter(db, billing) {
         })
       });
     } catch (error) {
-      console.error('Get user error:', error);
+      logger.error('Get user error', { error });
       res.status(500).json({
         error: {
           type: 'internal_error',
@@ -256,7 +257,7 @@ export function createUserAdminRouter(db, billing) {
         })
       });
     } catch (error) {
-      console.error('Update user error:', error);
+      logger.error('Update user error', { error });
       res.status(500).json({
         error: {
           type: 'internal_error',
@@ -290,7 +291,7 @@ export function createUserAdminRouter(db, billing) {
         message: 'User deleted successfully.'
       });
     } catch (error) {
-      console.error('Delete user error:', error);
+      logger.error('Delete user error', { error });
       res.status(500).json({
         error: {
           type: 'internal_error',
@@ -353,7 +354,7 @@ export function createUserAdminRouter(db, billing) {
         });
       }
 
-      console.error('Recharge error:', error);
+      logger.error('Recharge error', { error });
       res.status(500).json({
         error: {
           type: 'internal_error',
