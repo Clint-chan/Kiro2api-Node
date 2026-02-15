@@ -158,6 +158,7 @@ export function dualAuthMiddleware(db) {
           id: 'system',
           username: 'system_admin',
           role: 'admin',
+          balance: 0,
           isSystemAdmin: true,
           adminPath: adminPath
         };
