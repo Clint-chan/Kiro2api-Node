@@ -102,6 +102,32 @@
             setTimeout(() => errorDiv.classList.add('hidden'), 5000);
         }
 
+        async function resolveAdminPath(credential) {
+            try {
+                const response = await fetch('/api/admin/settings', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-key': credential
+                    }
+                });
+
+                if (!response.ok) {
+                    return '/admin.html';
+                }
+
+                const data = await response.json();
+                const adminPath = data?.data?.admin_path;
+                if (typeof adminPath === 'string' && adminPath.trim()) {
+                    return adminPath;
+                }
+            } catch (error) {
+                console.error('Resolve admin path failed:', error);
+            }
+
+            return '/admin.html';
+        }
+
         async function login(event) {
             event.preventDefault();
 
@@ -134,8 +160,7 @@
 
                     // 根据角色跳转
                     if (data.data.role === 'admin' || data.data.isSystemAdmin) {
-                        // Get custom admin path from server
-                        const adminPath = data.data.adminPath || '/admin.html';
+                        const adminPath = data.data.adminPath || await resolveAdminPath(credential);
                         window.location.href = adminPath;
                     } else {
                         window.location.href = '/user.html';
@@ -170,7 +195,8 @@
                         if (data.success) {
                             localStorage.setItem('kiro_user', JSON.stringify(data.data));
                             if (data.data.role === 'admin' || data.data.isSystemAdmin) {
-                                window.location.href = '/admin.html';
+                                const adminPath = data.data.adminPath || await resolveAdminPath(token);
+                                window.location.href = adminPath;
                             } else {
                                 window.location.href = '/user.html';
                             }
