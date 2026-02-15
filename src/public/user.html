@@ -361,7 +361,7 @@ response = client.chat.completions.create(
     <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
 
     <script>
-        let token = localStorage.getItem('kiro_token');
+        const token = localStorage.getItem('kiro_token');
         let user = JSON.parse(localStorage.getItem('kiro_user') || '{}');
         let apiKeyVisible = false;
         let requestChart, costChart;
@@ -394,6 +394,18 @@ response = client.chat.completions.create(
                 throw new Error(error.error?.message || res.statusText);
             }
             return res.json();
+        }
+
+        function formatTokens(value) {
+            const num = Number(value) || 0;
+            if (num >= 1000000) {
+                return (num / 1000000).toFixed(2) + 'M';
+            }
+            return num.toLocaleString();
+        }
+
+        function formatCurrency(value) {
+            return '$' + (Number(value) || 0).toFixed(2);
         }
 
         function logout() {
@@ -440,12 +452,12 @@ response = client.chat.completions.create(
                 user = data.data;
 
                 document.getElementById('navUsername').textContent = user.username;
-                document.getElementById('navBalance').textContent = '$' + user.balance.toFixed(4);
-                document.getElementById('stat-balance').textContent = '$' + user.balance.toFixed(4);
+                document.getElementById('navBalance').textContent = formatCurrency(user.balance);
+                document.getElementById('stat-balance').textContent = formatCurrency(user.balance);
                 document.getElementById('stat-requests').textContent = user.total_requests || 0;
-                document.getElementById('stat-cost').textContent = '$' + (user.total_cost || 0).toFixed(4);
-                document.getElementById('stat-input-tokens').textContent = (user.total_input_tokens || 0).toLocaleString();
-                document.getElementById('stat-output-tokens').textContent = (user.total_output_tokens || 0).toLocaleString();
+                document.getElementById('stat-cost').textContent = formatCurrency(user.total_cost || 0);
+                document.getElementById('stat-input-tokens').textContent = formatTokens(user.total_input_tokens || 0);
+                document.getElementById('stat-output-tokens').textContent = formatTokens(user.total_output_tokens || 0);
 
                 const apiKey = user.api_key || token;
                 const baseUrl = window.location.origin + '/v1';
@@ -656,7 +668,7 @@ print(response.choices[0].message.content)`;
 
                 // Render optgroups
                 const groupLabels = {
-                    'anthropic': 'Anthropic (Kiro)',
+                    'anthropic': 'Anthropic',
                     'antigravity': 'Antigravity',
                     'codex': 'Codex (GPT)',
                     'other': 'Other'
@@ -734,9 +746,7 @@ print(response.choices[0].message.content)`;
                             legend: { display: false },
                             tooltip: {
                                 callbacks: {
-                                    label: function(context) {
-                                        return '请求数: ' + context.parsed.y;
-                                    }
+                                    label: (context) => '请求数: ' + context.parsed.y
                                 }
                             }
                         },
@@ -772,9 +782,7 @@ print(response.choices[0].message.content)`;
                             legend: { display: false },
                             tooltip: {
                                 callbacks: {
-                                    label: function(context) {
-                                        return '消费: $' + context.parsed.y.toFixed(4);
-                                    }
+                                    label: (context) => '消费: $' + context.parsed.y.toFixed(4)
                                 }
                             }
                         },
@@ -782,9 +790,7 @@ print(response.choices[0].message.content)`;
                             y: {
                                 beginAtZero: true,
                                 ticks: {
-                                    callback: function(value) {
-                                        return '$' + value.toFixed(2);
-                                    }
+                                    callback: (value) => '$' + value.toFixed(2)
                                 }
                             }
                         }
