@@ -54,6 +54,7 @@ export function createStatsAdminRouter(db) {
 				errors: 0,
 				antigravity: 0,
 				codex: 0,
+				claude: 0,
 				totalModels: 0,
 			};
 
@@ -80,6 +81,9 @@ export function createStatsAdminRouter(db) {
 					).length;
 					cliproxyStats.codex = files.filter(
 						(f) => f.type === "codex" || f.provider === "codex",
+					).length;
+					cliproxyStats.claude = files.filter(
+						(f) => f.type === "claude" || f.provider === "claude",
 					).length;
 
 					for (const file of files) {

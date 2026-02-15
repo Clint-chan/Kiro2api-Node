@@ -178,6 +178,10 @@ async function loadStatus() {
 		);
 		setElementText("cliproxy-codex-count", String(cliproxyAccounts.codex || 0));
 		setElementText(
+			"cliproxy-claude-count",
+			String(cliproxyAccounts.claude || 0),
+		);
+		setElementText(
 			"cliproxy-total-models",
 			String(cliproxyAccounts.totalModels || 0),
 		);

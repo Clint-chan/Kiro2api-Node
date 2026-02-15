@@ -56,12 +56,20 @@ async function refreshAllQuotas() {
 	const codexAccounts = cliproxyAntigravityAccounts.filter(
 		(f) => f.provider === "codex" && !f.disabled,
 	);
+	const claudeAccounts = cliproxyAntigravityAccounts.filter(
+		(f) => f.provider === "claude" && !f.disabled,
+	);
 
-	if (agtAccounts.length === 0 && codexAccounts.length === 0) return;
+	if (
+		agtAccounts.length === 0 &&
+		codexAccounts.length === 0 &&
+		claudeAccounts.length === 0
+	)
+		return;
 
 	isLoadingQuota = true;
 
-	[...agtAccounts, ...codexAccounts].forEach((account) => {
+	[...agtAccounts, ...codexAccounts, ...claudeAccounts].forEach((account) => {
 		cliproxyQuotaCache[account.name] = { status: "loading" };
 	});
 	renderCliProxyAccounts();
@@ -136,10 +144,40 @@ async function refreshAllQuotas() {
 		}),
 	);
 
-	[...agtResults, ...codexResults].forEach((result) => {
+	const claudeResults = await Promise.all(
+		claudeAccounts.map(async (account) => {
+			const authIndex = account.auth_index || account.authIndex;
+			if (!authIndex)
+				return {
+					name: account.name,
+					provider: "claude",
+					status: "error",
+					error: "缺少 auth_index",
+				};
+
+			try {
+				const quota = await fetchClaudeQuota(authIndex);
+				return {
+					name: account.name,
+					provider: "claude",
+					status: "success",
+					data: quota,
+				};
+			} catch (e) {
+				return {
+					name: account.name,
+					provider: "claude",
+					status: "error",
+					error: e.message,
+				};
+			}
+		}),
+	);
+
+	[...agtResults, ...codexResults, ...claudeResults].forEach((result) => {
 		if (result.status === "success") {
 			console.log(
-				`[${result.provider === "antigravity" ? "Antigravity" : "Codex"} Quota] Cache update (batch)`,
+				`[${result.provider === "antigravity" ? "Antigravity" : result.provider === "codex" ? "Codex" : "ClaudeCode"} Quota] Cache update (batch)`,
 				{
 					account: result.name,
 					status: "success",
@@ -153,7 +191,7 @@ async function refreshAllQuotas() {
 			};
 		} else {
 			console.log(
-				`[${result.provider === "antigravity" ? "Antigravity" : "Codex"} Quota] Cache update (batch)`,
+				`[${result.provider === "antigravity" ? "Antigravity" : result.provider === "codex" ? "Codex" : "ClaudeCode"} Quota] Cache update (batch)`,
 				{
 					account: result.name,
 					status: "error",
@@ -217,15 +255,15 @@ function renderCliProxyAccounts() {
                                     ${a.email || a.id}
                                 </div>
                                 <div class="flex items-center gap-2 flex-wrap">
-                                    <span class="px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${a.provider === "codex" ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"}">
-                                        ${a.provider === "codex" ? "Codex" : "Antigravity"}
+                                    <span class="px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${a.provider === "codex" ? "bg-blue-100 text-blue-700" : a.provider === "claude" ? "bg-indigo-100 text-indigo-700" : "bg-purple-100 text-purple-700"}">
+                                        ${a.provider === "codex" ? "Codex" : a.provider === "claude" ? "ClaudeCode" : "Antigravity"}
                                     </span>
                                     ${a.provider === "codex" && a.plan_type ? `<span class="px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-green-100 text-green-700">${a.plan_type}</span>` : ""}
                                 </div>
                             </div>
                         </td>
                         <td class="px-4 py-4 align-middle">
-                            <div class="w-full">${a.provider === "codex" ? formatCodexQuota(a) : formatAgtQuota(a)}</div>
+                            <div class="w-full">${a.provider === "codex" ? formatCodexQuota(a) : a.provider === "claude" ? formatClaudeQuota(a) : formatAgtQuota(a)}</div>
                         </td>
                         <td class="px-4 py-4 align-middle">
                             <div class="flex justify-center whitespace-nowrap">${formatCliProxyStatus(a)}</div>
@@ -340,11 +378,25 @@ function formatCliProxyStatus(account) {
 	if (account.disabled) {
 		return '<span class="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">已禁用</span>';
 	}
+
+	const cache = cliproxyQuotaCache[account.name];
+	if (cache) {
+		if (cache.status === "loading") {
+			return '<span class="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">检测中</span>';
+		}
+		if (cache.status === "success") {
+			return '<span class="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">正常</span>';
+		}
+		if (cache.status === "error") {
+			return '<span class="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">错误</span>';
+		}
+	}
+
 	if (account.status === "active") {
 		return '<span class="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">正常</span>';
 	}
 	if (account.status === "error") {
-		return '<span class="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">错误</span>';
+		return '<span class="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">待检测</span>';
 	}
 	return '<span class="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">未知</span>';
 }
@@ -421,6 +473,17 @@ async function refreshSingleQuota(account) {
 				data: quota,
 				provider: "codex",
 			};
+		} else if (account.provider === "claude") {
+			const quota = await fetchClaudeQuota(authIndex);
+			console.log("[ClaudeCode Quota] Cache update (single)", {
+				account: account.name,
+				status: "success",
+			});
+			cliproxyQuotaCache[account.name] = {
+				status: "success",
+				data: quota,
+				provider: "claude",
+			};
 		} else {
 			const projectId = "bamboo-precept-lgxtn";
 			const quota = await fetchAgtQuota(authIndex, projectId);
@@ -437,7 +500,7 @@ async function refreshSingleQuota(account) {
 		}
 	} catch (e) {
 		console.log(
-			`[${account.provider === "codex" ? "Codex" : "Antigravity"} Quota] Cache update (single)`,
+			`[${account.provider === "codex" ? "Codex" : account.provider === "claude" ? "ClaudeCode" : "Antigravity"} Quota] Cache update (single)`,
 			{
 				account: account.name,
 				status: "error",
@@ -635,6 +698,66 @@ async function fetchCodexQuota(authIndex, accountId) {
 	throw new Error(`HTTP ${result.status_code || result.statusCode}`);
 }
 
+async function fetchClaudeQuota(authIndex) {
+	console.log("[ClaudeCode Quota] Start fetch quota", { authIndex });
+
+	const result = await fetchApi("/api/admin/cliproxy/api-call", {
+		method: "POST",
+		body: JSON.stringify({
+			authIndex,
+			method: "GET",
+			url: "https://api.anthropic.com/api/oauth/usage",
+			header: {
+				Authorization: "Bearer $TOKEN$",
+				"Content-Type": "application/json",
+				"anthropic-beta": "oauth-2025-04-20",
+			},
+		}),
+	});
+
+	console.log("[ClaudeCode Quota] Raw API call result", {
+		statusCode: result?.status_code || result?.statusCode,
+		bodyType: typeof result?.body,
+	});
+
+	const parseJsonSafe = (value, label) => {
+		if (typeof value !== "string") return value;
+		try {
+			return JSON.parse(value);
+		} catch (error) {
+			console.log("[ClaudeCode Quota] JSON parse failed", {
+				label,
+				error: error.message,
+				valueSnippet: value.slice(0, 240),
+			});
+			throw new Error(`解析配额数据失败: ${label}`);
+		}
+	};
+
+	if (
+		(result.status_code || result.statusCode) >= 200 &&
+		(result.status_code || result.statusCode) < 300
+	) {
+		const parsedBody = parseJsonSafe(result.body, "response-body");
+
+		console.log("[ClaudeCode Quota] Parsed quota data", {
+			authIndex,
+			fiveHour: parsedBody?.five_hour,
+			sevenDay: parsedBody?.seven_day,
+			sevenDaySonnet: parsedBody?.seven_day_sonnet,
+		});
+
+		return parsedBody;
+	}
+
+	console.log("[ClaudeCode Quota] API call failed", {
+		authIndex,
+		statusCode: result?.status_code || result?.statusCode,
+		body: result?.body,
+	});
+	throw new Error(`HTTP ${result.status_code || result.statusCode}`);
+}
+
 function formatCodexQuota(account) {
 	const cache = cliproxyQuotaCache[account.name];
 
@@ -756,6 +879,117 @@ function formatCodexQuota(account) {
 
 function loadAgtAccounts() {
 	loadCliProxyAgtAccounts();
+}
+
+function formatClaudeQuota(account) {
+	const cache = cliproxyQuotaCache[account.name];
+
+	if (!cache) {
+		return '<span class="text-xs text-gray-400">-</span>';
+	}
+
+	if (cache.status === "loading") {
+		return '<span class="text-xs text-blue-600">加载中...</span>';
+	}
+
+	if (cache.status === "error") {
+		return `<span class="text-xs text-red-600" title="${cache.error || "加载失败"}">加载失败</span>`;
+	}
+
+	const data = cache.data;
+	if (!data) {
+		return '<span class="text-xs text-gray-400">无数据</span>';
+	}
+
+	const formatResetTime = (isoString) => {
+		if (!isoString) return "";
+		const date = new Date(isoString);
+		const month = String(date.getMonth() + 1).padStart(2, "0");
+		const day = String(date.getDate()).padStart(2, "0");
+		const hour = String(date.getHours()).padStart(2, "0");
+		const minute = String(date.getMinutes()).padStart(2, "0");
+		return `${month}/${day} ${hour}:${minute}`;
+	};
+
+	const items = [];
+
+	if (data.five_hour) {
+		const utilization = data.five_hour.utilization || 0;
+		const remainingPercent = 100 - utilization;
+		const resetTime = formatResetTime(data.five_hour.resets_at);
+		const bgColor =
+			remainingPercent > 60
+				? "bg-green-500"
+				: remainingPercent > 20
+					? "bg-yellow-500"
+					: "bg-red-500";
+
+		items.push(`
+<div class="mb-3">
+    <div class="flex justify-between items-center mb-1">
+        <span class="text-sm font-medium text-gray-700">5 小时限额</span>
+        <span class="text-xs text-gray-500">${remainingPercent.toFixed(0)}%${resetTime ? " · " + resetTime : ""}</span>
+    </div>
+    <div class="w-full bg-gray-200 rounded-full h-2">
+        <div class="${bgColor} h-2 rounded-full transition-all" style="width: ${remainingPercent}%"></div>
+    </div>
+</div>
+`);
+	}
+
+	if (data.seven_day) {
+		const utilization = data.seven_day.utilization || 0;
+		const remainingPercent = 100 - utilization;
+		const resetTime = formatResetTime(data.seven_day.resets_at);
+		const bgColor =
+			remainingPercent > 60
+				? "bg-green-500"
+				: remainingPercent > 20
+					? "bg-yellow-500"
+					: "bg-red-500";
+
+		items.push(`
+<div class="mb-3">
+    <div class="flex justify-between items-center mb-1">
+        <span class="text-sm font-medium text-gray-700">7 天限额</span>
+        <span class="text-xs text-gray-500">${remainingPercent.toFixed(0)}%${resetTime ? " · " + resetTime : ""}</span>
+    </div>
+    <div class="w-full bg-gray-200 rounded-full h-2">
+        <div class="${bgColor} h-2 rounded-full transition-all" style="width: ${remainingPercent}%"></div>
+    </div>
+</div>
+`);
+	}
+
+	if (data.seven_day_sonnet) {
+		const utilization = data.seven_day_sonnet.utilization || 0;
+		const remainingPercent = 100 - utilization;
+		const resetTime = formatResetTime(data.seven_day_sonnet.resets_at);
+		const bgColor =
+			remainingPercent > 60
+				? "bg-green-500"
+				: remainingPercent > 20
+					? "bg-yellow-500"
+					: "bg-red-500";
+
+		items.push(`
+<div class="mb-3">
+    <div class="flex justify-between items-center mb-1">
+        <span class="text-sm font-medium text-gray-700">7 天 Sonnet</span>
+        <span class="text-xs text-gray-500">${remainingPercent.toFixed(0)}%${resetTime ? " · " + resetTime : ""}</span>
+    </div>
+    <div class="w-full bg-gray-200 rounded-full h-2">
+        <div class="${bgColor} h-2 rounded-full transition-all" style="width: ${remainingPercent}%"></div>
+    </div>
+</div>
+`);
+	}
+
+	if (items.length === 0) {
+		return '<span class="text-xs text-gray-400">无配额数据</span>';
+	}
+
+	return items.join("");
 }
 
 function formatAgtQuota(account) {

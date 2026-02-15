@@ -494,6 +494,15 @@ export class KiroClient {
 			kiroRequest.profileArn = this.tokenManager.credentials.profileArn;
 		}
 
+		// 为 Opus 4.6 添加 output_config（AWS Q Developer API 要求）
+		const isOpus46 = modelId === "claude-opus-4.6";
+		if (isOpus46) {
+			kiroRequest.conversationState.currentMessage.userInputMessage.outputConfig =
+				{
+					effort: "high",
+				};
+		}
+
 		// 检查请求大小
 		const requestSize = JSON.stringify(kiroRequest).length;
 		if (requestSize > 1000000) {
