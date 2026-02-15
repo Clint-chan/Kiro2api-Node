@@ -12,7 +12,7 @@ import { createBalanceMonitor } from './balance-monitor.js';
 import { userAuthMiddleware, adminAuthMiddleware, dualAuthMiddleware } from './middleware/auth.js';
 import { createApiRouter } from './routes/api-new.js';
 import { createAntigravityNativeRouter } from './routes/antigravity-native.js';
-import { createAdminRouter } from './routes/admin-new.js';
+import { createAdminRouter } from './routes/admin/index.js';
 import { createUserRouter } from './routes/user.js';
 import { createUiRouter } from './routes/ui.js';
 import { createObservabilityRouter } from './routes/observability.js';
