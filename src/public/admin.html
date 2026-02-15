@@ -112,91 +112,176 @@
         </nav>
 
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fadeIn">
-            <!-- 第一行统计卡片 -->
-            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-6">
-                <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-                    <div class="text-2xl font-bold text-gray-900" id="stat-active">-</div>
-                    <div class="text-sm text-gray-500">活跃账号</div>
-                </div>
-                <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-                    <div class="text-2xl font-bold text-yellow-500" id="stat-cooldown">-</div>
-                    <div class="text-sm text-gray-500">冷却中</div>
-                </div>
-                <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-                    <div class="text-2xl font-bold text-red-500" id="stat-invalid">-</div>
-                    <div class="text-sm text-gray-500">已失效</div>
-                </div>
-                <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-                    <div class="text-2xl font-bold text-gray-900" id="stat-requests">-</div>
-                    <div class="text-sm text-gray-500">总请求</div>
-                </div>
-                <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-                    <div class="text-2xl font-bold text-blue-500" id="stat-input">-</div>
-                    <div class="text-sm text-gray-500">输入Tokens</div>
-                </div>
-                <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-                    <div class="text-2xl font-bold text-green-500" id="stat-output">-</div>
-                    <div class="text-sm text-gray-500">输出Tokens</div>
-                </div>
-                <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-                    <div class="text-2xl font-bold text-purple-500" id="stat-uptime">-</div>
-                    <div class="text-sm text-gray-500">运行时间</div>
-                </div>
-            </div>
-
-            <!-- 第二行：额度统计和图表 -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                <!-- 总额度卡片 -->
-                <div class="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl p-6 shadow-lg text-white">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="text-sm font-medium opacity-90">账号池总额度</div>
-                        <svg class="w-8 h-8 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                        </svg>
+            <!-- 顶部核心指标 (Key Metrics) -->
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+                <div class="bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-xs font-medium text-gray-500">今日请求</span>
+                        <span class="text-[10px] font-mono text-green-600 bg-green-50 px-1.5 py-0.5 rounded">+12%</span>
                     </div>
-                    <div class="text-3xl font-bold mb-2" id="stat-total-quota">-</div>
-                    <div class="flex items-center justify-between text-sm opacity-90">
-                        <span>可用: <span id="stat-available-quota" class="font-semibold">-</span></span>
-                        <span>已用: <span id="stat-used-percent" class="font-semibold">-</span></span>
+                    <div class="text-xl font-bold text-gray-900" id="today-requests">-</div>
+                    <div class="mt-1 text-[10px] text-gray-400">总: <span id="stat-requests">-</span></div>
+                </div>
+                <div class="bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-xs font-medium text-gray-500">今日 Token</span>
+                        <svg class="w-3 h-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg>
                     </div>
-                    <div class="mt-3 h-2 bg-white bg-opacity-20 rounded-full overflow-hidden">
-                        <div id="quota-progress" class="h-full bg-white rounded-full transition-all" style="width: 0%">
-                        </div>
+                    <div class="text-xl font-bold text-gray-900" id="today-total-tokens">-</div>
+                    <div class="mt-1 text-[10px] text-gray-400">总: <span id="stat-total-tokens">-</span></div>
+                </div>
+                <div class="bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-xs font-medium text-gray-500">成功率</span>
+                        <svg class="w-3 h-3 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <div class="text-xl font-bold text-gray-900" id="stat-success-rate">-</div>
+                    <div class="mt-1 text-[10px] text-gray-400">全局统计</div>
+                </div>
+                <div class="bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-xs font-medium text-gray-500">Claude 账号</span>
+                        <svg class="w-3 h-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                    </div>
+                    <div class="text-xl font-bold text-gray-900" id="kiro-total-accounts">-</div>
+                    <div class="mt-1 text-[10px] text-gray-400">
+                        <span class="text-emerald-600 font-medium" id="kiro-active-accounts">-</span> 活跃
                     </div>
                 </div>
-
-                <!-- 今日统计 -->
-                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-                    <h4 class="text-sm font-semibold text-gray-700 mb-4">今日统计</h4>
-                    <div class="space-y-3">
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm text-gray-600">请求数</span>
-                            <span class="text-lg font-bold text-gray-900" id="today-requests">-</span>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm text-gray-600">消耗</span>
-                            <span class="text-lg font-bold text-green-600" id="today-revenue">-</span>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm text-gray-600">输入Tokens</span>
-                            <span class="text-sm font-medium text-blue-600" id="today-input">-</span>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm text-gray-600">输出Tokens</span>
-                            <span class="text-sm font-medium text-green-600" id="today-output">-</span>
-                        </div>
+                <div class="bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-xs font-medium text-gray-500">CliProxy</span>
+                        <svg class="w-3 h-3 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                    </div>
+                    <div class="text-xl font-bold text-gray-900" id="cliproxy-total-accounts">-</div>
+                    <div class="mt-1 text-[10px] text-gray-400">
+                        <span class="text-emerald-600 font-medium" id="cliproxy-active-accounts">-</span> 活跃
                     </div>
                 </div>
-
-                <!-- 最近7天趋势 -->
-                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-                    <h4 class="text-sm font-semibold text-gray-700 mb-4">最近7天请求趋势</h4>
-                    <div style="position: relative; height: 150px; width: 100%;">
-                        <canvas id="weeklyChart"></canvas>
+                <div class="bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-xs font-medium text-gray-500">额度水位</span>
+                        <span class="text-[10px] font-mono text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded" id="stat-available-quota">-</span>
+                    </div>
+                    <div class="text-xl font-bold text-gray-900" id="stat-total-quota">-</div>
+                    <div class="mt-2 h-1 bg-gray-100 rounded-full overflow-hidden">
+                        <div id="quota-progress" class="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full transition-all" style="width: 0%"></div>
                     </div>
                 </div>
             </div>
+
+            <!-- 主面板：核心指标与排行 (Main Dashboard) -->
+            <div class="space-y-4 mb-8">
+                <!-- 第一行：趋势图 + 账号状态 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                    <!-- 7日趋势迷你图 -->
+                    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-medium text-gray-500">7日请求趋势</span>
+                            <span class="text-xs text-gray-400" id="trend-change">-</span>
+                        </div>
+                        <div class="text-xl font-bold text-gray-900 mb-3" id="trend-total">-</div>
+                        <div class="relative w-full" style="height: 60px;">
+                            <canvas id="miniTrendChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Token 消耗迷你图 -->
+                    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-medium text-gray-500">7日Token消耗</span>
+                            <span class="text-xs text-gray-400" id="token-change">-</span>
+                        </div>
+                        <div class="text-xl font-bold text-gray-900 mb-3" id="token-total">-</div>
+                        <div class="relative w-full" style="height: 60px;">
+                            <canvas id="miniTokenChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Claude 状态详情 -->
+                    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+                        <div class="text-xs text-gray-500 mb-3">Kiro 账号</div>
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="text-gray-600">总数量</span>
+                                <span class="font-semibold text-gray-900" id="kiro-total-accounts">-</span>
+                            </div>
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="text-gray-600">可用</span>
+                                <span class="font-semibold text-green-600" id="kiro-active-accounts">-</span>
+                            </div>
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="text-gray-600">耗尽</span>
+                                <span class="font-semibold text-amber-600" id="kiro-depleted-accounts">-</span>
+                            </div>
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="text-gray-600">异常</span>
+                                <span class="font-semibold text-red-600" id="kiro-error-accounts">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CLIProxy 渠道 -->
+                    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+                        <div class="text-xs text-gray-500 mb-3">CLIProxy</div>
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="text-gray-600">Antigravity</span>
+                                <span class="font-semibold text-purple-600" id="cliproxy-antigravity-count">-</span>
+                            </div>
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="text-gray-600">Codex</span>
+                                <span class="font-semibold text-green-600" id="cliproxy-codex-count">-</span>
+                            </div>
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="text-gray-600">模型总数</span>
+                                <span class="font-semibold text-gray-900" id="cliproxy-total-models">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 模型类型统计 -->
+                    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+                        <div class="text-xs text-gray-500 mb-3">模型类型</div>
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="text-gray-600">Claude</span>
+                                <span class="font-semibold text-gray-900" id="model-claude-count">-</span>
+                            </div>
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="text-gray-600">Gemini</span>
+                                <span class="font-semibold text-gray-900" id="model-gemini-count">-</span>
+                            </div>
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="text-gray-600">GPT</span>
+                                <span class="font-semibold text-gray-900" id="model-gpt-count">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 第二行：用户排行与模型统计 -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <!-- 用户排行 -->
+                    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex flex-col" style="height: 280px;">
+                        <div class="flex items-center justify-between mb-3">
+                            <h4 class="text-xs font-semibold text-gray-700 uppercase tracking-wide">用户排行</h4>
+                            <span class="text-xs text-gray-400">Top 8</span>
+                        </div>
+                        <div id="user-ranking" class="flex-1 overflow-y-auto pr-1 space-y-1.5 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent"></div>
+                    </div>
+                    
+                    <!-- 模型统计 -->
+                    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex flex-col" style="height: 280px;">
+                        <div class="flex items-center justify-between mb-3">
+                            <h4 class="text-xs font-semibold text-gray-700 uppercase tracking-wide">模型统计</h4>
+                            <span class="text-xs text-gray-400">Top 8</span>
+                        </div>
+                        <div id="model-stats" class="flex-1 overflow-y-auto pr-1 space-y-1.5 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent"></div>
+                    </div>
+                </div>
+            </div>
+
 
             <!-- 标签页 -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-6">
@@ -207,7 +292,7 @@
                             data-tab="users">用户管理</button>
                         <button onclick="switchTab('accounts')"
                             class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1 text-sm font-medium"
-                            data-tab="accounts">Kiro账号池</button>
+                            data-tab="accounts">Claude账号池</button>
                         <button onclick="switchTab('antigravity-accounts')"
                             class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1 text-sm font-medium"
                             data-tab="antigravity-accounts">CLIProxy</button>
@@ -253,7 +338,7 @@
                     </div>
                 </div>
 
-                <!-- Kiro账号管理 -->
+                <!-- Claude账号管理 -->
                 <div id="tab-accounts" class="p-6 tab-content hidden">
                     <div class="flex flex-wrap items-center gap-3 mb-6">
                         <button onclick="showModal('addModal')"
@@ -288,14 +373,6 @@
                             </svg>
                             批量删除 (<span id="selectedCount">0</span>)
                         </button>
-                        <select id="strategy" onchange="setStrategy(this.value)"
-                            class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="round-robin">轮询策略</option>
-                            <option value="random">随机策略</option>
-                            <option value="least-used">最少使用</option>
-                        </select>
-                        <button onclick="refresh()"
-                            class="border border-gray-200 hover:bg-gray-50 px-4 py-2 rounded-lg text-sm font-medium text-gray-600 transition">刷新</button>
                     </div>
                     <div id="accounts-table"></div>
 
@@ -386,22 +463,22 @@
                     <div class="mb-8 p-4 bg-gray-50 rounded-lg">
                         <h3 class="text-lg font-semibold text-gray-900 mb-3">API 端点 <span class="text-sm font-normal text-gray-500">（点击复制完整 URL）</span></h3>
                         <div class="flex flex-wrap gap-3 mb-3">
-                            <span onclick="copyText(location.origin + '/v1/messages')" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer bg-blue-50 border border-blue-200 hover:bg-blue-100 transition">
+                            <span onclick="copyToClipboard(location.origin + '/v1/messages', 'URL 已复制')" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer bg-blue-50 border border-blue-200 hover:bg-blue-100 transition">
                                 <span class="px-2 py-0.5 bg-blue-500 text-white rounded text-xs font-bold">POST</span>
                                 <span class="font-mono text-sm text-blue-900">/v1/messages</span>
                                 <span class="text-xs text-blue-600">Anthropic</span>
                             </span>
-                            <span onclick="copyText(location.origin + '/v1/chat/completions')" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer bg-green-50 border border-green-200 hover:bg-green-100 transition">
+                            <span onclick="copyToClipboard(location.origin + '/v1/chat/completions', 'URL 已复制')" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer bg-green-50 border border-green-200 hover:bg-green-100 transition">
                                 <span class="px-2 py-0.5 bg-green-500 text-white rounded text-xs font-bold">POST</span>
                                 <span class="font-mono text-sm text-green-900">/v1/chat/completions</span>
                                 <span class="text-xs text-green-600">OpenAI</span>
                             </span>
-                            <span onclick="copyText(location.origin + '/v1internal:generateContent')" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer bg-purple-50 border border-purple-200 hover:bg-purple-100 transition">
+                            <span onclick="copyToClipboard(location.origin + '/v1internal:generateContent', 'URL 已复制')" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer bg-purple-50 border border-purple-200 hover:bg-purple-100 transition">
                                 <span class="px-2 py-0.5 bg-purple-500 text-white rounded text-xs font-bold">POST</span>
                                 <span class="font-mono text-sm text-purple-900">/v1internal:generateContent</span>
                                 <span class="text-xs text-purple-600">Gemini</span>
                             </span>
-                            <span onclick="copyText(location.origin + '/v1/models')" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer bg-gray-50 border border-gray-200 hover:bg-gray-100 transition">
+                            <span onclick="copyToClipboard(location.origin + '/v1/models', 'URL 已复制')" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer bg-gray-50 border border-gray-200 hover:bg-gray-100 transition">
                                 <span class="px-2 py-0.5 bg-gray-500 text-white rounded text-xs font-bold">GET</span>
                                 <span class="font-mono text-sm text-gray-900">/v1/models</span>
                                 <span class="text-xs text-gray-600">通用</span>
@@ -410,51 +487,69 @@
                         <p class="text-xs text-gray-500">Base URL: <span class="text-gray-700 font-mono" id="baseUrl"></span></p>
                     </div>
 
-                    <div class="max-w-2xl">
+                    <div class="w-full">
 
                     <!-- 可用模型 ID - 全宽 -->
                     <div class="mb-8 p-4 bg-gray-50 rounded-lg">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-3">可用模型 ID <span class="text-sm font-normal text-gray-500">（点击复制）</span></h3>
-                        <div class="space-y-4">
-                            <!-- Kiro 模型 -->
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="text-lg font-semibold text-gray-900">可用模型 ID</h3>
+                        </div>
+                        <div class="space-y-6">
+                            <!-- Claude 模型 -->
                             <div>
-                                <p class="text-xs font-semibold text-blue-700 mb-2">Kiro 渠道（Anthropic 格式）</p>
-                                <div class="flex flex-wrap gap-2">
-                                    <span onclick="copyText('claude-sonnet-4-5-20250929')" class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium font-mono cursor-pointer bg-blue-100 text-blue-800 hover:bg-blue-200 transition">claude-sonnet-4-5-20250929</span>
-                                    <span onclick="copyText('claude-opus-4-5-20251101')" class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium font-mono cursor-pointer bg-blue-100 text-blue-800 hover:bg-blue-200 transition">claude-opus-4-5-20251101</span>
-                                    <span onclick="copyText('claude-haiku-4-5-20251001')" class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium font-mono cursor-pointer bg-blue-100 text-blue-800 hover:bg-blue-200 transition">claude-haiku-4-5-20251001</span>
-                                    <span onclick="copyText('claude-3-5-sonnet-20241022')" class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium font-mono cursor-pointer bg-blue-100 text-blue-800 hover:bg-blue-200 transition">claude-3-5-sonnet-20241022</span>
-                                    <span onclick="copyText('claude-3-5-haiku-20241022')" class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium font-mono cursor-pointer bg-blue-100 text-blue-800 hover:bg-blue-200 transition">claude-3-5-haiku-20241022</span>
+                                <div class="flex items-center justify-between mb-3">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                                        <p class="text-sm font-medium text-gray-900">Claude 渠道</p>
+                                    </div>
+                                    <button onclick="fetchKiroModels()" class="text-xs text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded-full transition font-medium flex items-center gap-1">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                        刷新列表
+                                    </button>
+                                </div>
+                                <div class="flex flex-wrap gap-2" id="kiro-models-list">
+                                    <div class="text-xs text-gray-400 py-2">点击刷新获取最新模型列表</div>
                                 </div>
                             </div>
                             
                             <!-- Antigravity 模型 -->
                             <div>
-                                <p class="text-xs font-semibold text-purple-700 mb-2">Antigravity 渠道（Gemini 格式）</p>
-                                <div class="flex flex-wrap gap-2">
-                                    <span onclick="copyText('gemini-3-pro-high')" class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium font-mono cursor-pointer bg-purple-100 text-purple-800 hover:bg-purple-200 transition">gemini-3-pro-high</span>
-                                    <span onclick="copyText('gemini-3-flash')" class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium font-mono cursor-pointer bg-purple-100 text-purple-800 hover:bg-purple-200 transition">gemini-3-flash</span>
-                                    <span onclick="copyText('gemini-2.5-flash')" class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium font-mono cursor-pointer bg-purple-100 text-purple-800 hover:bg-purple-200 transition">gemini-2.5-flash</span>
-                                    <span onclick="copyText('gemini-2.5-flash-lite')" class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium font-mono cursor-pointer bg-purple-100 text-purple-800 hover:bg-purple-200 transition">gemini-2.5-flash-lite</span>
-                                    <span onclick="copyText('claude-sonnet-4-5-thinking')" class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium font-mono cursor-pointer bg-purple-100 text-purple-800 hover:bg-purple-200 transition">claude-sonnet-4-5-thinking</span>
-                                    <span onclick="copyText('claude-opus-4-5-thinking')" class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium font-mono cursor-pointer bg-purple-100 text-purple-800 hover:bg-purple-200 transition">claude-opus-4-5-thinking</span>
-                                    <span onclick="copyText('claude-opus-4-6-thinking')" class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium font-mono cursor-pointer bg-purple-100 text-purple-800 hover:bg-purple-200 transition">claude-opus-4-6-thinking</span>
+                                <div class="flex items-center justify-between mb-3">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-1.5 h-1.5 rounded-full bg-purple-500"></div>
+                                        <p class="text-sm font-medium text-gray-900">Antigravity 渠道</p>
+                                    </div>
+                                    <button onclick="fetchCliProxyModels('antigravity')" class="text-xs text-purple-600 hover:text-purple-800 bg-purple-50 hover:bg-purple-100 px-3 py-1 rounded-full transition font-medium flex items-center gap-1">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                        刷新列表
+                                    </button>
+                                </div>
+                                <div class="flex flex-wrap gap-2" id="antigravity-models-list">
+                                    <div class="text-xs text-gray-400 py-2">点击刷新获取最新模型列表</div>
                                 </div>
                             </div>
                             
                             <!-- Codex 模型 -->
                             <div>
-                                <p class="text-xs font-semibold text-green-700 mb-2">Codex 渠道（OpenAI 格式）</p>
-                                <div class="flex flex-wrap gap-2">
-                                    <span onclick="copyText('gpt-5.3-codex')" class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium font-mono cursor-pointer bg-green-100 text-green-800 hover:bg-green-200 transition">gpt-5.3-codex</span>
-                                    <span onclick="copyText('gpt-5.2-codex')" class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium font-mono cursor-pointer bg-green-100 text-green-800 hover:bg-green-200 transition">gpt-5.2-codex</span>
-                                    <span onclick="copyText('gpt-5.1-codex-max')" class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium font-mono cursor-pointer bg-green-100 text-green-800 hover:bg-green-200 transition">gpt-5.1-codex-max</span>
-                                    <span onclick="copyText('gpt-5.2')" class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium font-mono cursor-pointer bg-green-100 text-green-800 hover:bg-green-200 transition">gpt-5.2</span>
-                                    <span onclick="copyText('gpt-5.1-codex-mini')" class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium font-mono cursor-pointer bg-green-100 text-green-800 hover:bg-green-200 transition">gpt-5.1-codex-mini</span>
+                                <div class="flex items-center justify-between mb-3">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+                                        <p class="text-sm font-medium text-gray-900">Codex 渠道</p>
+                                    </div>
+                                    <button onclick="fetchCliProxyModels('codex')" class="text-xs text-green-600 hover:text-green-800 bg-green-50 hover:bg-green-100 px-3 py-1 rounded-full transition font-medium flex items-center gap-1">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                        刷新列表
+                                    </button>
+                                </div>
+                                <div class="flex flex-wrap gap-2" id="codex-models-list">
+                                    <div class="text-xs text-gray-400 py-2">点击刷新获取最新模型列表</div>
                                 </div>
                             </div>
                         </div>
-                        <p class="text-xs text-gray-500 mt-3">💡 提示：点击模型名称即可复制，不同渠道需要使用对应的 API 格式</p>
+                        <div class="mt-4 pt-3 border-t border-gray-50 text-xs text-gray-400 flex items-center gap-2">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            提示：点击模型名称即可复制
+                        </div>
                     </div>
 
                         <div class="mb-8">
@@ -469,6 +564,7 @@
                         </div>
                     </div>
                 </div>
+
             </div>
         </div>
     </div>
@@ -576,7 +672,6 @@
                 <div class="grid grid-cols-2 gap-6">
                     <!-- 左列 -->
                     <div class="space-y-5">
-                        <!-- 用户名预览 -->
                         <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
                             <div class="flex items-center gap-2 mb-2">
                                 <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -588,14 +683,12 @@
                             <div class="font-mono text-sm text-gray-600" id="username-preview">user_abc123</div>
                         </div>
 
-                        <!-- 用户名 -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">自定义用户名（可选）</label>
                             <input type="text" id="new-username" placeholder="留空自动生成" oninput="updateUsernamePreview()"
                                 class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
                         </div>
 
-                        <!-- 创建数量 -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">创建数量</label>
                             <input type="number" id="new-count" value="1" min="1" max="100" oninput="updateUsernamePreview()"
@@ -603,7 +696,6 @@
                             <p class="text-xs text-gray-500 mt-1">批量创建时自动生成唯一用户名</p>
                         </div>
 
-                        <!-- 初始余额 -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">初始余额 (USD)</label>
                             <div class="relative">
@@ -614,13 +706,12 @@
                             <p class="text-xs text-gray-500 mt-1">💡 开通订阅后会立即获得首次充值额度</p>
                         </div>
 
-                        <!-- 渠道权限 -->
                         <div class="border-2 border-gray-200 rounded-xl p-4">
                             <label class="block text-sm font-medium text-gray-700 mb-3">渠道权限</label>
                             <div class="space-y-2">
                                 <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 p-2 rounded transition">
                                     <input type="checkbox" id="new-channel-kiro" value="kiro" checked class="rounded border-gray-300 text-blue-500 focus:ring-blue-500">
-                                    <span class="font-medium">Kiro</span>
+                                    <span class="font-medium">Claude</span>
                                 </label>
                                 <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 p-2 rounded transition">
                                     <input type="checkbox" id="new-channel-antigravity" value="antigravity" class="rounded border-gray-300 text-purple-500 focus:ring-purple-500">
@@ -631,142 +722,68 @@
                                     <span class="font-medium">Codex</span>
                                 </label>
                             </div>
-                            <p class="text-xs text-gray-500 mt-2">💡 默认只开通 Kiro 渠道</p>
                         </div>
                     </div>
 
-                    <!-- 右列 -->
-                <div class="border-2 border-gray-200 rounded-xl p-4">
-                    <label class="flex items-center gap-3 cursor-pointer mb-4">
-                        <input type="checkbox" id="new-with-subscription" onchange="toggleSubscriptionOptions()"
-                            class="w-5 h-5 text-blue-500 rounded" checked>
-                        <div class="flex-1">
-                            <span class="text-sm font-semibold text-gray-900">同时开通订阅</span>
-                            <p class="text-xs text-gray-500">创建用户后立即开通订阅套餐</p>
-                        </div>
-                    </label>
-
-                    <div id="subscription-options" class="hidden space-y-4">
-                        <!-- 订阅类型 -->
+                    <div class="space-y-6">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">订阅类型</label>
-                            <div class="grid grid-cols-2 gap-3">
-                                <label class="relative cursor-pointer">
-                                    <input type="radio" name="sub-type" value="monthly" checked class="sr-only peer">
-                                    <div
-                                        class="p-4 border-2 border-gray-200 rounded-xl peer-checked:border-purple-500 peer-checked:bg-purple-50 transition-all hover:border-purple-300">
-                                        <div class="flex items-center gap-2 mb-1">
-                                            <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                            </svg>
-                                            <span class="font-medium text-gray-900">每月重置</span>
+                            <label class="block text-sm font-medium text-gray-700 mb-3">订阅计划</label>
+                            <div class="grid grid-cols-1 gap-3">
+                                <label class="relative flex items-start p-4 cursor-pointer rounded-xl border-2 border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all group">
+                                    <input type="radio" name="subscription" value="free" class="peer sr-only">
+                                    <div class="flex-1">
+                                        <div class="flex items-center justify-between mb-1">
+                                            <span class="font-bold text-gray-900 peer-checked:text-blue-700">Free</span>
+                                            <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full group-hover:bg-blue-200 group-hover:text-blue-800">$0/mo</span>
                                         </div>
-                                        <div class="text-xs text-gray-500">每月自动充值</div>
+                                        <p class="text-xs text-gray-500">基础访问权限，低速率限制</p>
                                     </div>
+                                    <div class="absolute inset-0 border-2 border-blue-500 rounded-xl opacity-0 peer-checked:opacity-100 pointer-events-none"></div>
                                 </label>
-                                <label class="relative cursor-pointer">
-                                    <input type="radio" name="sub-type" value="daily" class="sr-only peer">
-                                    <div
-                                        class="p-4 border-2 border-gray-200 rounded-xl peer-checked:border-blue-500 peer-checked:bg-blue-50 transition-all hover:border-blue-300">
-                                        <div class="flex items-center gap-2 mb-1">
-                                            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
-                                            <span class="font-medium text-gray-900">每日重置</span>
+
+                                <label class="relative flex items-start p-4 cursor-pointer rounded-xl border-2 border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all group">
+                                    <input type="radio" name="subscription" value="pro" checked class="peer sr-only">
+                                    <div class="flex-1">
+                                        <div class="flex items-center justify-between mb-1">
+                                            <span class="font-bold text-gray-900">Pro</span>
+                                            <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">$10/mo</span>
                                         </div>
-                                        <div class="text-xs text-gray-500">每天自动充值</div>
+                                        <p class="text-xs text-gray-500">标准访问权限，中等速率限制</p>
                                     </div>
+                                    <div class="absolute inset-0 border-2 border-blue-500 rounded-xl opacity-0 peer-checked:opacity-100 pointer-events-none"></div>
+                                </label>
+
+                                <label class="relative flex items-start p-4 cursor-pointer rounded-xl border-2 border-gray-200 hover:border-purple-500 hover:bg-purple-50 transition-all group">
+                                    <input type="radio" name="subscription" value="pro+" class="peer sr-only">
+                                    <div class="flex-1">
+                                        <div class="flex items-center justify-between mb-1">
+                                            <span class="font-bold text-gray-900">Pro+</span>
+                                            <span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">$20/mo</span>
+                                        </div>
+                                        <p class="text-xs text-gray-500">优先访问权限，高速率限制</p>
+                                    </div>
+                                    <div class="absolute inset-0 border-2 border-purple-500 rounded-xl opacity-0 peer-checked:opacity-100 pointer-events-none"></div>
                                 </label>
                             </div>
                         </div>
-
-                        <!-- 充值额度 -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">充值额度 (USD)</label>
-                            <div class="grid grid-cols-2 gap-2 mb-2">
-                                <button type="button" onclick="setSubQuota(1800, event)"
-                                    class="sub-quota-btn px-4 py-2 border-2 border-purple-500 bg-purple-50 text-purple-600 rounded-lg text-sm font-medium transition hover:bg-purple-100">
-                                    $1800
-                                </button>
-                                <button type="button" onclick="setSubQuota(3600, event)"
-                                    class="sub-quota-btn px-4 py-2 border-2 border-gray-200 rounded-lg text-sm font-medium transition hover:border-purple-500 hover:bg-purple-50">
-                                    $3600
-                                </button>
-                            </div>
-                            <div class="relative">
-                                <span
-                                    class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-semibold">$</span>
-                                <input type="number" step="0.01" id="new-subscription-quota" value="1800"
-                                    placeholder="或输入自定义额度"
-                                    class="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all">
-                            </div>
-                        </div>
-
-                        <!-- 开通时长 -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">开通时长</label>
-                            <div class="grid grid-cols-4 gap-2 mb-2">
-                                <button type="button" onclick="setSubDuration(1, event)"
-                                    class="sub-duration-btn px-3 py-2 border-2 border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 text-sm font-medium transition">
-                                    1个月
-                                </button>
-                                <button type="button" onclick="setSubDuration(3, event)"
-                                    class="sub-duration-btn px-3 py-2 border-2 border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 text-sm font-medium transition">
-                                    3个月
-                                </button>
-                                <button type="button" onclick="setSubDuration(6, event)"
-                                    class="sub-duration-btn px-3 py-2 border-2 border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 text-sm font-medium transition">
-                                    6个月
-                                </button>
-                                <button type="button" onclick="setSubDuration(12, event)"
-                                    class="sub-duration-btn px-3 py-2 border-2 border-purple-500 bg-purple-50 text-purple-600 rounded-lg text-sm font-medium transition">
-                                    12个月
-                                </button>
-                            </div>
-                            <input type="number" id="new-subscription-duration" value="12" min="1" max="120"
-                                placeholder="或输入自定义月数"
-                                class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all">
-                        </div>
-
-                        <div class="bg-green-50 border border-green-200 rounded-lg p-3">
-                            <div class="flex items-start gap-2">
-                                <svg class="w-4 h-4 text-green-600 mt-0.5" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                <div class="text-xs text-green-700">
-                                    <div class="font-medium mb-1">订阅说明</div>
-                                    <div>• 创建后立即充值首次额度</div>
-                                    <div>• 按周期自动充值到账户</div>
-                                    <div>• 到期后自动停止充值</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Footer -->
-            <div class="border-t border-gray-200 bg-gray-50 p-6">
-                <div class="flex gap-3">
-                    <button onclick="hideModal('createUserModal')"
-                        class="flex-1 px-4 py-3 bg-white border-2 border-gray-200 rounded-xl font-medium text-gray-600 hover:bg-gray-100 transition-all">
-                        取消
-                    </button>
-                    <button onclick="createUser()"
-                        class="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white rounded-xl font-semibold transition-all shadow-lg shadow-blue-500/30">
-                        创建用户
-                    </button>
-                </div>
+            <div class="p-6 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
+                <button onclick="hideModal('createUserModal')"
+                    class="px-6 py-2.5 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition shadow-sm">
+                    取消
+                </button>
+                <button onclick="createUser()"
+                    class="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-sm font-medium shadow-lg shadow-blue-500/30 transition transform hover:-translate-y-0.5">
+                    确认创建
+                </button>
             </div>
         </div>
     </div>
+
+    
 
     <!-- 额度调整弹窗 -->
     <div id="rechargeModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -1455,7 +1472,7 @@
                         <ul class="list-disc list-inside mt-1 space-y-0.5">
                             <li>勾选渠道后，该渠道的模型配置才会生效。</li>
                             <li>若某渠道下<strong>未勾选任何模型</strong>，则该渠道所有模型均可用（黑名单模式）。</li>
-                            <li>Kiro 渠道默认开启。</li>
+                            <li>Claude 渠道默认开启。</li>
                         </ul>
                     </div>
                 </div>
