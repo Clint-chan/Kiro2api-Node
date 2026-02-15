@@ -152,12 +152,25 @@
                 </div>
 
                 <!-- 模型选择器 -->
-                <div class="flex items-center gap-3 mb-4">
-                    <label class="text-sm font-medium text-gray-700">选择模型</label>
-                    <select id="modelSelector" onchange="updateModelInExamples()" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option value="claude-sonnet-4-5-20250929">Claude Sonnet 4.5</option>
-                    </select>
-                    <span class="text-xs text-gray-400" id="modelCount"></span>
+                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 mb-4 border border-blue-100">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">选择渠道</label>
+                            <select id="channelSelector" onchange="onChannelChange()" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
+                                <option value="">加载中...</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">选择模型</label>
+                            <select id="modelSelector" onchange="updateModelInExamples()" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
+                                <option value="">请先选择渠道</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mt-3 flex items-center justify-between text-xs">
+                        <span class="text-gray-500" id="channelCount"></span>
+                        <span class="text-gray-500" id="modelCount"></span>
+                    </div>
                 </div>
 
                 <!-- 标签页导航 -->
@@ -652,50 +665,105 @@ print(response.choices[0].message.content)`;
         async function loadModels() {
             try {
                 const resp = await fetchApi('/v1/models');
-                const models = resp.data || [];
-                const selector = document.getElementById('modelSelector');
-                if (!selector || models.length === 0) return;
+                const allModels = resp.data || [];
+                
+                if (allModels.length === 0) return;
 
-                selector.innerHTML = '';
+                const allowedChannels = user?.allowed_channels || [];
+                const allowedModels = user?.allowed_models || [];
 
-                // Group by owned_by
-                const groups = {};
-                models.forEach(m => {
-                    const group = m.owned_by || 'other';
-                    if (!groups[group]) groups[group] = [];
-                    groups[group].push(m);
-                });
-
-                // Render optgroups
-                const groupLabels = {
-                    'anthropic': 'Anthropic',
+                const channelLabels = {
+                    'anthropic': 'Claude',
                     'antigravity': 'Antigravity',
                     'codex': 'Codex (GPT)',
-                    'other': 'Other'
+                    'openai': 'OpenAI'
                 };
 
-                for (const [groupKey, groupModels] of Object.entries(groups)) {
-                    const optgroup = document.createElement('optgroup');
-                    optgroup.label = groupLabels[groupKey] || groupKey;
-                    groupModels.forEach(m => {
-                        const option = document.createElement('option');
-                        option.value = m.id;
-                        option.textContent = m.display_name || m.id;
-                        optgroup.appendChild(option);
-                    });
-                    selector.appendChild(optgroup);
+                const groupedModels = {};
+                allModels.forEach(m => {
+                    const channel = m.owned_by || 'other';
+                    if (!groupedModels[channel]) groupedModels[channel] = [];
+                    groupedModels[channel].push(m);
+                });
+
+                const channelSelector = document.getElementById('channelSelector');
+                channelSelector.innerHTML = '';
+
+                const availableChannels = Object.keys(groupedModels).filter(ch => {
+                    if (allowedChannels.length === 0) return true;
+                    return allowedChannels.includes(ch === 'anthropic' ? 'kiro' : ch);
+                });
+
+                if (availableChannels.length === 0) {
+                    channelSelector.innerHTML = '<option value="">无可用渠道</option>';
+                    document.getElementById('channelCount').textContent = '无可用渠道';
+                    return;
                 }
 
-                // Default select claude-sonnet if available
-                const defaultModel = models.find(m => m.id === 'claude-sonnet-4-5-20250929');
-                if (defaultModel) {
-                    selector.value = defaultModel.id;
+                availableChannels.forEach(channel => {
+                    const option = document.createElement('option');
+                    option.value = channel;
+                    option.textContent = channelLabels[channel] || channel;
+                    channelSelector.appendChild(option);
+                });
+
+                window.allModelsData = groupedModels;
+                window.allowedModels = allowedModels;
+
+                document.getElementById('channelCount').textContent = `${availableChannels.length} 个可用渠道`;
+
+                if (availableChannels.includes('anthropic')) {
+                    channelSelector.value = 'anthropic';
+                } else {
+                    channelSelector.value = availableChannels[0];
                 }
 
-                document.getElementById('modelCount').textContent = `${models.length} 个可用模型`;
+                onChannelChange();
             } catch (error) {
                 console.error('Load models error:', error);
             }
+        }
+
+        function onChannelChange() {
+            const channelSelector = document.getElementById('channelSelector');
+            const modelSelector = document.getElementById('modelSelector');
+            const selectedChannel = channelSelector.value;
+
+            if (!selectedChannel || !window.allModelsData) {
+                modelSelector.innerHTML = '<option value="">请先选择渠道</option>';
+                return;
+            }
+
+            const channelModels = window.allModelsData[selectedChannel] || [];
+            const allowedModels = window.allowedModels || [];
+
+            let filteredModels = channelModels;
+            if (allowedModels.length > 0) {
+                filteredModels = channelModels.filter(m => allowedModels.includes(m.id));
+            }
+
+            modelSelector.innerHTML = '';
+
+            if (filteredModels.length === 0) {
+                modelSelector.innerHTML = '<option value="">该渠道无可用模型</option>';
+                document.getElementById('modelCount').textContent = '0 个可用模型';
+                return;
+            }
+
+            filteredModels.forEach(m => {
+                const option = document.createElement('option');
+                option.value = m.id;
+                option.textContent = m.display_name || m.id;
+                modelSelector.appendChild(option);
+            });
+
+            const defaultModel = filteredModels.find(m => m.id === 'claude-sonnet-4-5-20250929');
+            if (defaultModel) {
+                modelSelector.value = defaultModel.id;
+            }
+
+            document.getElementById('modelCount').textContent = `${filteredModels.length} 个可用模型`;
+            updateModelInExamples();
         }
 
         async function loadStats() {
