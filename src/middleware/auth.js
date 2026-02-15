@@ -75,22 +75,17 @@ export function userAuthMiddleware(db) {
 }
 
 /**
- * Admin authentication middleware
- * Validates admin credentials
+ * Admin-only authentication middleware
+ * Only accepts system admin key, rejects user API keys
  */
 export function adminAuthMiddleware(db) {
 	return (req, res, next) => {
 		try {
-			// Extract credentials from header
-			let credential = req.headers["x-admin-key"] || req.headers["x-api-key"];
-
-			// Also check Authorization header
-			if (!credential && req.headers.authorization) {
-				const authHeader = req.headers.authorization;
-				if (authHeader.startsWith("Bearer ")) {
-					credential = authHeader.substring(7);
-				}
-			}
+			const credential =
+				req.body.credential ||
+				req.headers["x-admin-key"] ||
+				req.headers["x-api-key"] ||
+				req.headers.authorization?.replace("Bearer ", "");
 
 			if (!credential) {
 				return res.status(401).json({
@@ -101,35 +96,30 @@ export function adminAuthMiddleware(db) {
 				});
 			}
 
-			// Check if it's the system admin key
 			const systemAdminKey = resolveSystemAdminKey(db);
+
 			if (systemAdminKey && credential === systemAdminKey) {
-				// System admin
-				req.admin = {
+				const adminPath = db.getSetting("admin_path") || "/admin.html";
+				req.authUser = {
 					id: "system",
 					username: "system_admin",
 					role: "admin",
+					balance: 0,
 					isSystemAdmin: true,
+					adminPath: adminPath,
 				};
+				logger.info("adminAuthMiddleware: system admin authenticated");
 				return next();
 			}
 
-			// Check if it's an admin user's API key
-			const user = db.getUserByApiKey(credential, "active");
-			if (user && user.role === "admin") {
-				req.admin = {
-					id: user.id,
-					username: user.username,
-					role: user.role,
-					isSystemAdmin: false,
-				};
-				return next();
-			}
+			logger.warn("adminAuthMiddleware: authentication failed", {
+				credentialLength: credential.length,
+			});
 
-			return res.status(403).json({
+			return res.status(401).json({
 				error: {
-					type: "permission_error",
-					message: "Admin access required.",
+					type: "authentication_error",
+					message: "Invalid admin credentials.",
 				},
 			});
 		} catch (error) {
@@ -151,7 +141,6 @@ export function adminAuthMiddleware(db) {
 export function dualAuthMiddleware(db) {
 	return (req, res, next) => {
 		try {
-			// Extract credential from body or header
 			const credential =
 				req.body.credential ||
 				req.headers["x-api-key"] ||
@@ -166,8 +155,13 @@ export function dualAuthMiddleware(db) {
 				});
 			}
 
-			// Check if it's the system admin key
 			const systemAdminKey = resolveSystemAdminKey(db);
+			logger.debug("dualAuthMiddleware: checking system admin key", {
+				hasSystemAdminKey: !!systemAdminKey,
+				credentialLength: credential.length,
+				matches: systemAdminKey === credential,
+			});
+
 			if (systemAdminKey && credential === systemAdminKey) {
 				const adminPath = db.getSetting("admin_path") || "/admin.html";
 				req.authUser = {
@@ -178,11 +172,17 @@ export function dualAuthMiddleware(db) {
 					isSystemAdmin: true,
 					adminPath: adminPath,
 				};
+				logger.info("dualAuthMiddleware: system admin authenticated");
 				return next();
 			}
 
-			// Check if it's a user API key
 			const user = db.getUserByApiKey(credential, "active");
+			logger.debug("dualAuthMiddleware: checking user API key", {
+				userFound: !!user,
+				userRole: user?.role,
+				userStatus: user?.status,
+			});
+
 			if (user) {
 				req.authUser = {
 					id: user.id,
@@ -192,8 +192,20 @@ export function dualAuthMiddleware(db) {
 					balance: user.balance,
 					isSystemAdmin: false,
 				};
+				logger.info("dualAuthMiddleware: user authenticated", {
+					userId: user.id,
+					role: user.role,
+				});
 				return next();
 			}
+
+			logger.warn("dualAuthMiddleware: authentication failed", {
+				credentialLength: credential.length,
+				credentialPrefix: credential.substring(0, 3),
+				systemAdminKeyPrefix: systemAdminKey
+					? systemAdminKey.substring(0, 3)
+					: null,
+			});
 
 			return res.status(401).json({
 				error: {
