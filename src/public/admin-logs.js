@@ -50,6 +50,24 @@ function _applyLogFilters() {
 	loadLogs();
 }
 
+function _clearLogFilters() {
+	document.getElementById("log-time-range").value = "24h";
+	document.getElementById("log-user-filter").value = "";
+	document.getElementById("log-model-filter").value = "";
+	document.getElementById("log-status-filter").value = "";
+
+	currentFilters = {
+		timeRange: "24h",
+		userId: "",
+		model: "",
+		success: "",
+	};
+
+	logsCurrentPage = 1;
+	loadLogs();
+	showToast("已清空筛选条件", "info");
+}
+
 async function loadLogs() {
 	try {
 		const offset = (logsCurrentPage - 1) * logsPageSize;
@@ -351,3 +369,4 @@ window.changeLogsPage = _changeLogsPage;
 window.goToLogsPage = _goToLogsPage;
 window.showLogDetail = _showLogDetail;
 window.applyLogFilters = _applyLogFilters;
+window.clearLogFilters = _clearLogFilters;
