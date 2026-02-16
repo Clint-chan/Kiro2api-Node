@@ -11,7 +11,7 @@
 
 import assert from "assert";
 import { CLIProxyClient } from "../src/cliproxy-client.js";
-import { Database } from "../src/database.js";
+import { DatabaseManager } from "../src/database.js";
 
 // 测试配置
 const TEST_CONFIG = {
@@ -270,7 +270,7 @@ async function testAccountDataStructure() {
 async function testModelGroupDisabling() {
 	logSection("测试套件 3: 模型组禁用逻辑测试");
 
-	const db = new Database(TEST_CONFIG.dbPath);
+	const db = new DatabaseManager(TEST_CONFIG.dbPath);
 
 	await runTest("3.1 验证模型组识别逻辑", async () => {
 		const testCases = [
@@ -460,7 +460,7 @@ async function testModelGroupDisabling() {
 async function testPerformance() {
 	logSection("测试套件 4: 性能基准测试");
 
-	const db = new Database(TEST_CONFIG.dbPath);
+	const db = new DatabaseManager(TEST_CONFIG.dbPath);
 
 	await runTest("4.1 getSetting 性能测试", async () => {
 		// 准备测试数据
@@ -644,7 +644,7 @@ async function testIntegration() {
 		TEST_CONFIG.managementUrl,
 		TEST_CONFIG.managementKey,
 	);
-	const db = new Database(TEST_CONFIG.dbPath);
+	const db = new DatabaseManager(TEST_CONFIG.dbPath);
 
 	await runTest("5.1 端到端场景测试", async () => {
 		// 1. 获取账号列表

@@ -368,7 +368,51 @@ export class CLIProxyThresholdChecker {
 	}
 
 	async checkAntigravityThreshold(account, config) {
-		const quota = account.quota || {};
+		const quota = {};
+
+		try {
+			const result = await this.cliproxyClient.apiCall(
+				account.auth_index,
+				"POST",
+				"https://daily-cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels",
+				{
+					Authorization: "Bearer $TOKEN$",
+					"Content-Type": "application/json",
+					"User-Agent": "antigravity/1.11.5 windows/amd64",
+				},
+				JSON.stringify({
+					project: account.project_id || "bamboo-precept-lgxtn",
+				}),
+			);
+
+			const parseJsonSafe = (value) => {
+				if (typeof value !== "string") return value;
+				try {
+					return JSON.parse(value);
+				} catch {
+					return null;
+				}
+			};
+
+			const body = parseJsonSafe(result?.body);
+			const models = body?.models || {};
+
+			for (const [modelId, modelInfo] of Object.entries(models)) {
+				if (modelInfo?.quotaInfo) {
+					quota[modelId] = {
+						remaining_fraction: modelInfo.quotaInfo.remainingFraction,
+						reset_time: modelInfo.quotaInfo.resetTime,
+					};
+				}
+			}
+		} catch (error) {
+			logger.warn("获取 Antigravity 配额失败", {
+				name: account.name,
+				error: error.message,
+			});
+			return { disableGroups: {} };
+		}
+
 		const disableGroups = {};
 
 		const modelGroups = {
@@ -398,8 +442,13 @@ export class CLIProxyThresholdChecker {
 			if (groupConfig.threshold === undefined) continue;
 
 			for (const [modelId, modelQuota] of Object.entries(quota)) {
-				if (!modelQuota || modelQuota.remaining_fraction === undefined)
-					continue;
+				if (!modelQuota) continue;
+
+				const remaining =
+					modelQuota.remaining_fraction === null ||
+					modelQuota.remaining_fraction === undefined
+						? 0
+						: modelQuota.remaining_fraction;
 
 				let matches = false;
 				if (groupConfig.patterns) {
@@ -410,15 +459,15 @@ export class CLIProxyThresholdChecker {
 					matches = groupConfig.models.includes(modelId);
 				}
 
-				if (matches && modelQuota.remaining_fraction < groupConfig.threshold) {
+				if (matches && remaining < groupConfig.threshold) {
 					disableGroups[groupName] = {
 						mode: "auto",
 						disabled_at: Date.now(),
-						reason: `${modelId} remaining ${(modelQuota.remaining_fraction * 100).toFixed(1)}% < ${(groupConfig.threshold * 100).toFixed(1)}%`,
+						reason: `${modelId} remaining ${(remaining * 100).toFixed(1)}% < ${(groupConfig.threshold * 100).toFixed(1)}%`,
 						threshold: groupConfig.threshold,
 						observed: {
 							model_id: modelId,
-							remaining_fraction: modelQuota.remaining_fraction,
+							remaining_fraction: remaining,
 						},
 					};
 					break;

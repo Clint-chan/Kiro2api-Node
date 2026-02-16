@@ -665,7 +665,7 @@ async function ensureProjectId(db, account, token) {
 		const projectId = await probeProjectId(token);
 		if (!projectId) return null;
 
-		db.updateAgtAccountTokens(account.id, {
+		db.updateAntigravityAccountTokens(account.id, {
 			access_token: account.access_token,
 			refresh_token: account.refresh_token,
 			expires_in: account.expires_in,
@@ -689,7 +689,7 @@ export async function ensureAntigravityAccessToken(db, account) {
 	}
 
 	const nextTokens = await refreshAccessToken(account);
-	db.updateAgtAccountTokens(account.id, {
+	db.updateAntigravityAccountTokens(account.id, {
 		...nextTokens,
 		project_id: account.project_id,
 		email: account.email,
