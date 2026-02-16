@@ -138,3 +138,10 @@ function _getPaginationPages(currentPage, totalPages, maxVisible = 5) {
 		totalPages,
 	];
 }
+
+// 导出到全局作用域
+window.setAdminLogoutHandler = _setAdminLogoutHandler;
+window.fetchApi = _fetchApi;
+window.escapeHtml = _escapeHtml;
+window.copyText = _copyText;
+window.getPaginationPages = _getPaginationPages;
