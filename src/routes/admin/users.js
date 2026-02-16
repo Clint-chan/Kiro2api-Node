@@ -12,12 +12,21 @@ export function createUserAdminRouter(db, billing) {
 	 */
 	router.get("/users", (req, res) => {
 		try {
-			const { status, role } = req.query;
+			const { status, role, search } = req.query;
 
 			let users = db.getAllUsers(status);
 
 			if (role) {
 				users = users.filter((u) => u.role === role);
+			}
+
+			if (search) {
+				const searchLower = search.toLowerCase();
+				users = users.filter(
+					(u) =>
+						u.username?.toLowerCase().includes(searchLower) ||
+						u.id?.toLowerCase().includes(searchLower),
+				);
 			}
 
 			// Remove sensitive data
