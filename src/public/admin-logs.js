@@ -8,12 +8,21 @@ let currentFilters = {
 	success: "",
 };
 
+function formatDuration(ms) {
+	if (!ms) return "0s";
+	if (ms < 1000) return `${ms}ms`;
+	if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
+	const minutes = Math.floor(ms / 60000);
+	const seconds = Math.floor((ms % 60000) / 1000);
+	return `${minutes}m ${seconds}s`;
+}
+
 function _toggleAutoRefresh() {
 	const toggle = document.getElementById("autoRefreshToggle");
 	if (toggle.checked) {
 		autoRefreshInterval = setInterval(() => {
 			loadLogs();
-		}, 5000);
+		}, 10000);
 		showToast("已开启自动刷新", "success");
 	} else {
 		if (autoRefreshInterval) {
@@ -165,12 +174,23 @@ function renderLogsPage(logs) {
 														const rowClass = isFailure
 															? "hover:bg-red-50 transition border-l-4 border-red-500 bg-red-50/30"
 															: `hover:bg-gray-50 transition ${i % 2 === 1 ? "bg-gray-50/50" : ""}`;
+														const durationMs = l.duration_ms || 0;
 														const durationColor =
-															l.duration_ms > 8000
+															durationMs > 8000
 																? "text-red-600 font-medium"
-																: l.duration_ms > 3000
+																: durationMs > 3000
 																	? "text-amber-600"
 																	: "text-gray-600";
+
+														const errorPreview = l.error_message
+															? escapeHtml(
+																	l.error_message.substring(0, 100) +
+																		(l.error_message.length > 100 ? "..." : ""),
+																)
+															: "";
+														const statusBadge = l.success
+															? '<span class="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">成功</span>'
+															: `<span class="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 cursor-help" title="${errorPreview}">失败</span>`;
 
 														return `<tr class="${rowClass} cursor-pointer" onclick="showLogDetail(${JSON.stringify(l).replace(/"/g, "&quot;")})">
                             <td class="px-4 py-3 text-sm text-gray-600">${new Date(l.timestamp).toLocaleString("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" })}</td>
@@ -186,9 +206,9 @@ function renderLogsPage(logs) {
                                 <div class="text-xs"><span class="text-gray-400">In:</span> ${l.input_tokens || 0}</div>
                                 <div class="text-xs"><span class="text-gray-400">Out:</span> ${l.output_tokens || 0}</div>
                             </td>
-                            <td class="px-4 py-3 text-sm ${durationColor}">${l.duration_ms || 0}ms</td>
+                            <td class="px-4 py-3 text-sm ${durationColor}">${formatDuration(durationMs)}</td>
                             <td class="px-4 py-3 text-sm font-medium text-gray-900">$${(l.total_cost || 0).toFixed(4)}</td>
-                            <td class="px-4 py-3">${l.success ? '<span class="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">成功</span>' : '<span class="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">失败</span>'}</td>
+                            <td class="px-4 py-3">${statusBadge}</td>
                         </tr>`;
 													})
 													.join("")}
@@ -308,7 +328,7 @@ function _showLogDetail(log) {
 					<div class="grid grid-cols-2 gap-4">
 						<div>
 							<div class="text-xs text-gray-500 mb-1">耗时</div>
-							<div class="text-sm font-medium ${log.duration_ms > 8000 ? "text-red-600" : log.duration_ms > 3000 ? "text-amber-600" : "text-gray-900"}">${log.duration_ms || 0} ms</div>
+							<div class="text-sm font-medium ${log.duration_ms > 8000 ? "text-red-600" : log.duration_ms > 3000 ? "text-amber-600" : "text-gray-900"}">${formatDuration(log.duration_ms || 0)}</div>
 						</div>
 						<div>
 							<div class="text-xs text-gray-500 mb-1">成本</div>
