@@ -3,7 +3,7 @@
 let cliproxyAntigravityAccounts = [];
 const cliproxyQuotaCache = {};
 let isLoadingQuota = false;
-let lastCacheUpdate = null;
+let _lastCacheUpdate = null;
 
 function escapeInlineJsString(value) {
 	return String(value ?? "")
@@ -17,7 +17,7 @@ async function loadCliProxyAccounts() {
 	try {
 		const result = await fetchApi("/api/admin/cliproxy/auth-files");
 		cliproxyAntigravityAccounts = result.files || [];
-		lastCacheUpdate = new Date();
+		_lastCacheUpdate = new Date();
 		renderCliProxyAccounts();
 
 		await refreshAllQuotas();
@@ -32,7 +32,7 @@ async function _forceRefreshCliProxyAccounts() {
 			"/api/admin/cliproxy/auth-files?refresh=true",
 		);
 		cliproxyAntigravityAccounts = result.files || [];
-		lastCacheUpdate = new Date();
+		_lastCacheUpdate = new Date();
 		renderCliProxyAccounts();
 
 		await refreshAllQuotas();
@@ -242,17 +242,7 @@ function renderCliProxyAccounts() {
 
 	const allAccounts = cliproxyAntigravityAccounts;
 
-	const cacheStatus = lastCacheUpdate
-		? `<div class="text-xs text-gray-500 mb-4 flex items-center justify-end">
-            <svg class="w-3.5 h-3.5 mr-1 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            最后更新: ${lastCacheUpdate.toLocaleString("zh-CN")}
-          </div>`
-		: "";
-
 	container.innerHTML = `
-        ${cacheStatus}
         <div class="overflow-hidden border border-gray-200 rounded-xl shadow-sm bg-white">
             <table class="w-full text-sm text-left table-fixed">
                 <thead class="text-xs text-gray-500 uppercase bg-gray-50 border-b border-gray-100">
@@ -266,75 +256,49 @@ function renderCliProxyAccounts() {
                 <tbody class="divide-y divide-gray-100">
                 ${allAccounts
 									.map((a, _i) => {
-										// Provider Icon Colors and Initials
-										let providerBg = "bg-gray-100 text-gray-500";
-										let providerRing = "ring-gray-100";
-										let initials = "UK";
-										let providerLabel = "Unknown";
+										let providerBadge = "";
+										let providerFullName = "";
 										if (a.provider === "codex") {
-											providerBg = "bg-blue-50 text-blue-600";
-											providerRing = "ring-blue-100";
-											initials = "CX";
-											providerLabel = "Codex";
+											providerBadge =
+												"bg-blue-100 text-blue-700 border-blue-200";
+											providerFullName = "Codex";
 										} else if (a.provider === "claude") {
-											providerBg = "bg-indigo-50 text-indigo-600";
-											providerRing = "ring-indigo-100";
-											initials = "CL";
-											providerLabel = "Claude";
+											providerBadge =
+												"bg-indigo-100 text-indigo-700 border-indigo-200";
+											providerFullName = "Claude";
 										} else {
-											providerBg = "bg-purple-50 text-purple-600";
-											providerRing = "ring-purple-100";
-											initials = "AG";
-											providerLabel = "AntiG";
+											providerBadge =
+												"bg-purple-100 text-purple-700 border-purple-200";
+											providerFullName = "Antigravity";
 										}
 
-										// Email Truncation Logic
 										const email = a.email || a.id || "Unknown";
 										const displayEmail =
 											email.length > 28
-												? email.substring(0, 12) +
-													"..." +
-													email.substring(email.length - 12)
+												? `${email.substring(0, 12)}...${email.substring(email.length - 12)}`
 												: email;
 
 										return `
                     <tr class="group hover:bg-gray-50/80 transition-colors duration-200">
                         <td class="px-6 py-4 align-top">
-                            <div class="flex items-start gap-3">
-                                <div class="relative flex-shrink-0 mt-0.5">
-                                    <div class="flex items-center justify-center w-9 h-9 rounded-lg ${providerBg} font-bold text-xs ring-1 ${providerRing} shadow-sm group-hover:shadow transition-all">
-                                        ${initials}
-                                    </div>
-                                    <div class="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 shadow-sm">
-                                        ${
-																					!a.disabled
-																						? '<div class="w-2.5 h-2.5 bg-green-500 rounded-full border border-white"></div>'
-																						: '<div class="w-2.5 h-2.5 bg-gray-300 rounded-full border border-white"></div>'
-																				}
-                                    </div>
+                            <div class="space-y-2">
+                                <div class="text-sm font-semibold text-gray-900 truncate group-hover:text-blue-600 transition-colors cursor-help" title="${email}">
+                                    ${displayEmail}
                                 </div>
-                                <div class="min-w-0 flex-1">
-                                    <div class="flex items-center justify-between mb-1.5">
-                                        <div class="text-sm font-semibold text-gray-900 truncate pr-2 group-hover:text-blue-600 transition-colors cursor-help" title="${email}">
-                                            ${displayEmail}
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="flex flex-wrap items-center gap-2">
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-600 border border-gray-200">
-                                            ${providerLabel}
-                                        </span>
-                                        ${
-																					a.provider === "codex" && a.plan_type
-																						? `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-green-50 text-green-700 border border-green-100 ring-1 ring-inset ring-green-600/10">${a.plan_type}</span>`
-																						: ""
-																				}
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium transition-colors cursor-pointer hover:bg-amber-50" 
-                                              id="threshold-badge-${a.name}"
-                                              onclick="showThresholdConfig(${JSON.stringify(a).replace(/"/g, "&quot;")})">
-                                            <span class="threshold-loading text-gray-400">检查...</span>
-                                        </span>
-                                    </div>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${providerBadge} border">
+                                        ${providerFullName}
+                                    </span>
+                                    ${
+																			a.provider === "codex" && a.plan_type
+																				? `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700 border border-green-200">${a.plan_type}</span>`
+																				: ""
+																		}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium transition-colors cursor-pointer hover:bg-amber-50 border border-amber-200" 
+                                          id="threshold-badge-${a.name}"
+                                          onclick="showThresholdConfig(${JSON.stringify(a).replace(/"/g, "&quot;")})">
+                                        <span class="threshold-loading text-gray-400">检查...</span>
+                                    </span>
                                 </div>
                             </div>
                         </td>
@@ -355,33 +319,33 @@ function renderCliProxyAccounts() {
                             <div class="flex justify-center">${formatCliProxyStatus(a)}</div>
                         </td>
 
-                        <td class="px-6 py-4 align-middle text-right">
-                            <div class="flex items-center justify-center gap-1.5">
+                        <td class="px-6 py-4 align-middle">
+                            <div class="flex items-center justify-end gap-1">
                                 <button onclick="refreshSingleQuota(${JSON.stringify(a).replace(/"/g, "&quot;")})" 
-                                    class="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all active:scale-95" 
+                                    class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-all" 
                                     title="刷新额度">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                                 </button>
 								<button onclick="viewModels('${escapeInlineJsString(a.name)}')" 
-                                    class="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all active:scale-95" 
+                                    class="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded transition-all" 
                                     title="查看模型">
 									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
 								</button>
 								<button onclick="showThresholdConfig(${JSON.stringify(a).replace(/"/g, "&quot;")})" 
-                                    class="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all active:scale-95" 
+                                    class="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded transition-all" 
                                     title="设置阈值">
 									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
 								</button>
                                 ${
 																	a.disabled
-																		? `<button onclick="toggleCliProxyAccount('${a.name}', false)" class="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all active:scale-95" title="启用账号">
+																		? `<button onclick="toggleCliProxyAccount('${a.name}', false)" class="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-all" title="启用账号">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                     </button>`
-																		: `<button onclick="toggleCliProxyAccount('${a.name}', true)" class="p-2 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-all active:scale-95" title="禁用账号">
+																		: `<button onclick="toggleCliProxyAccount('${a.name}', true)" class="p-1.5 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded transition-all" title="禁用账号">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                     </button>`
 																}
-                                <button onclick="deleteCliProxyAccount('${a.name}')" class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all active:scale-95" title="删除账号">
+                                <button onclick="deleteCliProxyAccount('${a.name}')" class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all" title="删除账号">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                 </button>
                             </div>
