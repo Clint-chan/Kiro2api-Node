@@ -991,12 +991,12 @@ async function _batchDeleteAccounts() {
 }
 
 async function _clearLogs() {
-	if (!confirm("确定清空所有请求记录？")) return;
+	if (!confirm("确定清空所有请求记录？此操作不可恢复。")) return;
 	try {
-		await fetchApi("/api/logs", { method: "DELETE" });
+		const result = await fetchApi("/api/admin/logs", { method: "DELETE" });
 		loadLogs();
 		loadStatus();
-		showToast("记录已清空", "success");
+		showToast(result.message || "记录已清空", "success");
 	} catch (e) {
 		showToast(`清空失败: ${e.message}`, "error");
 	}

@@ -1,6 +1,6 @@
 let logsCurrentPage = 1;
-const logsPageSize = 20;
-let allLogs = [];
+const logsPageSize = 50;
+let totalLogs = 0;
 
 function _toggleAutoRefresh() {
 	const toggle = document.getElementById("autoRefreshToggle");
@@ -20,18 +20,23 @@ function _toggleAutoRefresh() {
 
 async function loadLogs() {
 	try {
-		const data = await fetchApi("/api/admin/logs?limit=1000");
-		allLogs = data.data || [];
-		renderLogsPage();
+		const offset = (logsCurrentPage - 1) * logsPageSize;
+		const data = await fetchApi(
+			`/api/admin/logs?limit=${logsPageSize}&offset=${offset}`,
+		);
+		const logs = data.data || [];
+		totalLogs = data.pagination?.total || 0;
+		renderLogsPage(logs);
 	} catch (e) {
 		console.error(e);
+		showToast("加载日志失败", "error");
 	}
 }
 
-function renderLogsPage() {
+function renderLogsPage(logs) {
 	const container = document.getElementById("logs-table");
 
-	if (!allLogs || allLogs.length === 0) {
+	if (!logs || logs.length === 0) {
 		container.innerHTML =
 			'<div class="text-center py-12 text-gray-500">暂无请求记录</div>';
 		document.getElementById("logs-pagination").classList.add("hidden");
@@ -40,14 +45,13 @@ function renderLogsPage() {
 
 	document.getElementById("logs-pagination").classList.remove("hidden");
 
-	const totalPages = Math.ceil(allLogs.length / logsPageSize);
+	const totalPages = Math.ceil(totalLogs / logsPageSize);
 	const startIdx = (logsCurrentPage - 1) * logsPageSize;
-	const endIdx = Math.min(startIdx + logsPageSize, allLogs.length);
-	const pageLogs = allLogs.slice(startIdx, endIdx);
+	const endIdx = Math.min(startIdx + logs.length, totalLogs);
 
 	document.getElementById("logs-page-start").textContent = startIdx + 1;
 	document.getElementById("logs-page-end").textContent = endIdx;
-	document.getElementById("total-logs").textContent = allLogs.length;
+	document.getElementById("total-logs").textContent = totalLogs;
 	document.getElementById("logs-prev-btn").disabled = logsCurrentPage === 1;
 	document.getElementById("logs-next-btn").disabled =
 		logsCurrentPage === totalPages;
@@ -57,24 +61,48 @@ function renderLogsPage() {
 	container.innerHTML = `
                 <table class="w-full">
                     <thead><tr class="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        <th class="px-4 py-3 rounded-tl-lg">时间</th><th class="px-4 py-3">账号</th><th class="px-4 py-3">模型</th><th class="px-4 py-3">输入</th><th class="px-4 py-3">输出</th><th class="px-4 py-3">耗时</th><th class="px-4 py-3 rounded-tr-lg">状态</th>
+                        <th class="px-4 py-3 rounded-tl-lg">时间</th>
+                        <th class="px-4 py-3">用户</th>
+                        <th class="px-4 py-3">Kiro账号</th>
+                        <th class="px-4 py-3">模型</th>
+                        <th class="px-4 py-3">Tokens</th>
+                        <th class="px-4 py-3">耗时</th>
+                        <th class="px-4 py-3">成本</th>
+                        <th class="px-4 py-3 rounded-tr-lg">状态</th>
                     </tr></thead>
                     <tbody class="divide-y divide-gray-100">
-                        ${pageLogs
-													.map(
-														(
-															l,
-															i,
-														) => `<tr class="hover:bg-gray-50 transition ${i % 2 === 1 ? "bg-gray-50/50" : ""}">
-                            <td class="px-4 py-3 text-sm text-gray-600">${new Date(l.timestamp).toLocaleString()}</td>
-                            <td class="px-4 py-3 text-sm text-gray-900">${l.kiro_account_name || l.accountName}</td>
-                            <td class="px-4 py-3 text-xs text-gray-500">${l.model || "-"}</td>
-                            <td class="px-4 py-3 text-sm text-gray-600">${l.input_tokens || l.inputTokens || 0}</td>
-                            <td class="px-4 py-3 text-sm text-gray-600">${l.output_tokens || l.outputTokens || 0}</td>
-                            <td class="px-4 py-3 text-sm text-gray-600">${l.duration_ms || l.durationMs}ms</td>
+                        ${logs
+													.map((l, i) => {
+														const isFailure = !l.success;
+														const rowClass = isFailure
+															? "hover:bg-red-50 transition border-l-4 border-red-500 bg-red-50/30"
+															: `hover:bg-gray-50 transition ${i % 2 === 1 ? "bg-gray-50/50" : ""}`;
+														const durationColor =
+															l.duration_ms > 8000
+																? "text-red-600 font-medium"
+																: l.duration_ms > 3000
+																	? "text-amber-600"
+																	: "text-gray-600";
+
+														return `<tr class="${rowClass} cursor-pointer" onclick="showLogDetail(${JSON.stringify(l).replace(/"/g, "&quot;")})">
+                            <td class="px-4 py-3 text-sm text-gray-600">${new Date(l.timestamp).toLocaleString("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" })}</td>
+                            <td class="px-4 py-3">
+                                <div class="text-sm font-medium text-gray-900">${escapeHtml(l.username || "未知用户")}</div>
+                                <div class="text-xs text-gray-400">${l.user_id?.substring(0, 8) || "-"}</div>
+                            </td>
+                            <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(l.kiro_account_name || "-")}</td>
+                            <td class="px-4 py-3">
+                                <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">${l.model || "-"}</span>
+                            </td>
+                            <td class="px-4 py-3 text-sm text-gray-600">
+                                <div class="text-xs"><span class="text-gray-400">In:</span> ${l.input_tokens || 0}</div>
+                                <div class="text-xs"><span class="text-gray-400">Out:</span> ${l.output_tokens || 0}</div>
+                            </td>
+                            <td class="px-4 py-3 text-sm ${durationColor}">${l.duration_ms || 0}ms</td>
+                            <td class="px-4 py-3 text-sm font-medium text-gray-900">$${(l.total_cost || 0).toFixed(4)}</td>
                             <td class="px-4 py-3">${l.success ? '<span class="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">成功</span>' : '<span class="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">失败</span>'}</td>
-                        </tr>`,
-													)
+                        </tr>`;
+													})
 													.join("")}
                     </tbody>
                 </table>`;
@@ -98,22 +126,119 @@ function renderLogsPageNumbers(totalPages) {
 function _changeLogsPage(direction) {
 	if (direction === "prev" && logsCurrentPage > 1) {
 		logsCurrentPage--;
-		renderLogsPage();
+		loadLogs();
 	} else if (direction === "next") {
-		const totalPages = Math.ceil(allLogs.length / logsPageSize);
+		const totalPages = Math.ceil(totalLogs / logsPageSize);
 		if (logsCurrentPage < totalPages) {
 			logsCurrentPage++;
-			renderLogsPage();
+			loadLogs();
 		}
 	}
 }
 
 function _goToLogsPage(page) {
 	logsCurrentPage = page;
-	renderLogsPage();
+	loadLogs();
+}
+
+function _showLogDetail(log) {
+	const modal = document.createElement("div");
+	modal.id = "logDetailModal";
+	modal.className =
+		"fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4";
+	modal.onclick = (e) => {
+		if (e.target === modal) modal.remove();
+	};
+
+	const errorSection = log.error_message
+		? `
+		<div class="border-t border-gray-200 pt-4">
+			<h4 class="text-sm font-semibold text-red-600 mb-2">错误信息</h4>
+			<div class="bg-red-50 border border-red-200 rounded-lg p-3">
+				<pre class="text-xs text-red-800 whitespace-pre-wrap break-words font-mono">${escapeHtml(log.error_message)}</pre>
+			</div>
+		</div>
+	`
+		: "";
+
+	modal.innerHTML = `
+		<div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+			<div class="flex items-center justify-between p-6 border-b border-gray-100">
+				<h3 class="text-lg font-semibold text-gray-900">请求详情</h3>
+				<button onclick="document.getElementById('logDetailModal').remove()" class="text-gray-400 hover:text-gray-600 transition">
+					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+					</svg>
+				</button>
+			</div>
+			<div class="p-6 overflow-y-auto flex-1">
+				<div class="space-y-4">
+					<div class="grid grid-cols-2 gap-4">
+						<div>
+							<div class="text-xs text-gray-500 mb-1">请求时间</div>
+							<div class="text-sm font-medium text-gray-900">${new Date(log.timestamp).toLocaleString("zh-CN")}</div>
+						</div>
+						<div>
+							<div class="text-xs text-gray-500 mb-1">状态</div>
+							<div>${log.success ? '<span class="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">成功</span>' : '<span class="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">失败</span>'}</div>
+						</div>
+					</div>
+
+					<div class="grid grid-cols-2 gap-4">
+						<div>
+							<div class="text-xs text-gray-500 mb-1">用户</div>
+							<div class="text-sm font-medium text-gray-900">${escapeHtml(log.username || "未知用户")}</div>
+							<div class="text-xs text-gray-400 mt-0.5">${log.user_id || "-"}</div>
+						</div>
+						<div>
+							<div class="text-xs text-gray-500 mb-1">Kiro 账号</div>
+							<div class="text-sm font-medium text-gray-900">${escapeHtml(log.kiro_account_name || "-")}</div>
+							<div class="text-xs text-gray-400 mt-0.5">${log.kiro_account_id || "-"}</div>
+						</div>
+					</div>
+
+					<div>
+						<div class="text-xs text-gray-500 mb-1">模型</div>
+						<div class="text-sm font-medium text-gray-900">${log.model || "-"}</div>
+					</div>
+
+					<div class="grid grid-cols-3 gap-4">
+						<div>
+							<div class="text-xs text-gray-500 mb-1">输入 Tokens</div>
+							<div class="text-sm font-medium text-gray-900">${(log.input_tokens || 0).toLocaleString()}</div>
+						</div>
+						<div>
+							<div class="text-xs text-gray-500 mb-1">输出 Tokens</div>
+							<div class="text-sm font-medium text-gray-900">${(log.output_tokens || 0).toLocaleString()}</div>
+						</div>
+						<div>
+							<div class="text-xs text-gray-500 mb-1">总计 Tokens</div>
+							<div class="text-sm font-medium text-gray-900">${((log.input_tokens || 0) + (log.output_tokens || 0)).toLocaleString()}</div>
+						</div>
+					</div>
+
+					<div class="grid grid-cols-2 gap-4">
+						<div>
+							<div class="text-xs text-gray-500 mb-1">耗时</div>
+							<div class="text-sm font-medium ${log.duration_ms > 8000 ? "text-red-600" : log.duration_ms > 3000 ? "text-amber-600" : "text-gray-900"}">${log.duration_ms || 0} ms</div>
+						</div>
+						<div>
+							<div class="text-xs text-gray-500 mb-1">成本</div>
+							<div class="text-sm font-medium text-gray-900">$${(log.total_cost || 0).toFixed(6)}</div>
+						</div>
+					</div>
+
+					${errorSection}
+				</div>
+			</div>
+		</div>
+	`;
+
+	document.body.appendChild(modal);
 }
 
 // 导出到全局作用域
 window.toggleAutoRefresh = _toggleAutoRefresh;
 window.changeLogsPage = _changeLogsPage;
 window.goToLogsPage = _goToLogsPage;
+window.showLogDetail = _showLogDetail;

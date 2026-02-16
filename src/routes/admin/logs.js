@@ -20,65 +20,82 @@ export function createLogsAdminRouter(db) {
 				offset = 0,
 			} = req.query;
 
-			let query = "SELECT * FROM request_logs WHERE 1=1";
+			let query = `SELECT 
+			rl.id,
+			rl.user_id,
+			u.username,
+			rl.kiro_account_id,
+			rl.kiro_account_name,
+			rl.model,
+			rl.input_tokens,
+			rl.output_tokens,
+			rl.duration_ms,
+			rl.total_cost,
+			rl.success,
+			rl.error_message,
+			rl.timestamp
+		FROM request_logs rl
+		LEFT JOIN users u ON rl.user_id = u.id
+		WHERE 1=1`;
 			const params = [];
 
 			if (userId) {
-				query += " AND user_id = ?";
+				query += " AND rl.user_id = ?";
 				params.push(userId);
 			}
 
 			if (model) {
-				query += " AND model = ?";
+				query += " AND rl.model = ?";
 				params.push(model);
 			}
 
 			if (success !== undefined) {
-				query += " AND success = ?";
+				query += " AND rl.success = ?";
 				params.push(success === "true" ? 1 : 0);
 			}
 
 			if (startDate) {
-				query += " AND timestamp >= ?";
+				query += " AND rl.timestamp >= ?";
 				params.push(startDate);
 			}
 
 			if (endDate) {
-				query += " AND timestamp <= ?";
+				query += " AND rl.timestamp <= ?";
 				params.push(endDate);
 			}
 
-			query += " ORDER BY timestamp DESC LIMIT ? OFFSET ?";
+			query += " ORDER BY rl.timestamp DESC LIMIT ? OFFSET ?";
 			params.push(parseInt(limit, 10), parseInt(offset, 10));
 
 			const logs = db.db.prepare(query).all(...params);
 
 			// Get total count
-			let countQuery = "SELECT COUNT(*) as count FROM request_logs WHERE 1=1";
+			let countQuery =
+				"SELECT COUNT(*) as count FROM request_logs rl WHERE 1=1";
 			const countParams = [];
 
 			if (userId) {
-				countQuery += " AND user_id = ?";
+				countQuery += " AND rl.user_id = ?";
 				countParams.push(userId);
 			}
 
 			if (model) {
-				countQuery += " AND model = ?";
+				countQuery += " AND rl.model = ?";
 				countParams.push(model);
 			}
 
 			if (success !== undefined) {
-				countQuery += " AND success = ?";
+				countQuery += " AND rl.success = ?";
 				countParams.push(success === "true" ? 1 : 0);
 			}
 
 			if (startDate) {
-				countQuery += " AND timestamp >= ?";
+				countQuery += " AND rl.timestamp >= ?";
 				countParams.push(startDate);
 			}
 
 			if (endDate) {
-				countQuery += " AND timestamp <= ?";
+				countQuery += " AND rl.timestamp <= ?";
 				countParams.push(endDate);
 			}
 
