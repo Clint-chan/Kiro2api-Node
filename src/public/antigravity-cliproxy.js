@@ -607,22 +607,43 @@ async function _showThresholdConfig(account) {
 		} else {
 			configHtml = `
 				<div class="space-y-4">
-					<div class="text-sm text-gray-600 mb-4">分模型组设置阈值，当模型组内任一模型低于阈值时，禁用该组</div>
+					<div class="text-sm text-gray-600 mb-4">Antigravity 渠道：Claude/GPT 统一计费，Gemini 各模型独立限额</div>
 					<div class="border border-gray-200 rounded-lg p-4">
 						<h4 class="font-medium text-gray-900 mb-3">Claude/GPT 模型组</h4>
 						<label class="block text-sm font-medium text-gray-700 mb-2">最低阈值 (%)</label>
 						<input type="number" id="threshold-claude-gpt" min="0" max="100" value="${toInputPercent(config.claude_gpt)}"
 							placeholder="留空或0表示不限制"
 							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-						<div class="text-xs text-gray-500 mt-2">包含: claude-sonnet-4-5, claude-opus-4-6 等</div>
+						<div class="text-xs text-gray-500 mt-2">包含: claude-sonnet-4-5, claude-opus-4-6, gpt-4 等（统一计费）</div>
 					</div>
 					<div class="border border-gray-200 rounded-lg p-4">
-						<h4 class="font-medium text-gray-900 mb-3">Gemini 模型组</h4>
-						<label class="block text-sm font-medium text-gray-700 mb-2">最低阈值 (%)</label>
-						<input type="number" id="threshold-gemini" min="0" max="100" value="${toInputPercent(config.gemini)}"
-							placeholder="留空或0表示不限制"
-							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-						<div class="text-xs text-gray-500 mt-2">包含: gemini-3-pro-high, gemini-3-flash 等</div>
+						<h4 class="font-medium text-gray-900 mb-3">Gemini 模型（独立限额）</h4>
+						<div class="space-y-3">
+							<div>
+								<label class="block text-sm font-medium text-gray-700 mb-2">gemini-3-pro 阈值 (%)</label>
+								<input type="number" id="threshold-gemini-3-pro" min="0" max="100" value="${toInputPercent(config.gemini_3_pro)}"
+									placeholder="留空或0表示不限制"
+									class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+							</div>
+							<div>
+								<label class="block text-sm font-medium text-gray-700 mb-2">gemini-3-pro-high 阈值 (%)</label>
+								<input type="number" id="threshold-gemini-3-pro-high" min="0" max="100" value="${toInputPercent(config.gemini_3_pro_high)}"
+									placeholder="留空或0表示不限制"
+									class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+							</div>
+							<div>
+								<label class="block text-sm font-medium text-gray-700 mb-2">gemini-3-flash 阈值 (%)</label>
+								<input type="number" id="threshold-gemini-3-flash" min="0" max="100" value="${toInputPercent(config.gemini_3_flash)}"
+									placeholder="留空或0表示不限制"
+									class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+							</div>
+							<div>
+								<label class="block text-sm font-medium text-gray-700 mb-2">gemini-3-pro-image 阈值 (%)</label>
+								<input type="number" id="threshold-gemini-3-pro-image" min="0" max="100" value="${toInputPercent(config.gemini_3_pro_image)}"
+									placeholder="留空或0表示不限制"
+									class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+							</div>
+						</div>
 					</div>
 				</div>
 			`;
@@ -717,11 +738,25 @@ async function _saveThresholdConfig(accountName, provider) {
 			const claudeGptValue = document.getElementById(
 				"threshold-claude-gpt",
 			).value;
-			const geminiValue = document.getElementById("threshold-gemini").value;
+			const gemini3ProValue = document.getElementById(
+				"threshold-gemini-3-pro",
+			).value;
+			const gemini3ProHighValue = document.getElementById(
+				"threshold-gemini-3-pro-high",
+			).value;
+			const gemini3FlashValue = document.getElementById(
+				"threshold-gemini-3-flash",
+			).value;
+			const gemini3ProImageValue = document.getElementById(
+				"threshold-gemini-3-pro-image",
+			).value;
 
 			config = compactConfig({
 				claude_gpt: parseThreshold(claudeGptValue),
-				gemini: parseThreshold(geminiValue),
+				gemini_3_pro: parseThreshold(gemini3ProValue),
+				gemini_3_pro_high: parseThreshold(gemini3ProHighValue),
+				gemini_3_flash: parseThreshold(gemini3FlashValue),
+				gemini_3_pro_image: parseThreshold(gemini3ProImageValue),
 			});
 		}
 
@@ -1316,15 +1351,13 @@ function formatAgtQuota(account) {
 	// Priority models list - only display these important models
 	const priorityModels = [
 		"claude-sonnet-4-5",
-		"claude-opus-4",
+		"claude-opus-4-6",
 		"claude-haiku-4",
 		"gpt-4",
 		"gpt-4-turbo",
 		"gpt-3.5-turbo",
 		"gemini-3-pro",
-		"gemini-2.5-pro",
-		"gemini-2.5-flash",
-		"gemini-2.5-flash-lite",
+		"gemini-3-pro-high",
 		"gemini-3-flash",
 		"gemini-3-pro-image",
 	];

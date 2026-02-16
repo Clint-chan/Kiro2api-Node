@@ -17,6 +17,21 @@ function formatDuration(ms) {
 	return `${minutes}m ${seconds}s`;
 }
 
+async function _fetchUsersForAutocomplete() {
+	try {
+		const data = await fetchApi("/api/admin/users");
+		const users = data.data || [];
+		const datalist = document.getElementById("user-suggestions");
+		if (datalist) {
+			datalist.innerHTML = users
+				.map((u) => `<option value="${u.username} (${u.id})">`)
+				.join("");
+		}
+	} catch (e) {
+		console.error("Failed to fetch users for autocomplete", e);
+	}
+}
+
 function _toggleAutoRefresh() {
 	const toggle = document.getElementById("autoRefreshToggle");
 	if (toggle.checked) {
@@ -171,8 +186,9 @@ function updateLogsSummary(logs) {
 		logs.length > 0 ? ((successCount / logs.length) * 100).toFixed(1) : 0;
 
 	const totalDuration = logs.reduce((sum, l) => sum + (l.duration_ms || 0), 0);
+	// Convert to seconds for average duration
 	const avgDuration =
-		logs.length > 0 ? Math.round(totalDuration / logs.length) : 0;
+		logs.length > 0 ? (totalDuration / logs.length / 1000).toFixed(2) : 0;
 
 	const totalCost = logs.reduce((sum, l) => sum + (l.total_cost || 0), 0);
 
@@ -183,9 +199,9 @@ function updateLogsSummary(logs) {
 	document.getElementById("summary-failures").textContent =
 		failureCount.toLocaleString();
 	document.getElementById("summary-avg-duration").textContent =
-		`${avgDuration}ms`;
+		`${avgDuration}s`;
 	document.getElementById("summary-total-cost").textContent =
-		`$${totalCost.toFixed(4)}`;
+		`$${totalCost.toFixed(2)}`;
 }
 
 function renderLogsPage(logs) {

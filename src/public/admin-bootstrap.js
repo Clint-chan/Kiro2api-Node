@@ -21,6 +21,15 @@ document.addEventListener("DOMContentLoaded", async () => {
 	if (typeof updateUsernamePreview === "function") {
 		updateUsernamePreview();
 	}
+
+	if (typeof initLogFilterEvents === "function") {
+		initLogFilterEvents();
+	}
+
+	if (typeof fetchUsersForAutocomplete === "function") {
+		fetchUsersForAutocomplete();
+	}
+
 	switchTab("users");
 });
 

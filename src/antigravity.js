@@ -50,8 +50,6 @@ const ANTIGRAVITY_EXCLUSIVE_MODELS = new Set([
 	"gemini-3-pro-low",
 	"gemini-3-pro-image",
 	"gemini-3-flash",
-	"gemini-2.5-flash",
-	"gemini-2.5-flash-lite",
 	"claude-sonnet-4-5-thinking",
 	"claude-opus-4-5-thinking",
 	"claude-opus-4-6-thinking",
@@ -60,7 +58,6 @@ const ANTIGRAVITY_EXCLUSIVE_MODELS = new Set([
 const MODEL_ALIAS = {
 	"antigravity-gemini-3-pro": "gemini-3-pro-high",
 	"antigravity-gemini-3-flash": "gemini-3-flash",
-	"antigravity-gemini-2-5-flash": "gemini-2.5-flash",
 	"antigravity-claude-sonnet-4-5": "claude-sonnet-4-5",
 	"antigravity-claude-sonnet-4-5-thinking": "claude-sonnet-4-5-thinking",
 	"antigravity-claude-opus-4-5-thinking": "claude-opus-4-5-thinking",
@@ -85,18 +82,6 @@ export const ANTIGRAVITY_STATIC_MODELS = [
 		upstream: "gemini-3-flash",
 		owned_by: "antigravity",
 		display_name: "Gemini 3 Flash",
-	},
-	{
-		id: "gemini-2.5-flash",
-		upstream: "gemini-2.5-flash",
-		owned_by: "antigravity",
-		display_name: "Gemini 2.5 Flash",
-	},
-	{
-		id: "gemini-2.5-flash-lite",
-		upstream: "gemini-2.5-flash-lite",
-		owned_by: "antigravity",
-		display_name: "Gemini 2.5 Flash Lite",
 	},
 	{
 		id: "claude-sonnet-4-5-thinking",

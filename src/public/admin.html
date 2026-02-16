@@ -472,9 +472,12 @@
                                     </div>
                                 </div>
 
-                                <!-- 用户筛选 -->
+                                <!-- 用户筛选 (带自动补全) -->
                                 <div class="relative group">
-                                    <input type="text" id="log-user-filter" class="peer w-full h-11 px-3 pt-4 pb-1 text-sm bg-gray-50 border-0 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/50 focus:bg-white transition-colors placeholder-transparent text-gray-700" placeholder="用户 ID">
+                                    <input type="text" id="log-user-filter" list="user-suggestions" class="peer w-full h-11 px-3 pt-4 pb-1 text-sm bg-gray-50 border-0 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/50 focus:bg-white transition-colors placeholder-transparent text-gray-700" placeholder="用户 ID">
+                                    <datalist id="user-suggestions">
+                                        <!-- Will be populated by JS -->
+                                    </datalist>
                                     <label for="log-user-filter" class="absolute left-3 top-3.5 text-xs text-gray-500 transition-all transform -translate-y-2.5 scale-75 origin-[0] peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-2.5 pointer-events-none">用户 (ID/用户名)</label>
                                 </div>
 
@@ -490,18 +493,14 @@
                                         <option value="gemini-3-flash"></option>
                                     </datalist>
                                     <label for="log-model-filter" class="absolute left-3 top-3.5 text-xs text-gray-500 transition-all transform -translate-y-2.5 scale-75 origin-[0] peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-2.5 pointer-events-none">模型名称</label>
-                                    <!-- 搜索图标 -->
-                                    <div class="absolute right-3 top-3.5 pointer-events-none text-gray-400 opacity-0 peer-focus:opacity-100 transition-opacity">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                                    </div>
                                 </div>
 
                                 <!-- 状态筛选 -->
                                 <div class="relative group">
                                     <select id="log-status-filter" class="peer w-full h-11 px-3 pt-4 pb-1 text-sm bg-gray-50 border-0 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/50 focus:bg-white transition-colors appearance-none cursor-pointer text-gray-700">
                                         <option value="" selected>全部状态</option>
-                                        <option value="true" class="text-green-600 font-medium">✅ 成功</option>
-                                        <option value="false" class="text-red-600 font-medium">❌ 失败</option>
+                                        <option value="true" class="text-green-600 font-medium">成功</option>
+                                        <option value="false" class="text-red-600 font-medium">失败</option>
                                     </select>
                                     <label for="log-status-filter" class="absolute left-3 top-3.5 text-xs text-gray-500 transition-all transform -translate-y-2.5 scale-75 origin-[0] peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-2.5 pointer-events-none">请求状态</label>
                                     <div class="absolute right-3 top-3.5 pointer-events-none text-gray-400 peer-focus:text-blue-500">

@@ -298,8 +298,6 @@ const ALL_MODELS = {
 	antigravity: [
 		{ id: "gemini-3-pro-high", name: "Gemini 3 Pro High" },
 		{ id: "gemini-3-flash", name: "Gemini 3 Flash" },
-		{ id: "gemini-2.5-flash", name: "Gemini 2.5 Flash" },
-		{ id: "gemini-2.5-flash-lite", name: "Gemini 2.5 Flash Lite" },
 		{ id: "claude-sonnet-4-5-thinking", name: "Claude Sonnet 4.5 (Thinking)" },
 		{ id: "claude-opus-4-5-thinking", name: "Claude Opus 4.5 (Thinking)" },
 		{ id: "claude-opus-4-6-thinking", name: "Claude Opus 4.6 (Thinking)" },
