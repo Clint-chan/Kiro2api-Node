@@ -46,15 +46,52 @@ function _applyLogFilters() {
 		success: statusFilter,
 	};
 
+	const filterContainer = document
+		.getElementById("log-time-range")
+		?.closest(".bg-white");
+	if (filterContainer) {
+		const hasActiveFilters =
+			userFilter || modelFilter || statusFilter !== "" || timeRange !== "24h";
+		if (hasActiveFilters) {
+			filterContainer.classList.add(
+				"ring-2",
+				"ring-blue-400",
+				"border-blue-300",
+			);
+		} else {
+			filterContainer.classList.remove(
+				"ring-2",
+				"ring-blue-400",
+				"border-blue-300",
+			);
+		}
+	}
+
 	logsCurrentPage = 1;
 	loadLogs();
 }
 
 function _clearLogFilters() {
-	document.getElementById("log-time-range").value = "24h";
-	document.getElementById("log-user-filter").value = "";
-	document.getElementById("log-model-filter").value = "";
-	document.getElementById("log-status-filter").value = "";
+	const els = {
+		time: document.getElementById("log-time-range"),
+		user: document.getElementById("log-user-filter"),
+		model: document.getElementById("log-model-filter"),
+		status: document.getElementById("log-status-filter"),
+	};
+
+	if (els.time) els.time.value = "24h";
+	if (els.user) els.user.value = "";
+	if (els.model) els.model.value = "";
+	if (els.status) els.status.value = "";
+
+	const filterContainer = els.time?.closest(".bg-white");
+	if (filterContainer) {
+		filterContainer.classList.remove(
+			"ring-2",
+			"ring-blue-400",
+			"border-blue-300",
+		);
+	}
 
 	currentFilters = {
 		timeRange: "24h",
@@ -65,7 +102,10 @@ function _clearLogFilters() {
 
 	logsCurrentPage = 1;
 	loadLogs();
-	showToast("已清空筛选条件", "info");
+
+	if (typeof showToast === "function") {
+		showToast("筛选已重置", "info");
+	}
 }
 
 async function loadLogs() {
@@ -363,6 +403,26 @@ function _showLogDetail(log) {
 	document.body.appendChild(modal);
 }
 
+function initLogFilterEvents() {
+	const inputs = [
+		"log-user-filter",
+		"log-model-filter",
+		"log-time-range",
+		"log-status-filter",
+	];
+	inputs.forEach((id) => {
+		const el = document.getElementById(id);
+		if (el) {
+			el.addEventListener("keydown", (e) => {
+				if (e.key === "Enter") {
+					e.preventDefault();
+					_applyLogFilters();
+				}
+			});
+		}
+	});
+}
+
 // 导出到全局作用域
 window.toggleAutoRefresh = _toggleAutoRefresh;
 window.changeLogsPage = _changeLogsPage;
@@ -370,3 +430,4 @@ window.goToLogsPage = _goToLogsPage;
 window.showLogDetail = _showLogDetail;
 window.applyLogFilters = _applyLogFilters;
 window.clearLogFilters = _clearLogFilters;
+window.initLogFilterEvents = initLogFilterEvents;

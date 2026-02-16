@@ -1381,12 +1381,15 @@ function _switchTab(tab) {
 		}
 	}
 	if (tab === "logs") {
+		if (typeof initLogFilterEvents === "function") {
+			initLogFilterEvents();
+		}
 		loadLogs();
 		const toggle = document.getElementById("autoRefreshToggle");
 		if (toggle?.checked && !autoRefreshInterval) {
 			autoRefreshInterval = setInterval(() => {
 				loadLogs();
-			}, 5000);
+			}, 10000);
 		}
 	} else {
 		if (autoRefreshInterval) {
