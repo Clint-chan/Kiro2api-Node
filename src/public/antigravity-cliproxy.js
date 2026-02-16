@@ -2,6 +2,7 @@
 
 let cliproxyAntigravityAccounts = [];
 const cliproxyQuotaCache = {};
+const cliproxyThresholdStatusCache = {};
 let isLoadingQuota = false;
 let _lastCacheUpdate = null;
 
@@ -363,12 +364,39 @@ function renderCliProxyAccounts() {
 	});
 }
 
-function _renderProgressBarItem(label, percent, resetTime, _type = "default") {
-	// Colors and States
+function _renderProgressBarItem(label, percent, resetTime, options = {}) {
+	const { disabled, disabledReason, disabledAt } = options;
+
 	let colorClass = "bg-green-500";
 	let textClass = "text-green-600";
+	let statusIcon = "";
+	let containerClass = "opacity-100";
+	let labelClass = "text-gray-600";
 
-	if (percent < 20) {
+	if (disabled) {
+		colorClass = "bg-gray-400";
+		textClass = "text-gray-500 line-through decoration-gray-400";
+		containerClass = "opacity-75 grayscale";
+		labelClass = "text-gray-500";
+
+		const dateStr = disabledAt
+			? new Date(disabledAt).toLocaleString("zh-CN", {
+					month: "2-digit",
+					day: "2-digit",
+					hour: "2-digit",
+					minute: "2-digit",
+				})
+			: "";
+		const title = `已禁用: ${disabledReason || "未知原因"}${dateStr ? ` (${dateStr})` : ""}`;
+
+		statusIcon = `
+            <span class="cursor-help text-red-500 hover:text-red-600 transition-colors ml-1" title="${title}">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                </svg>
+            </span>
+        `;
+	} else if (percent < 20) {
 		colorClass = "bg-red-500";
 		textClass = "text-red-600";
 	} else if (percent < 60) {
@@ -377,9 +405,12 @@ function _renderProgressBarItem(label, percent, resetTime, _type = "default") {
 	}
 
 	return `
-    <div class="flex flex-col gap-1.5 w-full">
+    <div class="flex flex-col gap-1.5 w-full ${containerClass}">
         <div class="flex justify-between items-end leading-none">
-            <span class="text-xs font-medium text-gray-600 truncate max-w-[120px]" title="${label}">${label}</span>
+            <div class="flex items-center">
+                <span class="text-xs font-medium ${labelClass} truncate max-w-[120px]" title="${label}">${label}</span>
+                ${statusIcon}
+            </div>
             <div class="flex items-center gap-1.5">
                 ${resetTime ? `<span class="text-[10px] text-gray-400 font-mono hidden sm:inline-block">${resetTime}</span>` : ""}
                 <span class="text-xs font-bold ${textClass} tabular-nums">${percent}%</span>
@@ -634,6 +665,7 @@ function formatAgtQuota(account) {
 				claudeGptGroup = {
 					displayName: "Claude/GPT 共享",
 					info: info,
+					groupKey: "claude_gpt",
 				};
 			}
 		} else if (name.startsWith("gemini-")) {
@@ -650,6 +682,7 @@ function formatAgtQuota(account) {
 					info?.model_id ||
 					name,
 				info: info,
+				groupKey: name.replace(/-/g, "_"),
 			});
 		}
 	}
@@ -659,7 +692,25 @@ function formatAgtQuota(account) {
 		groupedModels.push(claudeGptGroup);
 	}
 
-	const items = groupedModels.map(({ displayName, info }) => {
+	// Load threshold status if not exists
+	if (
+		!cliproxyThresholdStatusCache[account.name] &&
+		!cliproxyThresholdStatusCache[`loading_${account.name}`]
+	) {
+		cliproxyThresholdStatusCache[`loading_${account.name}`] = true;
+		loadGroupDisableStatus(account.name).finally(() => {
+			delete cliproxyThresholdStatusCache[`loading_${account.name}`];
+			// Only re-render if we are still on the page and the element exists (simple check)
+			if (document.getElementById("cliproxy-antigravity-accounts-table")) {
+				renderCliProxyAccounts();
+			}
+		});
+	}
+
+	const thresholdStatus = cliproxyThresholdStatusCache[account.name] || {};
+	const disabledGroups = thresholdStatus.disabledGroups || {};
+
+	const items = groupedModels.map(({ displayName, info, groupKey }) => {
 		const remainingRaw =
 			info?.quotaInfo?.remainingFraction ??
 			info?.quota_info?.remaining_fraction ??
@@ -672,7 +723,14 @@ function formatAgtQuota(account) {
 			info?.quotaInfo?.resetTime || info?.quota_info?.reset_time;
 		const resetDate = formatResetTime(resetTime);
 
-		return _renderProgressBarItem(displayName, percent, resetDate);
+		const disabledInfo = disabledGroups[groupKey];
+		const isGroupDisabled = !!disabledInfo;
+
+		return _renderProgressBarItem(displayName, percent, resetDate, {
+			disabled: isGroupDisabled,
+			disabledReason: disabledInfo?.reason,
+			disabledAt: disabledInfo?.disabled_at,
+		});
 	});
 
 	if (items.length === 0)
@@ -685,6 +743,19 @@ function formatAgtQuota(account) {
 			: "grid grid-cols-1 gap-3";
 
 	return `<div class="${gridClass}">${items.join("")}</div>`;
+}
+
+async function loadGroupDisableStatus(accountName) {
+	try {
+		const response = await fetchApi(
+			`/api/admin/cliproxy/threshold-status?name=${encodeURIComponent(accountName)}`,
+		);
+		cliproxyThresholdStatusCache[accountName] = response;
+		return response;
+	} catch (e) {
+		console.error(`加载阈值状态失败 [${accountName}]:`, e);
+		return null;
+	}
 }
 
 async function loadThresholdBadge(accountName) {

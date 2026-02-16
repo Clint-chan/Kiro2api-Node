@@ -340,6 +340,10 @@ export function createCLIProxyThresholdRouter(db) {
 		"code_review",
 		"claude_gpt",
 		"gemini",
+		"gemini_3_pro",
+		"gemini_3_pro_high",
+		"gemini_3_flash",
+		"gemini_3_pro_image",
 	]);
 
 	const normalizeThresholdConfig = (input) => {
@@ -375,6 +379,46 @@ export function createCLIProxyThresholdRouter(db) {
 
 			const config = normalizeThresholdConfig(rawConfig);
 			res.json({ config });
+		} catch (error) {
+			res.status(500).json({ error: error.message });
+		}
+	});
+
+	router.get("/threshold-status", (req, res) => {
+		try {
+			const { name } = req.query;
+			if (!name) {
+				return res.status(400).json({ error: "Account name required" });
+			}
+
+			const configJson = db.getSetting(`cliproxy_threshold_${name}`) || "{}";
+			let rawConfig = {};
+			try {
+				rawConfig = JSON.parse(configJson);
+			} catch {
+				rawConfig = {};
+			}
+
+			const config = normalizeThresholdConfig(rawConfig);
+
+			const autoDisabledLegacy =
+				db.getSetting(`cliproxy_auto_disabled_${name}`) === "1";
+
+			const groupsJson =
+				db.getSetting(`cliproxy_auto_disabled_groups_${name}`) || "{}";
+			let disabledGroups = {};
+			try {
+				const parsed = JSON.parse(groupsJson);
+				disabledGroups = parsed.groups || {};
+			} catch {
+				disabledGroups = {};
+			}
+
+			res.json({
+				config,
+				autoDisabledLegacy,
+				disabledGroups,
+			});
 		} catch (error) {
 			res.status(500).json({ error: error.message });
 		}

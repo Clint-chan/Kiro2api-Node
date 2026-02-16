@@ -127,8 +127,23 @@ export class CLIProxyThresholdChecker {
 			reason = result.reason;
 		} else if (account.provider === "antigravity") {
 			const result = await this.checkAntigravityThreshold(account, config);
-			shouldDisable = result.shouldDisable;
-			reason = result.reason;
+			const disableGroups = result.disableGroups || {};
+
+			if (Object.keys(disableGroups).length > 0) {
+				const groupsData = { version: 1, groups: disableGroups };
+				this.db.setSetting(
+					`cliproxy_auto_disabled_groups_${account.name}`,
+					JSON.stringify(groupsData),
+				);
+
+				const groupNames = Object.keys(disableGroups).join(", ");
+				logger.warn("模型组额度低于阈值，已记录禁用状态", {
+					name: account.name,
+					provider: account.provider,
+					groups: groupNames,
+				});
+			}
+			return;
 		}
 
 		if (shouldDisable) {
@@ -175,8 +190,13 @@ export class CLIProxyThresholdChecker {
 			reason = result.reason;
 		} else if (account.provider === "antigravity") {
 			const result = await this.checkAntigravityRecovery(account, config);
-			shouldEnable = result.shouldEnable;
-			reason = result.reason;
+			if (result.reason) {
+				logger.info("Antigravity 模型组恢复", {
+					name: account.name,
+					reason: result.reason,
+				});
+			}
+			return;
 		}
 
 		if (shouldEnable) {
@@ -349,113 +369,163 @@ export class CLIProxyThresholdChecker {
 
 	async checkAntigravityThreshold(account, config) {
 		const quota = account.quota || {};
+		const disableGroups = {};
 
-		const claudeGptModels = [
-			"claude-opus-4-6-thinking",
-			"claude-opus-4-20250514",
-			"claude-sonnet-4-20250514",
-			"claude-3-5-sonnet-20241022",
-			"claude-3-5-sonnet-20240620",
-			"claude-3-5-haiku-20241022",
-			"gpt-4o",
-			"gpt-4o-mini",
-			"o1",
-			"o1-mini",
-		];
+		const modelGroups = {
+			claude_gpt: {
+				patterns: [/^claude-/, /^gpt-/, /^o\d/],
+				threshold: config.claude_gpt,
+			},
+			gemini_3_pro: {
+				models: ["gemini-3-pro"],
+				threshold: config.gemini_3_pro,
+			},
+			gemini_3_pro_high: {
+				models: ["gemini-3-pro-high"],
+				threshold: config.gemini_3_pro_high,
+			},
+			gemini_3_flash: {
+				models: ["gemini-3-flash"],
+				threshold: config.gemini_3_flash,
+			},
+			gemini_3_pro_image: {
+				models: ["gemini-3-pro-image"],
+				threshold: config.gemini_3_pro_image,
+			},
+		};
 
-		const geminiModels = [
-			"gemini-2.0-flash-exp",
-			"gemini-2.0-flash-thinking-exp-01-21",
-			"gemini-exp-1206",
-		];
+		for (const [groupName, groupConfig] of Object.entries(modelGroups)) {
+			if (groupConfig.threshold === undefined) continue;
 
-		if (config.claude_gpt !== undefined) {
-			for (const modelId of claudeGptModels) {
-				const modelQuota = quota[modelId];
-				if (
-					modelQuota &&
-					modelQuota.remaining_fraction !== undefined &&
-					modelQuota.remaining_fraction < config.claude_gpt
-				) {
-					return {
-						shouldDisable: true,
-						reason: `Claude/GPT组模型 ${modelId} 剩余 ${(modelQuota.remaining_fraction * 100).toFixed(1)}% < ${(config.claude_gpt * 100).toFixed(1)}%`,
+			for (const [modelId, modelQuota] of Object.entries(quota)) {
+				if (!modelQuota || modelQuota.remaining_fraction === undefined)
+					continue;
+
+				let matches = false;
+				if (groupConfig.patterns) {
+					matches = groupConfig.patterns.some((pattern) =>
+						pattern.test(modelId),
+					);
+				} else if (groupConfig.models) {
+					matches = groupConfig.models.includes(modelId);
+				}
+
+				if (matches && modelQuota.remaining_fraction < groupConfig.threshold) {
+					disableGroups[groupName] = {
+						mode: "auto",
+						disabled_at: Date.now(),
+						reason: `${modelId} remaining ${(modelQuota.remaining_fraction * 100).toFixed(1)}% < ${(groupConfig.threshold * 100).toFixed(1)}%`,
+						threshold: groupConfig.threshold,
+						observed: {
+							model_id: modelId,
+							remaining_fraction: modelQuota.remaining_fraction,
+						},
 					};
+					break;
 				}
 			}
 		}
 
-		if (config.gemini !== undefined) {
-			for (const modelId of geminiModels) {
-				const modelQuota = quota[modelId];
-				if (
-					modelQuota &&
-					modelQuota.remaining_fraction !== undefined &&
-					modelQuota.remaining_fraction < config.gemini
-				) {
-					return {
-						shouldDisable: true,
-						reason: `Gemini组模型 ${modelId} 剩余 ${(modelQuota.remaining_fraction * 100).toFixed(1)}% < ${(config.gemini * 100).toFixed(1)}%`,
-					};
-				}
-			}
-		}
-
-		return { shouldDisable: false, reason: "" };
+		return { disableGroups };
 	}
 
 	async checkAntigravityRecovery(account, config) {
 		const quota = account.quota || {};
 		const hysteresis = 0.05;
 
-		const claudeGptModels = [
-			"claude-opus-4-6-thinking",
-			"claude-opus-4-20250514",
-			"claude-sonnet-4-20250514",
-			"claude-3-5-sonnet-20241022",
-			"claude-3-5-sonnet-20240620",
-			"claude-3-5-haiku-20241022",
-			"gpt-4o",
-			"gpt-4o-mini",
-			"o1",
-			"o1-mini",
-		];
-
-		const geminiModels = [
-			"gemini-2.0-flash-exp",
-			"gemini-2.0-flash-thinking-exp-01-21",
-			"gemini-exp-1206",
-		];
-
-		if (config.claude_gpt !== undefined) {
-			for (const modelId of claudeGptModels) {
-				const modelQuota = quota[modelId];
-				if (
-					modelQuota &&
-					modelQuota.remaining_fraction !== undefined &&
-					modelQuota.remaining_fraction < config.claude_gpt + hysteresis
-				) {
-					return { shouldEnable: false, reason: "" };
-				}
-			}
+		const groupsJson =
+			this.db.getSetting(`cliproxy_auto_disabled_groups_${account.name}`) ||
+			"{}";
+		let disabledGroups = {};
+		try {
+			const parsed = JSON.parse(groupsJson);
+			disabledGroups = parsed.groups || {};
+		} catch {
+			disabledGroups = {};
 		}
 
-		if (config.gemini !== undefined) {
-			for (const modelId of geminiModels) {
-				const modelQuota = quota[modelId];
-				if (
-					modelQuota &&
-					modelQuota.remaining_fraction !== undefined &&
-					modelQuota.remaining_fraction < config.gemini + hysteresis
-				) {
-					return { shouldEnable: false, reason: "" };
-				}
-			}
+		if (Object.keys(disabledGroups).length === 0) {
+			return { shouldEnable: false, reason: "" };
 		}
 
-		return {
-			shouldEnable: true,
-			reason: "所有模型配额已恢复到阈值以上",
+		const modelGroups = {
+			claude_gpt: {
+				patterns: [/^claude-/, /^gpt-/, /^o\d/],
+				threshold: config.claude_gpt,
+			},
+			gemini_3_pro: {
+				models: ["gemini-3-pro"],
+				threshold: config.gemini_3_pro,
+			},
+			gemini_3_pro_high: {
+				models: ["gemini-3-pro-high"],
+				threshold: config.gemini_3_pro_high,
+			},
+			gemini_3_flash: {
+				models: ["gemini-3-flash"],
+				threshold: config.gemini_3_flash,
+			},
+			gemini_3_pro_image: {
+				models: ["gemini-3-pro-image"],
+				threshold: config.gemini_3_pro_image,
+			},
 		};
+
+		const recoveredGroups = [];
+
+		for (const [groupName, groupInfo] of Object.entries(disabledGroups)) {
+			const groupConfig = modelGroups[groupName];
+			if (!groupConfig || groupConfig.threshold === undefined) continue;
+
+			let canRecover = true;
+
+			for (const [modelId, modelQuota] of Object.entries(quota)) {
+				if (!modelQuota || modelQuota.remaining_fraction === undefined)
+					continue;
+
+				let matches = false;
+				if (groupConfig.patterns) {
+					matches = groupConfig.patterns.some((pattern) =>
+						pattern.test(modelId),
+					);
+				} else if (groupConfig.models) {
+					matches = groupConfig.models.includes(modelId);
+				}
+
+				if (
+					matches &&
+					modelQuota.remaining_fraction < groupConfig.threshold + hysteresis
+				) {
+					canRecover = false;
+					break;
+				}
+			}
+
+			if (canRecover) {
+				recoveredGroups.push(groupName);
+			}
+		}
+
+		if (recoveredGroups.length > 0) {
+			for (const groupName of recoveredGroups) {
+				delete disabledGroups[groupName];
+			}
+
+			if (Object.keys(disabledGroups).length === 0) {
+				this.db.deleteSetting(`cliproxy_auto_disabled_groups_${account.name}`);
+			} else {
+				this.db.setSetting(
+					`cliproxy_auto_disabled_groups_${account.name}`,
+					JSON.stringify({ version: 1, groups: disabledGroups }),
+				);
+			}
+
+			return {
+				shouldEnable: false,
+				reason: `模型组 ${recoveredGroups.join(", ")} 已恢复`,
+			};
+		}
+
+		return { shouldEnable: false, reason: "" };
 	}
 }
