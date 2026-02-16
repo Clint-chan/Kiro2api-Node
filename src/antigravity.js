@@ -9,8 +9,9 @@ const ANTIGRAVITY_BASE_URLS = [
 ].filter(Boolean);
 
 const ANTIGRAVITY_CLIENT_ID =
+	process.env.ANTIGRAVITY_CLIENT_ID ||
 	"1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com";
-const ANTIGRAVITY_CLIENT_SECRET = "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";
+const ANTIGRAVITY_CLIENT_SECRET = process.env.ANTIGRAVITY_CLIENT_SECRET || "";
 const ANTIGRAVITY_TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
 const ANTIGRAVITY_DEFAULT_USER_AGENT =
 	process.env.ANTIGRAVITY_USER_AGENT || "antigravity/1.104.0 darwin/arm64";
