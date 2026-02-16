@@ -74,105 +74,118 @@ async function refreshAllQuotas() {
 	});
 	renderCliProxyAccounts();
 
-	const agtResults = await Promise.all(
-		agtAccounts.map(async (account) => {
-			const authIndex = account.auth_index || account.authIndex;
-			if (!authIndex)
-				return {
-					name: account.name,
-					provider: "antigravity",
-					status: "error",
-					error: "缺少 auth_index",
-				};
+	// 并发控制：每批最多 3 个请求，批次间延迟 800ms
+	const BATCH_SIZE = 3;
+	const BATCH_DELAY = 800;
 
-			const projectId = "bamboo-precept-lgxtn";
-			try {
-				const quota = await fetchAgtQuota(authIndex, projectId);
-				return {
-					name: account.name,
-					provider: "antigravity",
-					status: "success",
-					data: quota,
-				};
-			} catch (e) {
-				return {
-					name: account.name,
-					provider: "antigravity",
-					status: "error",
-					error: e.message,
-				};
+	const processBatch = async (accounts, fetchFn) => {
+		const results = [];
+		for (let i = 0; i < accounts.length; i += BATCH_SIZE) {
+			const batch = accounts.slice(i, i + BATCH_SIZE);
+			const batchResults = await Promise.all(batch.map(fetchFn));
+			results.push(...batchResults);
+
+			// 批次间延迟，避免 API 限流
+			if (i + BATCH_SIZE < accounts.length) {
+				await new Promise((resolve) => setTimeout(resolve, BATCH_DELAY));
 			}
-		}),
-	);
+		}
+		return results;
+	};
 
-	const codexResults = await Promise.all(
-		codexAccounts.map(async (account) => {
-			const authIndex = account.auth_index || account.authIndex;
-			if (!authIndex)
-				return {
-					name: account.name,
-					provider: "codex",
-					status: "error",
-					error: "缺少 auth_index",
-				};
+	const agtResults = await processBatch(agtAccounts, async (account) => {
+		const authIndex = account.auth_index || account.authIndex;
+		if (!authIndex)
+			return {
+				name: account.name,
+				provider: "antigravity",
+				status: "error",
+				error: "缺少 auth_index",
+			};
 
-			const accountId = account.id_token?.chatgpt_account_id;
-			if (!accountId)
-				return {
-					name: account.name,
-					provider: "codex",
-					status: "error",
-					error: "缺少 chatgpt_account_id",
-				};
+		const projectId = "bamboo-precept-lgxtn";
+		try {
+			const quota = await fetchAgtQuota(authIndex, projectId);
+			return {
+				name: account.name,
+				provider: "antigravity",
+				status: "success",
+				data: quota,
+			};
+		} catch (e) {
+			return {
+				name: account.name,
+				provider: "antigravity",
+				status: "error",
+				error: e.message,
+			};
+		}
+	});
 
-			try {
-				const quota = await fetchCodexQuota(authIndex, accountId);
-				return {
-					name: account.name,
-					provider: "codex",
-					status: "success",
-					data: quota,
-				};
-			} catch (e) {
-				return {
-					name: account.name,
-					provider: "codex",
-					status: "error",
-					error: e.message,
-				};
-			}
-		}),
-	);
+	const codexResults = await processBatch(codexAccounts, async (account) => {
+		const authIndex = account.auth_index || account.authIndex;
+		if (!authIndex)
+			return {
+				name: account.name,
+				provider: "codex",
+				status: "error",
+				error: "缺少 auth_index",
+			};
 
-	const claudeResults = await Promise.all(
-		claudeAccounts.map(async (account) => {
-			const authIndex = account.auth_index || account.authIndex;
-			if (!authIndex)
-				return {
-					name: account.name,
-					provider: "claude",
-					status: "error",
-					error: "缺少 auth_index",
-				};
+		const accountId = account.id_token?.chatgpt_account_id;
+		if (!accountId)
+			return {
+				name: account.name,
+				provider: "codex",
+				status: "error",
+				error: "缺少 chatgpt_account_id",
+			};
 
-			try {
-				const quota = await fetchClaudeQuota(authIndex);
-				return {
-					name: account.name,
-					provider: "claude",
-					status: "success",
-					data: quota,
-				};
-			} catch (e) {
-				return {
-					name: account.name,
-					provider: "claude",
-					status: "error",
-					error: e.message,
-				};
-			}
-		}),
-	);
+		try {
+			const quota = await fetchCodexQuota(authIndex, accountId);
+			return {
+				name: account.name,
+				provider: "codex",
+				status: "success",
+				data: quota,
+			};
+		} catch (e) {
+			return {
+				name: account.name,
+				provider: "codex",
+				status: "error",
+				error: e.message,
+			};
+		}
+	});
+
+	const claudeResults = await processBatch(claudeAccounts, async (account) => {
+		const authIndex = account.auth_index || account.authIndex;
+		if (!authIndex)
+			return {
+				name: account.name,
+				provider: "claude",
+				status: "error",
+				error: "缺少 auth_index",
+			};
+
+		try {
+			const quota = await fetchClaudeQuota(authIndex);
+			return {
+				name: account.name,
+				provider: "claude",
+				status: "success",
+				data: quota,
+			};
+		} catch (e) {
+			return {
+				name: account.name,
+				provider: "claude",
+				status: "error",
+				error: e.message,
+			};
+		}
+	});
 
 	[...agtResults, ...codexResults, ...claudeResults].forEach((result) => {
 		if (result.status === "success") {
@@ -273,26 +286,32 @@ function renderCliProxyAccounts() {
                         </td>
                         <td class="px-4 py-4 align-middle">
                             <div class="flex items-center justify-center gap-1">
-                                <button onclick="refreshSingleQuota(${JSON.stringify(a).replace(/"/g, "&quot;")})" class="p-1 text-blue-600 hover:bg-blue-50 rounded transition" title="刷新额度">
+                                <button onclick="refreshSingleQuota(${JSON.stringify(a).replace(/"/g, "&quot;")})" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition group relative" title="刷新额度">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                    <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition pointer-events-none">刷新额度</span>
                                 </button>
-								<button onclick="viewModels('${escapeInlineJsString(a.name)}')" class="p-1 text-purple-600 hover:bg-purple-50 rounded transition" title="查看模型">
-									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+								<button onclick="viewModels('${escapeInlineJsString(a.name)}')" class="p-1.5 text-purple-600 hover:bg-purple-50 rounded transition group relative" title="查看支持的模型列表">
+									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+                                    <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition pointer-events-none">查看模型</span>
 								</button>
-								<button onclick="showThresholdConfig(${JSON.stringify(a).replace(/"/g, "&quot;")})" class="p-1 text-indigo-600 hover:bg-indigo-50 rounded transition" title="设置阈值">
-									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+								<button onclick="showThresholdConfig(${JSON.stringify(a).replace(/"/g, "&quot;")})" class="p-1.5 text-amber-600 hover:bg-amber-50 rounded transition group relative" title="配置额度阈值（低于阈值自动禁用）">
+									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                    <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition pointer-events-none">设置阈值</span>
 								</button>
                                 ${
 																	a.disabled
-																		? `<button onclick="toggleCliProxyAccount('${a.name}', false)" class="p-1 text-green-600 hover:bg-green-50 rounded transition" title="启用">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+																		? `<button onclick="toggleCliProxyAccount('${a.name}', false)" class="p-1.5 text-green-600 hover:bg-green-50 rounded transition group relative" title="启用此账号">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition pointer-events-none">启用账号</span>
                                     </button>`
-																		: `<button onclick="toggleCliProxyAccount('${a.name}', true)" class="p-1 text-orange-600 hover:bg-orange-50 rounded transition" title="禁用">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+																		: `<button onclick="toggleCliProxyAccount('${a.name}', true)" class="p-1.5 text-orange-600 hover:bg-orange-50 rounded transition group relative" title="禁用此账号">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition pointer-events-none">禁用账号</span>
                                     </button>`
 																}
-                                <button onclick="deleteCliProxyAccount('${a.name}')" class="p-1 text-red-600 hover:bg-red-50 rounded transition" title="删除">
+                                <button onclick="deleteCliProxyAccount('${a.name}')" class="p-1.5 text-red-600 hover:bg-red-50 rounded transition group relative" title="删除此账号">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                    <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition pointer-events-none">删除账号</span>
                                 </button>
                             </div>
                         </td>

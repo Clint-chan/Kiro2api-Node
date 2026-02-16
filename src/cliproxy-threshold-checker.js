@@ -4,7 +4,7 @@ export class CLIProxyThresholdChecker {
 	constructor(db, cliproxyClient) {
 		this.db = db;
 		this.cliproxyClient = cliproxyClient;
-		this.checkInterval = 5 * 60 * 1000;
+		this.checkInterval = 15 * 60 * 1000;
 		this.intervalId = null;
 		this.isRunning = false;
 		this.isChecking = false;
