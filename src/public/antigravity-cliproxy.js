@@ -243,88 +243,484 @@ function renderCliProxyAccounts() {
 	const allAccounts = cliproxyAntigravityAccounts;
 
 	const cacheStatus = lastCacheUpdate
-		? `<div class="text-xs text-gray-500 mb-4">缓存更新时间: ${lastCacheUpdate.toLocaleString("zh-CN")}</div>`
+		? `<div class="text-xs text-gray-500 mb-4 flex items-center justify-end">
+            <svg class="w-3.5 h-3.5 mr-1 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            最后更新: ${lastCacheUpdate.toLocaleString("zh-CN")}
+          </div>`
 		: "";
 
 	container.innerHTML = `
         ${cacheStatus}
-        <table class="w-full">
-            <thead>
-                <tr class="bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <th class="px-4 py-3 text-left rounded-tl-lg" style="width: 30%">账号信息</th>
-                    <th class="px-4 py-3 text-center" style="width: 35%">额度使用</th>
-                    <th class="px-4 py-3 text-center" style="width: 15%">状态</th>
-                    <th class="px-4 py-3 text-center rounded-tr-lg" style="width: 20%">操作</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
+        <div class="overflow-hidden border border-gray-200 rounded-xl shadow-sm bg-white">
+            <table class="w-full text-sm text-left table-fixed">
+                <thead class="text-xs text-gray-500 uppercase bg-gray-50 border-b border-gray-100">
+                    <tr>
+                        <th scope="col" class="w-[35%] px-6 py-4 font-semibold tracking-wide">账号信息</th>
+                        <th scope="col" class="w-[40%] px-6 py-4 font-semibold tracking-wide text-center">额度使用</th>
+                        <th scope="col" class="w-[10%] px-6 py-4 font-semibold tracking-wide text-center">状态</th>
+                        <th scope="col" class="w-[15%] px-6 py-4 font-semibold tracking-wide text-center">操作</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
                 ${allAccounts
-									.map(
-										(a, i) => `
-                    <tr class="hover:bg-gray-50 transition ${i % 2 === 1 ? "bg-gray-50/50" : ""}">
-                        <td class="px-4 py-4 align-middle">
-                            <div class="flex flex-col gap-1">
-                                <div class="font-semibold text-gray-900 text-sm">
-                                    ${a.email || a.id}
+									.map((a, _i) => {
+										// Provider Icon Colors and Initials
+										let providerBg = "bg-gray-100 text-gray-500";
+										let providerRing = "ring-gray-100";
+										let initials = "UK";
+										let providerLabel = "Unknown";
+										if (a.provider === "codex") {
+											providerBg = "bg-blue-50 text-blue-600";
+											providerRing = "ring-blue-100";
+											initials = "CX";
+											providerLabel = "Codex";
+										} else if (a.provider === "claude") {
+											providerBg = "bg-indigo-50 text-indigo-600";
+											providerRing = "ring-indigo-100";
+											initials = "CL";
+											providerLabel = "Claude";
+										} else {
+											providerBg = "bg-purple-50 text-purple-600";
+											providerRing = "ring-purple-100";
+											initials = "AG";
+											providerLabel = "AntiG";
+										}
+
+										// Email Truncation Logic
+										const email = a.email || a.id || "Unknown";
+										const displayEmail =
+											email.length > 28
+												? email.substring(0, 12) +
+													"..." +
+													email.substring(email.length - 12)
+												: email;
+
+										return `
+                    <tr class="group hover:bg-gray-50/80 transition-colors duration-200">
+                        <td class="px-6 py-4 align-top">
+                            <div class="flex items-start gap-3">
+                                <div class="relative flex-shrink-0 mt-0.5">
+                                    <div class="flex items-center justify-center w-9 h-9 rounded-lg ${providerBg} font-bold text-xs ring-1 ${providerRing} shadow-sm group-hover:shadow transition-all">
+                                        ${initials}
+                                    </div>
+                                    <div class="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 shadow-sm">
+                                        ${
+																					!a.disabled
+																						? '<div class="w-2.5 h-2.5 bg-green-500 rounded-full border border-white"></div>'
+																						: '<div class="w-2.5 h-2.5 bg-gray-300 rounded-full border border-white"></div>'
+																				}
+                                    </div>
                                 </div>
-                                <div class="flex items-center gap-2 flex-wrap">
-                                    <span class="px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${a.provider === "codex" ? "bg-blue-100 text-blue-700" : a.provider === "claude" ? "bg-indigo-100 text-indigo-700" : "bg-purple-100 text-purple-700"}">
-                                        ${a.provider === "codex" ? "Codex" : a.provider === "claude" ? "ClaudeCode" : "Antigravity"}
-                                    </span>
-                                    ${a.provider === "codex" && a.plan_type ? `<span class="px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-green-100 text-green-700">${a.plan_type}</span>` : ""}
-                                    <span class="px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-amber-100 text-amber-700" id="threshold-badge-${a.name}">
-                                        <span class="threshold-loading">检查中...</span>
-                                    </span>
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex items-center justify-between mb-1.5">
+                                        <div class="text-sm font-semibold text-gray-900 truncate pr-2 group-hover:text-blue-600 transition-colors cursor-help" title="${email}">
+                                            ${displayEmail}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-600 border border-gray-200">
+                                            ${providerLabel}
+                                        </span>
+                                        ${
+																					a.provider === "codex" && a.plan_type
+																						? `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-green-50 text-green-700 border border-green-100 ring-1 ring-inset ring-green-600/10">${a.plan_type}</span>`
+																						: ""
+																				}
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium transition-colors cursor-pointer hover:bg-amber-50" 
+                                              id="threshold-badge-${a.name}"
+                                              onclick="showThresholdConfig(${JSON.stringify(a).replace(/"/g, "&quot;")})">
+                                            <span class="threshold-loading text-gray-400">检查...</span>
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </td>
-                        <td class="px-4 py-4 align-middle">
-                            <div class="w-full">${a.provider === "codex" ? formatCodexQuota(a) : a.provider === "claude" ? formatClaudeQuota(a) : formatAgtQuota(a)}</div>
+                        
+                        <td class="px-6 py-4 align-top">
+                            <div class="w-full max-w-sm mx-auto space-y-3">
+                                ${
+																	a.provider === "codex"
+																		? formatCodexQuota(a)
+																		: a.provider === "claude"
+																			? formatClaudeQuota(a)
+																			: formatAgtQuota(a)
+																}
+                            </div>
                         </td>
-                        <td class="px-4 py-4 align-middle">
-                            <div class="flex justify-center whitespace-nowrap">${formatCliProxyStatus(a)}</div>
+
+                        <td class="px-6 py-4 align-middle text-center">
+                            <div class="flex justify-center">${formatCliProxyStatus(a)}</div>
                         </td>
-                        <td class="px-4 py-4 align-middle">
-                            <div class="flex items-center justify-center gap-1">
-                                <button onclick="refreshSingleQuota(${JSON.stringify(a).replace(/"/g, "&quot;")})" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition group relative" title="刷新额度">
+
+                        <td class="px-6 py-4 align-middle text-right">
+                            <div class="flex items-center justify-center gap-1.5">
+                                <button onclick="refreshSingleQuota(${JSON.stringify(a).replace(/"/g, "&quot;")})" 
+                                    class="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all active:scale-95" 
+                                    title="刷新额度">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                                    <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition pointer-events-none">刷新额度</span>
                                 </button>
-								<button onclick="viewModels('${escapeInlineJsString(a.name)}')" class="p-1.5 text-purple-600 hover:bg-purple-50 rounded transition group relative" title="查看支持的模型列表">
-									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
-                                    <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition pointer-events-none">查看模型</span>
+								<button onclick="viewModels('${escapeInlineJsString(a.name)}')" 
+                                    class="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all active:scale-95" 
+                                    title="查看模型">
+									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
 								</button>
-								<button onclick="showThresholdConfig(${JSON.stringify(a).replace(/"/g, "&quot;")})" class="p-1.5 text-amber-600 hover:bg-amber-50 rounded transition group relative" title="配置额度阈值（低于阈值自动禁用）">
-									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                                    <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition pointer-events-none">设置阈值</span>
+								<button onclick="showThresholdConfig(${JSON.stringify(a).replace(/"/g, "&quot;")})" 
+                                    class="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all active:scale-95" 
+                                    title="设置阈值">
+									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
 								</button>
                                 ${
 																	a.disabled
-																		? `<button onclick="toggleCliProxyAccount('${a.name}', false)" class="p-1.5 text-green-600 hover:bg-green-50 rounded transition group relative" title="启用此账号">
+																		? `<button onclick="toggleCliProxyAccount('${a.name}', false)" class="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all active:scale-95" title="启用账号">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                        <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition pointer-events-none">启用账号</span>
                                     </button>`
-																		: `<button onclick="toggleCliProxyAccount('${a.name}', true)" class="p-1.5 text-orange-600 hover:bg-orange-50 rounded transition group relative" title="禁用此账号">
+																		: `<button onclick="toggleCliProxyAccount('${a.name}', true)" class="p-2 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-all active:scale-95" title="禁用账号">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                        <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition pointer-events-none">禁用账号</span>
                                     </button>`
 																}
-                                <button onclick="deleteCliProxyAccount('${a.name}')" class="p-1.5 text-red-600 hover:bg-red-50 rounded transition group relative" title="删除此账号">
+                                <button onclick="deleteCliProxyAccount('${a.name}')" class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all active:scale-95" title="删除账号">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                    <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition pointer-events-none">删除账号</span>
                                 </button>
                             </div>
                         </td>
                     </tr>
-                `,
-									)
+                `;
+									})
 									.join("")}
-            </tbody>
-        </table>`;
+                </tbody>
+            </table>
+        </div>`;
 
 	allAccounts.forEach((account) => {
 		loadThresholdBadge(account.name);
 	});
+}
+
+function _renderProgressBarItem(label, percent, resetTime, _type = "default") {
+	// Colors and States
+	let colorClass = "bg-green-500";
+	let textClass = "text-green-600";
+
+	if (percent < 20) {
+		colorClass = "bg-red-500";
+		textClass = "text-red-600";
+	} else if (percent < 60) {
+		colorClass = "bg-amber-400";
+		textClass = "text-amber-600";
+	}
+
+	return `
+    <div class="flex flex-col gap-1.5 w-full">
+        <div class="flex justify-between items-end leading-none">
+            <span class="text-xs font-medium text-gray-600 truncate max-w-[120px]" title="${label}">${label}</span>
+            <div class="flex items-center gap-1.5">
+                ${resetTime ? `<span class="text-[10px] text-gray-400 font-mono hidden sm:inline-block">${resetTime}</span>` : ""}
+                <span class="text-xs font-bold ${textClass} tabular-nums">${percent}%</span>
+            </div>
+        </div>
+        <div class="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden ring-1 ring-gray-50">
+            <div class="${colorClass} h-full rounded-full transition-all duration-500 ease-out" style="width: ${percent}%"></div>
+        </div>
+    </div>
+    `;
+}
+
+function formatCodexQuota(account) {
+	const cache = cliproxyQuotaCache[account.name];
+
+	if (!cache) {
+		return '<div class="flex items-center justify-center h-full text-xs text-gray-400 italic">等待数据...</div>';
+	}
+
+	if (cache.status === "loading") {
+		return `
+        <div class="flex items-center justify-center gap-2 py-2">
+            <div class="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            <span class="text-xs text-blue-600 font-medium">加载配额中...</span>
+        </div>`;
+	}
+
+	if (cache.status === "error") {
+		return `<div class="bg-red-50 text-red-600 text-xs px-3 py-2 rounded-lg border border-red-100 flex items-start gap-2">
+            <svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span class="break-all" title="${cache.error || "加载失败"}">加载失败</span>
+        </div>`;
+	}
+
+	const data = cache.data;
+	if (!data) {
+		return '<div class="text-xs text-gray-400 text-center py-2">无可用数据</div>';
+	}
+
+	const formatResetTime = (timestamp) => {
+		if (!timestamp) return "";
+		const date = new Date(timestamp * 1000);
+		const month = String(date.getMonth() + 1).padStart(2, "0");
+		const day = String(date.getDate()).padStart(2, "0");
+		const hour = String(date.getHours()).padStart(2, "0");
+		const minute = String(date.getMinutes()).padStart(2, "0");
+		return `${month}/${day} ${hour}:${minute}`;
+	};
+
+	const items = [];
+
+	if (data.rate_limit?.primary_window) {
+		const usedPercent = data.rate_limit.primary_window.used_percent || 0;
+		const remainingPercent = Math.max(0, 100 - usedPercent);
+		const resetTime = formatResetTime(data.rate_limit.primary_window.reset_at);
+		items.push(
+			_renderProgressBarItem(
+				"5小时限额",
+				Math.round(remainingPercent),
+				resetTime,
+			),
+		);
+	}
+
+	if (data.rate_limit?.secondary_window) {
+		const usedPercent = data.rate_limit.secondary_window.used_percent || 0;
+		const remainingPercent = Math.max(0, 100 - usedPercent);
+		const resetTime = formatResetTime(
+			data.rate_limit.secondary_window.reset_at,
+		);
+		items.push(
+			_renderProgressBarItem("周限额", Math.round(remainingPercent), resetTime),
+		);
+	}
+
+	if (data.code_review_rate_limit?.primary_window) {
+		const usedPercent =
+			data.code_review_rate_limit.primary_window.used_percent || 0;
+		const remainingPercent = Math.max(0, 100 - usedPercent);
+		const resetTime = formatResetTime(
+			data.code_review_rate_limit.primary_window.reset_at,
+		);
+		items.push(
+			_renderProgressBarItem(
+				"代码审查",
+				Math.round(remainingPercent),
+				resetTime,
+			),
+		);
+	}
+
+	if (items.length === 0)
+		return '<div class="text-xs text-gray-400 text-center py-2">无配额数据</div>';
+
+	return `<div class="grid grid-cols-1 gap-3">${items.join("")}</div>`;
+}
+
+function formatClaudeQuota(account) {
+	const cache = cliproxyQuotaCache[account.name];
+
+	if (!cache) {
+		return '<div class="flex items-center justify-center h-full text-xs text-gray-400 italic">等待数据...</div>';
+	}
+
+	if (cache.status === "loading") {
+		return `
+        <div class="flex items-center justify-center gap-2 py-2">
+            <div class="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+            <span class="text-xs text-indigo-600 font-medium">加载配额中...</span>
+        </div>`;
+	}
+
+	if (cache.status === "error") {
+		return `<div class="bg-red-50 text-red-600 text-xs px-3 py-2 rounded-lg border border-red-100 flex items-start gap-2">
+            <svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span class="break-all" title="${cache.error || "加载失败"}">加载失败</span>
+        </div>`;
+	}
+
+	const data = cache.data;
+	if (!data) {
+		return '<div class="text-xs text-gray-400 text-center py-2">无可用数据</div>';
+	}
+
+	const formatResetTime = (isoString) => {
+		if (!isoString) return "";
+		const date = new Date(isoString);
+		const month = String(date.getMonth() + 1).padStart(2, "0");
+		const day = String(date.getDate()).padStart(2, "0");
+		const hour = String(date.getHours()).padStart(2, "0");
+		const minute = String(date.getMinutes()).padStart(2, "0");
+		return `${month}/${day} ${hour}:${minute}`;
+	};
+
+	const items = [];
+
+	if (data.five_hour) {
+		const utilization = data.five_hour.utilization || 0;
+		const remainingPercent = Math.max(0, 100 - utilization);
+		const resetTime = formatResetTime(data.five_hour.resets_at);
+		items.push(
+			_renderProgressBarItem(
+				"5小时限额",
+				Math.round(remainingPercent),
+				resetTime,
+			),
+		);
+	}
+
+	if (data.seven_day) {
+		const utilization = data.seven_day.utilization || 0;
+		const remainingPercent = Math.max(0, 100 - utilization);
+		const resetTime = formatResetTime(data.seven_day.resets_at);
+		items.push(
+			_renderProgressBarItem(
+				"7天限额",
+				Math.round(remainingPercent),
+				resetTime,
+			),
+		);
+	}
+
+	if (data.seven_day_sonnet) {
+		const utilization = data.seven_day_sonnet.utilization || 0;
+		const remainingPercent = Math.max(0, 100 - utilization);
+		const resetTime = formatResetTime(data.seven_day_sonnet.resets_at);
+		items.push(
+			_renderProgressBarItem(
+				"7天Sonnet",
+				Math.round(remainingPercent),
+				resetTime,
+			),
+		);
+	}
+
+	if (items.length === 0) {
+		return '<div class="text-xs text-gray-400 text-center py-2">无配额数据</div>';
+	}
+
+	return `<div class="grid grid-cols-1 gap-3">${items.join("")}</div>`;
+}
+
+function formatAgtQuota(account) {
+	const cache = cliproxyQuotaCache[account.name];
+
+	if (!cache) {
+		return '<div class="flex items-center justify-center h-full text-xs text-gray-400 italic">等待数据...</div>';
+	}
+
+	if (cache.status === "loading") {
+		return `
+        <div class="flex items-center justify-center gap-2 py-2">
+            <div class="w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+            <span class="text-xs text-purple-600 font-medium">加载配额中...</span>
+        </div>`;
+	}
+
+	if (cache.status === "error") {
+		return `<div class="bg-red-50 text-red-600 text-xs px-3 py-2 rounded-lg border border-red-100 flex items-start gap-2">
+            <svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span class="break-all" title="${cache.error || "加载失败"}">加载失败</span>
+        </div>`;
+	}
+
+	const models = Object.entries(cache.data || {});
+	if (models.length === 0) {
+		return '<div class="text-xs text-gray-400 text-center py-2">无可用数据</div>';
+	}
+
+	const formatResetTime = (resetTime) => {
+		if (!resetTime) return "";
+		const date = new Date(resetTime);
+		const month = String(date.getMonth() + 1).padStart(2, "0");
+		const day = String(date.getDate()).padStart(2, "0");
+		const hour = String(date.getHours()).padStart(2, "0");
+		const minute = String(date.getMinutes()).padStart(2, "0");
+		return `${month}/${day} ${hour}:${minute}`;
+	};
+
+	// Priority models list - only display these important models
+	const priorityModels = [
+		"claude-sonnet-4-5",
+		"claude-opus-4-6",
+		"claude-haiku-4",
+		"gpt-4",
+		"gpt-4-turbo",
+		"gpt-3.5-turbo",
+		"gemini-3-pro",
+		"gemini-3-pro-high",
+		"gemini-3-flash",
+		"gemini-3-pro-image",
+	];
+
+	// Filter to only priority models and sort by priority order
+	const filteredModels = models.filter(([name]) =>
+		priorityModels.includes(name),
+	);
+	const sortedModels = filteredModels.sort(([keyA], [keyB]) => {
+		const indexA = priorityModels.indexOf(keyA);
+		const indexB = priorityModels.indexOf(keyB);
+		return indexA - indexB;
+	});
+
+	// Group models: Claude/GPT together, Gemini separate
+	const groupedModels = [];
+	let claudeGptGroup = null;
+
+	for (const [name, info] of sortedModels) {
+		if (name.startsWith("claude-") || name.startsWith("gpt-")) {
+			// Add to Claude/GPT group (use first one's data)
+			if (!claudeGptGroup) {
+				claudeGptGroup = {
+					displayName: "Claude/GPT 共享",
+					info: info,
+				};
+			}
+		} else if (name.startsWith("gemini-")) {
+			// Gemini models stay separate
+			if (claudeGptGroup) {
+				groupedModels.push(claudeGptGroup);
+				claudeGptGroup = null;
+			}
+			groupedModels.push({
+				displayName:
+					info?.displayName ||
+					info?.display_name ||
+					info?.modelId ||
+					info?.model_id ||
+					name,
+				info: info,
+			});
+		}
+	}
+
+	// Add remaining Claude/GPT group if exists
+	if (claudeGptGroup) {
+		groupedModels.push(claudeGptGroup);
+	}
+
+	const items = groupedModels.map(({ displayName, info }) => {
+		const remainingRaw =
+			info?.quotaInfo?.remainingFraction ??
+			info?.quota_info?.remaining_fraction ??
+			0;
+		const remaining = Number(remainingRaw);
+		const safeRemaining = Number.isFinite(remaining) ? remaining : 0;
+
+		const percent = Math.round(safeRemaining * 100);
+		const resetTime =
+			info?.quotaInfo?.resetTime || info?.quota_info?.reset_time;
+		const resetDate = formatResetTime(resetTime);
+
+		return _renderProgressBarItem(displayName, percent, resetDate);
+	});
+
+	if (items.length === 0)
+		return '<div class="text-xs text-gray-400 text-center py-2">无配额数据</div>';
+
+	// Use grid layout for multiple items
+	const gridClass =
+		items.length > 2
+			? "grid grid-cols-1 md:grid-cols-2 gap-3"
+			: "grid grid-cols-1 gap-3";
+
+	return `<div class="${gridClass}">${items.join("")}</div>`;
 }
 
 async function loadThresholdBadge(accountName) {
@@ -1084,372 +1480,6 @@ async function fetchClaudeQuota(authIndex) {
 	throw new Error(`HTTP ${result.status_code || result.statusCode}`);
 }
 
-function formatCodexQuota(account) {
-	const cache = cliproxyQuotaCache[account.name];
-
-	if (!cache) {
-		return '<span class="text-xs text-gray-400">-</span>';
-	}
-
-	if (cache.status === "loading") {
-		return '<span class="text-xs text-blue-600">加载中...</span>';
-	}
-
-	if (cache.status === "error") {
-		return `<span class="text-xs text-red-600" title="${cache.error || "加载失败"}">加载失败</span>`;
-	}
-
-	const data = cache.data;
-	if (!data) {
-		return '<span class="text-xs text-gray-400">无数据</span>';
-	}
-
-	const formatResetTime = (timestamp) => {
-		if (!timestamp) return "";
-		const date = new Date(timestamp * 1000);
-		const month = String(date.getMonth() + 1).padStart(2, "0");
-		const day = String(date.getDate()).padStart(2, "0");
-		const hour = String(date.getHours()).padStart(2, "0");
-		const minute = String(date.getMinutes()).padStart(2, "0");
-		return `${month}/${day} ${hour}:${minute}`;
-	};
-
-	const _planTypeMap = {
-		team: "Team",
-		plus: "Plus",
-		free: "Free",
-		pro: "Pro",
-	};
-
-	const items = [];
-
-	if (data.rate_limit?.primary_window) {
-		const usedPercent = data.rate_limit.primary_window.used_percent || 0;
-		const remainingPercent = 100 - usedPercent;
-		const resetTime = formatResetTime(data.rate_limit.primary_window.reset_at);
-		const bgColor =
-			remainingPercent > 60
-				? "bg-green-500"
-				: remainingPercent > 20
-					? "bg-yellow-500"
-					: "bg-red-500";
-
-		items.push(`
-<div class="mb-3">
-    <div class="flex justify-between items-center mb-1">
-        <span class="text-sm font-medium text-gray-700">5 小时限额</span>
-        <span class="text-xs text-gray-500">${remainingPercent}%${resetTime ? ` · ${resetTime}` : ""}</span>
-    </div>
-    <div class="w-full bg-gray-200 rounded-full h-2">
-        <div class="${bgColor} h-2 rounded-full transition-all" style="width: ${remainingPercent}%"></div>
-    </div>
-</div>
-`);
-	}
-
-	if (data.rate_limit?.secondary_window) {
-		const usedPercent = data.rate_limit.secondary_window.used_percent || 0;
-		const remainingPercent = 100 - usedPercent;
-		const resetTime = formatResetTime(
-			data.rate_limit.secondary_window.reset_at,
-		);
-		const bgColor =
-			remainingPercent > 60
-				? "bg-green-500"
-				: remainingPercent > 20
-					? "bg-yellow-500"
-					: "bg-red-500";
-
-		items.push(`
-<div class="mb-3">
-    <div class="flex justify-between items-center mb-1">
-        <span class="text-sm font-medium text-gray-700">周限额</span>
-        <span class="text-xs text-gray-500">${remainingPercent}%${resetTime ? ` · ${resetTime}` : ""}</span>
-    </div>
-    <div class="w-full bg-gray-200 rounded-full h-2">
-        <div class="${bgColor} h-2 rounded-full transition-all" style="width: ${remainingPercent}%"></div>
-    </div>
-</div>
-`);
-	}
-
-	if (data.code_review_rate_limit?.primary_window) {
-		const usedPercent =
-			data.code_review_rate_limit.primary_window.used_percent || 0;
-		const remainingPercent = 100 - usedPercent;
-		const resetTime = formatResetTime(
-			data.code_review_rate_limit.primary_window.reset_at,
-		);
-		const bgColor =
-			remainingPercent > 60
-				? "bg-green-500"
-				: remainingPercent > 20
-					? "bg-yellow-500"
-					: "bg-red-500";
-
-		items.push(`
-<div class="mb-3 last:mb-0">
-    <div class="flex justify-between items-center mb-1">
-        <span class="text-sm font-medium text-gray-700">代码审查周限额</span>
-        <span class="text-xs text-gray-500">${remainingPercent}%${resetTime ? ` · ${resetTime}` : ""}</span>
-    </div>
-    <div class="w-full bg-gray-200 rounded-full h-2">
-        <div class="${bgColor} h-2 rounded-full transition-all" style="width: ${remainingPercent}%"></div>
-    </div>
-</div>
-`);
-	}
-
-	return items.join("");
-}
-
-function _loadAgtAccounts() {
-	loadCliProxyAgtAccounts();
-}
-
-function formatClaudeQuota(account) {
-	const cache = cliproxyQuotaCache[account.name];
-
-	if (!cache) {
-		return '<span class="text-xs text-gray-400">-</span>';
-	}
-
-	if (cache.status === "loading") {
-		return '<span class="text-xs text-blue-600">加载中...</span>';
-	}
-
-	if (cache.status === "error") {
-		return `<span class="text-xs text-red-600" title="${cache.error || "加载失败"}">加载失败</span>`;
-	}
-
-	const data = cache.data;
-	if (!data) {
-		return '<span class="text-xs text-gray-400">无数据</span>';
-	}
-
-	const formatResetTime = (isoString) => {
-		if (!isoString) return "";
-		const date = new Date(isoString);
-		const month = String(date.getMonth() + 1).padStart(2, "0");
-		const day = String(date.getDate()).padStart(2, "0");
-		const hour = String(date.getHours()).padStart(2, "0");
-		const minute = String(date.getMinutes()).padStart(2, "0");
-		return `${month}/${day} ${hour}:${minute}`;
-	};
-
-	const items = [];
-
-	if (data.five_hour) {
-		const utilization = data.five_hour.utilization || 0;
-		const remainingPercent = 100 - utilization;
-		const resetTime = formatResetTime(data.five_hour.resets_at);
-		const bgColor =
-			remainingPercent > 60
-				? "bg-green-500"
-				: remainingPercent > 20
-					? "bg-yellow-500"
-					: "bg-red-500";
-
-		items.push(`
-<div class="mb-3">
-    <div class="flex justify-between items-center mb-1">
-        <span class="text-sm font-medium text-gray-700">5 小时限额</span>
-        <span class="text-xs text-gray-500">${remainingPercent.toFixed(0)}%${resetTime ? ` · ${resetTime}` : ""}</span>
-    </div>
-    <div class="w-full bg-gray-200 rounded-full h-2">
-        <div class="${bgColor} h-2 rounded-full transition-all" style="width: ${remainingPercent}%"></div>
-    </div>
-</div>
-`);
-	}
-
-	if (data.seven_day) {
-		const utilization = data.seven_day.utilization || 0;
-		const remainingPercent = 100 - utilization;
-		const resetTime = formatResetTime(data.seven_day.resets_at);
-		const bgColor =
-			remainingPercent > 60
-				? "bg-green-500"
-				: remainingPercent > 20
-					? "bg-yellow-500"
-					: "bg-red-500";
-
-		items.push(`
-<div class="mb-3">
-    <div class="flex justify-between items-center mb-1">
-        <span class="text-sm font-medium text-gray-700">7 天限额</span>
-        <span class="text-xs text-gray-500">${remainingPercent.toFixed(0)}%${resetTime ? ` · ${resetTime}` : ""}</span>
-    </div>
-    <div class="w-full bg-gray-200 rounded-full h-2">
-        <div class="${bgColor} h-2 rounded-full transition-all" style="width: ${remainingPercent}%"></div>
-    </div>
-</div>
-`);
-	}
-
-	if (data.seven_day_sonnet) {
-		const utilization = data.seven_day_sonnet.utilization || 0;
-		const remainingPercent = 100 - utilization;
-		const resetTime = formatResetTime(data.seven_day_sonnet.resets_at);
-		const bgColor =
-			remainingPercent > 60
-				? "bg-green-500"
-				: remainingPercent > 20
-					? "bg-yellow-500"
-					: "bg-red-500";
-
-		items.push(`
-<div class="mb-3">
-    <div class="flex justify-between items-center mb-1">
-        <span class="text-sm font-medium text-gray-700">7 天 Sonnet</span>
-        <span class="text-xs text-gray-500">${remainingPercent.toFixed(0)}%${resetTime ? ` · ${resetTime}` : ""}</span>
-    </div>
-    <div class="w-full bg-gray-200 rounded-full h-2">
-        <div class="${bgColor} h-2 rounded-full transition-all" style="width: ${remainingPercent}%"></div>
-    </div>
-</div>
-`);
-	}
-
-	if (items.length === 0) {
-		return '<span class="text-xs text-gray-400">无配额数据</span>';
-	}
-
-	return items.join("");
-}
-
-function formatAgtQuota(account) {
-	const cache = cliproxyQuotaCache[account.name];
-
-	if (!cache) {
-		return '<span class="text-xs text-gray-400">-</span>';
-	}
-
-	if (cache.status === "loading") {
-		return '<span class="text-xs text-blue-600">加载中...</span>';
-	}
-
-	if (cache.status === "error") {
-		return `<span class="text-xs text-red-600" title="${cache.error || "加载失败"}">加载失败</span>`;
-	}
-
-	const models = Object.entries(cache.data || {});
-	if (models.length === 0) {
-		return '<span class="text-xs text-gray-400">无数据</span>';
-	}
-
-	const formatResetTime = (resetTime) => {
-		if (!resetTime) return "";
-		const date = new Date(resetTime);
-		const month = String(date.getMonth() + 1).padStart(2, "0");
-		const day = String(date.getDate()).padStart(2, "0");
-		const hour = String(date.getHours()).padStart(2, "0");
-		const minute = String(date.getMinutes()).padStart(2, "0");
-		return `${month}/${day} ${hour}:${minute}`;
-	};
-
-	// Priority models list - only display these important models
-	const priorityModels = [
-		"claude-sonnet-4-5",
-		"claude-opus-4-6",
-		"claude-haiku-4",
-		"gpt-4",
-		"gpt-4-turbo",
-		"gpt-3.5-turbo",
-		"gemini-3-pro",
-		"gemini-3-pro-high",
-		"gemini-3-flash",
-		"gemini-3-pro-image",
-	];
-
-	// Filter to only priority models and sort by priority order
-	const filteredModels = models.filter(([name]) =>
-		priorityModels.includes(name),
-	);
-	const sortedModels = filteredModels.sort(([keyA], [keyB]) => {
-		const indexA = priorityModels.indexOf(keyA);
-		const indexB = priorityModels.indexOf(keyB);
-		return indexA - indexB;
-	});
-
-	// Group models: Claude/GPT together, Gemini separate
-	const groupedModels = [];
-	let claudeGptGroup = null;
-
-	for (const [name, info] of sortedModels) {
-		if (name.startsWith("claude-") || name.startsWith("gpt-")) {
-			// Add to Claude/GPT group (use first one's data)
-			if (!claudeGptGroup) {
-				claudeGptGroup = {
-					displayName: "Claude/GPT",
-					info: info,
-				};
-			}
-		} else if (name.startsWith("gemini-")) {
-			// Gemini models stay separate
-			if (claudeGptGroup) {
-				groupedModels.push(claudeGptGroup);
-				claudeGptGroup = null;
-			}
-			groupedModels.push({
-				displayName:
-					info?.displayName ||
-					info?.display_name ||
-					info?.modelId ||
-					info?.model_id ||
-					name,
-				info: info,
-			});
-		}
-	}
-
-	// Add remaining Claude/GPT group if exists
-	if (claudeGptGroup) {
-		groupedModels.push(claudeGptGroup);
-	}
-
-	const items = groupedModels
-		.map(({ displayName, info }) => {
-			const remainingRaw =
-				info?.quotaInfo?.remainingFraction ??
-				info?.quota_info?.remaining_fraction ??
-				0;
-			const remaining = Number(remainingRaw);
-			const safeRemaining = Number.isFinite(remaining) ? remaining : 0;
-			console.log("[Antigravity Quota] Format model item", {
-				account: account.name,
-				displayName: displayName,
-				remainingFraction: remainingRaw,
-				normalizedRemainingFraction: safeRemaining,
-			});
-			const percent = Math.round(safeRemaining * 100);
-			const resetTime =
-				info?.quotaInfo?.resetTime || info?.quota_info?.reset_time;
-			const resetDate = formatResetTime(resetTime);
-			const bgColor =
-				percent > 60
-					? "bg-green-500"
-					: percent > 20
-						? "bg-yellow-500"
-						: "bg-red-500";
-
-			return `
-<div class="mb-3 last:mb-0">
-    <div class="flex justify-between items-center mb-1">
-        <span class="text-sm font-medium text-gray-700">${displayName}</span>
-        <span class="text-xs text-gray-500">${percent}%${resetDate ? ` · ${resetDate}` : ""}</span>
-    </div>
-    <div class="w-full bg-gray-200 rounded-full h-2">
-        <div class="${bgColor} h-2 rounded-full transition-all" style="width: ${percent}%"></div>
-    </div>
-</div>
-`;
-		})
-		.join("");
-
-	return items;
-}
-
 // 导出到全局作用域
 window.forceRefreshCliProxyAccounts = _forceRefreshCliProxyAccounts;
 window.refreshAllAgtQuotas = _refreshAllAgtQuotas;
@@ -1457,8 +1487,12 @@ window.renderCliProxyAgtAccounts = _renderCliProxyAgtAccounts;
 window.viewModels = _viewModels;
 window.formatDateTime = _formatDateTime;
 window.toggleCliProxyAgtAccount = _toggleCliProxyAgtAccount;
+window.deleteCliProxyAgtAccount = _deleteCliProxyAgtAccount;
+window.refreshSingleQuota = refreshSingleQuota;
+window.refreshSingleAgtQuota = _refreshSingleAgtQuota;
 window.showThresholdConfig = _showThresholdConfig;
 window.saveThresholdConfig = _saveThresholdConfig;
-window.deleteCliProxyAgtAccount = _deleteCliProxyAgtAccount;
-window.refreshSingleAgtQuota = _refreshSingleAgtQuota;
-window.loadAgtAccounts = _loadAgtAccounts;
+window.toggleCliProxyAccount = toggleCliProxyAccount;
+window.deleteCliProxyAccount = deleteCliProxyAccount;
+window.loadCliProxyAccounts = loadCliProxyAccounts;
+window.loadCliProxyAgtAccounts = loadCliProxyAgtAccounts;
