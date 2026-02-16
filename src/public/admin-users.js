@@ -216,3 +216,8 @@ function _goToUsersPage(page) {
 	usersCurrentPage = page;
 	renderUsersPage();
 }
+
+// 导出到全局作用域
+window.loadUsers = _loadUsers;
+window.changeUsersPage = _changeUsersPage;
+window.goToUsersPage = _goToUsersPage;

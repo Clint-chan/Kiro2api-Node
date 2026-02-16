@@ -1397,3 +1397,16 @@ function formatAgtQuota(account) {
 
 	return items;
 }
+
+// 导出到全局作用域
+window.forceRefreshCliProxyAccounts = _forceRefreshCliProxyAccounts;
+window.refreshAllAgtQuotas = _refreshAllAgtQuotas;
+window.renderCliProxyAgtAccounts = _renderCliProxyAgtAccounts;
+window.viewModels = _viewModels;
+window.formatDateTime = _formatDateTime;
+window.toggleCliProxyAgtAccount = _toggleCliProxyAgtAccount;
+window.showThresholdConfig = _showThresholdConfig;
+window.saveThresholdConfig = _saveThresholdConfig;
+window.deleteCliProxyAgtAccount = _deleteCliProxyAgtAccount;
+window.refreshSingleAgtQuota = _refreshSingleAgtQuota;
+window.loadAgtAccounts = _loadAgtAccounts;

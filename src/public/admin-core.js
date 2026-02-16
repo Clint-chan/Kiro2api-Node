@@ -2263,3 +2263,23 @@ async function refresh() {
 	loadAccounts();
 	loadSettings();
 }
+
+// 导出到全局作用域
+window.showMainPanel = _showMainPanel;
+window.loadWeeklyChart = _loadWeeklyChart;
+window.loadAntigravityTemplate = _loadAntigravityTemplate;
+window.importAntigravityAccounts = _importAntigravityAccounts;
+window.changePage = _changePage;
+window.goToPage = _goToPage;
+window.toggleSelect = _toggleSelect;
+window.toggleSelectAll = _toggleSelectAll;
+window.batchDeleteAccounts = _batchDeleteAccounts;
+window.clearLogs = _clearLogs;
+window.saveModelCooldownConfigFromModal = _saveModelCooldownConfigFromModal;
+window.switchTab = _switchTab;
+window.showModal = _showModal;
+window.hideModal = hideModal;
+window.copyToClipboard = copyToClipboard;
+window.fetchKiroModels = _fetchKiroModels;
+window.fetchCliProxyModels = _fetchCliProxyModels;
+window.showModelCooldownConfig = _showModelCooldownConfig;

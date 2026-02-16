@@ -112,3 +112,8 @@ function _goToLogsPage(page) {
 	logsCurrentPage = page;
 	renderLogsPage();
 }
+
+// 导出到全局作用域
+window.toggleAutoRefresh = _toggleAutoRefresh;
+window.changeLogsPage = _changeLogsPage;
+window.goToLogsPage = _goToLogsPage;

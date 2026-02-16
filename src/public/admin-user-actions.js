@@ -669,3 +669,23 @@ async function _cancelSubscription() {
 		showToast(`取消失败: ${e.message}`, "error");
 	}
 }
+
+// 导出到全局作用域
+window.updateUsernamePreview = updateUsernamePreview;
+window.setSubQuota = _setSubQuota;
+window.setSubDuration = _setSubDuration;
+window.createUser = _createUser;
+window.doRecharge = _doRecharge;
+window.deleteUser = _deleteUser;
+window.refreshUserStats = _refreshUserStats;
+window.toggleUserStatus = _toggleUserStatus;
+window.showSubscriptionModalFromButton = _showSubscriptionModalFromButton;
+window.showRechargeModalFromButton = _showRechargeModalFromButton;
+window.showPermissionModalFromButton = _showPermissionModalFromButton;
+window.batchSelectModels = _batchSelectModels;
+window.saveUserPermissions = _saveUserPermissions;
+window.updateSubscriptionType = _updateSubscriptionType;
+window.applyTemplate = _applyTemplate;
+window.setDuration = _setDuration;
+window.setSubscription = _setSubscription;
+window.cancelSubscription = _cancelSubscription;
