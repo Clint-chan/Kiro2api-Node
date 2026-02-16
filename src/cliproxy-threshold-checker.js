@@ -1,3 +1,4 @@
+import { getModelGroupsWithThresholds } from "./antigravity-model-groups.js";
 import { logger } from "./logger.js";
 
 export class CLIProxyThresholdChecker {
@@ -385,6 +386,15 @@ export class CLIProxyThresholdChecker {
 				}),
 			);
 
+			const statusCode = result?.status_code || result?.statusCode;
+			if (!statusCode || statusCode < 200 || statusCode >= 300) {
+				logger.warn("Antigravity API 返回非成功状态", {
+					name: account.name,
+					statusCode,
+				});
+				return { disableGroups: {} };
+			}
+
 			const parseJsonSafe = (value) => {
 				if (typeof value !== "string") return value;
 				try {
@@ -395,7 +405,16 @@ export class CLIProxyThresholdChecker {
 			};
 
 			const body = parseJsonSafe(result?.body);
-			const models = body?.models || {};
+			if (!body || !body.models) {
+				logger.warn("Antigravity API 响应格式异常", {
+					name: account.name,
+					hasBody: !!body,
+					hasModels: !!body?.models,
+				});
+				return { disableGroups: {} };
+			}
+
+			const models = body.models;
 
 			for (const [modelId, modelInfo] of Object.entries(models)) {
 				if (modelInfo?.quotaInfo) {
@@ -414,32 +433,28 @@ export class CLIProxyThresholdChecker {
 		}
 
 		const disableGroups = {};
+		const recoveredGroups = [];
 
-		const modelGroups = {
-			claude_gpt: {
-				patterns: [/^claude-/, /^gpt-/, /^o\d/],
-				threshold: config.claude_gpt,
-			},
-			gemini_3_pro: {
-				models: ["gemini-3-pro"],
-				threshold: config.gemini_3_pro,
-			},
-			gemini_3_pro_high: {
-				models: ["gemini-3-pro-high"],
-				threshold: config.gemini_3_pro_high,
-			},
-			gemini_3_flash: {
-				models: ["gemini-3-flash"],
-				threshold: config.gemini_3_flash,
-			},
-			gemini_3_pro_image: {
-				models: ["gemini-3-pro-image"],
-				threshold: config.gemini_3_pro_image,
-			},
-		};
+		const groupsJson =
+			this.db.getSetting(`cliproxy_auto_disabled_groups_${account.name}`) ||
+			"{}";
+		let currentDisabledGroups = {};
+		try {
+			const parsed = JSON.parse(groupsJson);
+			currentDisabledGroups = parsed.groups || {};
+		} catch {
+			currentDisabledGroups = {};
+		}
+
+		const modelGroups = getModelGroupsWithThresholds(config);
 
 		for (const [groupName, groupConfig] of Object.entries(modelGroups)) {
 			if (groupConfig.threshold === undefined) continue;
+
+			const hysteresis = 0.05;
+			const isCurrentlyDisabled = !!currentDisabledGroups[groupName];
+			let shouldDisable = false;
+			let triggerModel = null;
 
 			for (const [modelId, modelQuota] of Object.entries(quota)) {
 				if (!modelQuota) continue;
@@ -459,19 +474,62 @@ export class CLIProxyThresholdChecker {
 					matches = groupConfig.models.includes(modelId);
 				}
 
-				if (matches && remaining < groupConfig.threshold) {
-					disableGroups[groupName] = {
-						mode: "auto",
-						disabled_at: Date.now(),
-						reason: `${modelId} remaining ${(remaining * 100).toFixed(1)}% < ${(groupConfig.threshold * 100).toFixed(1)}%`,
-						threshold: groupConfig.threshold,
-						observed: {
-							model_id: modelId,
-							remaining_fraction: remaining,
-						},
-					};
-					break;
+				if (!matches) continue;
+
+				if (isCurrentlyDisabled) {
+					if (remaining < groupConfig.threshold + hysteresis) {
+						shouldDisable = true;
+						triggerModel = { modelId, remaining };
+						break;
+					}
+				} else {
+					if (remaining < groupConfig.threshold) {
+						shouldDisable = true;
+						triggerModel = { modelId, remaining };
+						break;
+					}
 				}
+			}
+
+			if (shouldDisable && triggerModel) {
+				disableGroups[groupName] = {
+					mode: "auto",
+					disabled_at:
+						currentDisabledGroups[groupName]?.disabled_at || Date.now(),
+					reason: `${triggerModel.modelId} remaining ${(triggerModel.remaining * 100).toFixed(1)}% < ${(groupConfig.threshold * 100).toFixed(1)}%`,
+					threshold: groupConfig.threshold,
+					observed: {
+						model_id: triggerModel.modelId,
+						remaining_fraction: triggerModel.remaining,
+					},
+				};
+			} else if (isCurrentlyDisabled && !shouldDisable) {
+				recoveredGroups.push(groupName);
+			}
+		}
+
+		if (Object.keys(disableGroups).length > 0 || recoveredGroups.length > 0) {
+			const groupsData = { version: 1, groups: disableGroups };
+			this.db.setSetting(
+				`cliproxy_auto_disabled_groups_${account.name}`,
+				JSON.stringify(groupsData),
+			);
+
+			if (Object.keys(disableGroups).length > 0) {
+				const groupNames = Object.keys(disableGroups).join(", ");
+				logger.warn("模型组额度低于阈值，已记录禁用状态", {
+					name: account.name,
+					provider: account.provider,
+					groups: groupNames,
+				});
+			}
+
+			if (recoveredGroups.length > 0) {
+				logger.info("模型组额度已恢复", {
+					name: account.name,
+					provider: account.provider,
+					groups: recoveredGroups.join(", "),
+				});
 			}
 		}
 

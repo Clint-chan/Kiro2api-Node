@@ -4,6 +4,7 @@ import {
 	callAntigravityStream,
 	resolveAntigravityUpstreamModel,
 } from "../antigravity.js";
+import { getModelGroupName } from "../antigravity-model-groups.js";
 import { userAuthMiddleware } from "../middleware/auth.js";
 import { isChannelAllowed } from "../user-permissions.js";
 
@@ -27,21 +28,6 @@ export function createAntigravityNativeRouter(state) {
 		} catch {
 			return null;
 		}
-	}
-
-	function getModelGroupName(modelId) {
-		if (
-			/^claude-/.test(modelId) ||
-			/^gpt-/.test(modelId) ||
-			/^o\d/.test(modelId)
-		) {
-			return "claude_gpt";
-		}
-		if (modelId === "gemini-3-pro") return "gemini_3_pro";
-		if (modelId === "gemini-3-pro-high") return "gemini_3_pro_high";
-		if (modelId === "gemini-3-flash") return "gemini_3_flash";
-		if (modelId === "gemini-3-pro-image") return "gemini_3_pro_image";
-		return null;
 	}
 
 	function hasQuotaForModel(account, modelId) {

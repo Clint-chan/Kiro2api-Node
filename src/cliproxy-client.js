@@ -40,25 +40,38 @@ export class CLIProxyClient {
 			...options.headers,
 		};
 
+		const timeout = options.timeout || 30000;
+		const controller = new AbortController();
+		const timeoutId = setTimeout(() => controller.abort(), timeout);
+
 		try {
 			const response = await fetch(url, {
 				...options,
 				headers,
+				signal: controller.signal,
 			});
 
+			clearTimeout(timeoutId);
+
 			if (!response.ok) {
-				let errorMessage = `HTTP ${response.status}`;
+				let errorMessage = `HTTP ${response.status} ${response.statusText}`;
 				try {
 					const error = await response.json();
 					errorMessage = error.error || error.message || errorMessage;
 				} catch (_e) {
 					// 如果响应不是 JSON，使用默认错误消息
 				}
-				throw new Error(errorMessage);
+				throw new Error(`${errorMessage} (${path})`);
 			}
 
 			return await response.json();
 		} catch (error) {
+			clearTimeout(timeoutId);
+			if (error.name === "AbortError") {
+				throw new Error(
+					`CLIProxyAPI request timeout after ${timeout}ms: ${path}`,
+				);
+			}
 			throw new Error(`CLIProxyAPI request failed: ${error.message}`);
 		}
 	}
