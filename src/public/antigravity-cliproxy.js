@@ -259,6 +259,9 @@ function renderCliProxyAccounts() {
                                         ${a.provider === "codex" ? "Codex" : a.provider === "claude" ? "ClaudeCode" : "Antigravity"}
                                     </span>
                                     ${a.provider === "codex" && a.plan_type ? `<span class="px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-green-100 text-green-700">${a.plan_type}</span>` : ""}
+                                    <span class="px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-amber-100 text-amber-700" id="threshold-badge-${a.name}">
+                                        <span class="threshold-loading">检查中...</span>
+                                    </span>
                                 </div>
                             </div>
                         </td>
@@ -275,6 +278,9 @@ function renderCliProxyAccounts() {
                                 </button>
 								<button onclick="viewModels('${escapeInlineJsString(a.name)}')" class="p-1 text-purple-600 hover:bg-purple-50 rounded transition" title="查看模型">
 									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+								</button>
+								<button onclick="showThresholdConfig(${JSON.stringify(a).replace(/"/g, "&quot;")})" class="p-1 text-indigo-600 hover:bg-indigo-50 rounded transition" title="设置阈值">
+									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
 								</button>
                                 ${
 																	a.disabled
@@ -296,6 +302,70 @@ function renderCliProxyAccounts() {
 									.join("")}
             </tbody>
         </table>`;
+
+	allAccounts.forEach((account) => {
+		loadThresholdBadge(account.name);
+	});
+}
+
+async function loadThresholdBadge(accountName) {
+	try {
+		const response = await fetchApi(
+			`/api/admin/cliproxy/threshold-config?name=${encodeURIComponent(accountName)}`,
+		);
+		const config = response.config || {};
+		const badge = document.getElementById(`threshold-badge-${accountName}`);
+
+		if (!badge) return;
+
+		const thresholdLabels = {
+			five_hour: "5小时",
+			seven_day: "7天",
+			seven_day_sonnet: "7天Sonnet",
+			weekly: "每周",
+			code_review: "代码审查",
+			claude_gpt: "Claude/GPT",
+			gemini: "Gemini",
+		};
+
+		const activeThresholds = Object.entries(config)
+			.map(([key, value]) => ({
+				key,
+				label: thresholdLabels[key] || key,
+				value: Number(value),
+			}))
+			.filter((t) => Number.isFinite(t.value) && t.value > 0);
+
+		if (activeThresholds.length === 0) {
+			badge.innerHTML = "未设置";
+			badge.className =
+				"px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-gray-100 text-gray-600";
+			badge.title = "点击设置阈值";
+		} else {
+			const thresholds = activeThresholds.map((t) => ({
+				...t,
+				value: Math.round(t.value * 100),
+			}));
+
+			const minThreshold = Math.min(...thresholds.map((t) => t.value));
+			const tooltipLines = thresholds
+				.map((t) => `${t.label}: ${t.value}%`)
+				.join("\n");
+
+			badge.innerHTML = `阈值 ${minThreshold}%`;
+			badge.className =
+				"px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-green-100 text-green-700 cursor-help";
+			badge.title = tooltipLines;
+		}
+	} catch (e) {
+		const badge = document.getElementById(`threshold-badge-${accountName}`);
+		if (badge) {
+			badge.innerHTML = "加载失败";
+			badge.className =
+				"px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-red-100 text-red-600";
+			badge.title = e.message;
+		}
+	}
 }
 
 // Backward compatibility
@@ -369,7 +439,7 @@ async function viewModels(name) {
 		showToast("获取模型列表失败: " + e.message, "error");
 		const loading = document.getElementById("models-list-loading");
 		if (loading) {
-			loading.innerHTML = `<div class="text-red-500 text-center">加载失败: ${e.message}</div>`;
+			loading.innerHTML = `<div class="text-red-500 text-center">加载失败: ${escapeHtml(e.message)}</div>`;
 		}
 	}
 }
@@ -445,6 +515,208 @@ async function deleteCliProxyAccount(name) {
 		await loadCliProxyAccounts();
 	} catch (e) {
 		showToast("删除失败: " + e.message, "error");
+	}
+}
+
+async function showThresholdConfig(account) {
+	try {
+		const response = await fetchApi(
+			`/api/admin/cliproxy/threshold-config?name=${encodeURIComponent(account.name)}`,
+		);
+		const config = response.config || {};
+
+		const toInputPercent = (value) => {
+			const num = Number(value);
+			return Number.isFinite(num) && num > 0 ? Math.round(num * 100) : "";
+		};
+
+		const modal = document.createElement("div");
+		modal.id = "thresholdModal";
+		modal.className =
+			"fixed inset-0 bg-black/50 flex items-center justify-center z-50";
+
+		let configHtml = "";
+
+		if (account.provider === "claude") {
+			configHtml = `
+				<div class="space-y-4">
+					<div class="text-sm text-gray-600 mb-4">当任一限额低于设定阈值时，自动禁用该账号</div>
+					<div>
+						<label class="block text-sm font-medium text-gray-700 mb-2">5 小时限额阈值 (%)</label>
+						<input type="number" id="threshold-five-hour" min="0" max="100" value="${toInputPercent(config.five_hour)}"
+							placeholder="留空或0表示不限制"
+							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+					</div>
+					<div>
+						<label class="block text-sm font-medium text-gray-700 mb-2">7 天限额阈值 (%)</label>
+						<input type="number" id="threshold-seven-day" min="0" max="100" value="${toInputPercent(config.seven_day)}"
+							placeholder="留空或0表示不限制"
+							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+					</div>
+					<div>
+						<label class="block text-sm font-medium text-gray-700 mb-2">7 天 Sonnet 限额阈值 (%)</label>
+						<input type="number" id="threshold-seven-day-sonnet" min="0" max="100" value="${toInputPercent(config.seven_day_sonnet)}"
+							placeholder="留空或0表示不限制"
+							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+					</div>
+				</div>
+			`;
+		} else if (account.provider === "codex") {
+			configHtml = `
+				<div class="space-y-4">
+					<div class="text-sm text-gray-600 mb-4">当任一限额低于设定阈值时，自动禁用该账号</div>
+					<div>
+						<label class="block text-sm font-medium text-gray-700 mb-2">5 小时限额阈值 (%)</label>
+						<input type="number" id="threshold-five-hour" min="0" max="100" value="${toInputPercent(config.five_hour)}"
+							placeholder="留空或0表示不限制"
+							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+					</div>
+					<div>
+						<label class="block text-sm font-medium text-gray-700 mb-2">周限额阈值 (%)</label>
+						<input type="number" id="threshold-weekly" min="0" max="100" value="${toInputPercent(config.weekly)}"
+							placeholder="留空或0表示不限制"
+							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+					</div>
+					<div>
+						<label class="block text-sm font-medium text-gray-700 mb-2">代码审查周限额阈值 (%)</label>
+						<input type="number" id="threshold-code-review" min="0" max="100" value="${toInputPercent(config.code_review)}"
+							placeholder="留空或0表示不限制"
+							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+					</div>
+				</div>
+			`;
+		} else {
+			configHtml = `
+				<div class="space-y-4">
+					<div class="text-sm text-gray-600 mb-4">分模型组设置阈值，当模型组内任一模型低于阈值时，禁用该组</div>
+					<div class="border border-gray-200 rounded-lg p-4">
+						<h4 class="font-medium text-gray-900 mb-3">Claude/GPT 模型组</h4>
+						<label class="block text-sm font-medium text-gray-700 mb-2">最低阈值 (%)</label>
+						<input type="number" id="threshold-claude-gpt" min="0" max="100" value="${toInputPercent(config.claude_gpt)}"
+							placeholder="留空或0表示不限制"
+							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+						<div class="text-xs text-gray-500 mt-2">包含: claude-sonnet-4-5, claude-opus-4-6 等</div>
+					</div>
+					<div class="border border-gray-200 rounded-lg p-4">
+						<h4 class="font-medium text-gray-900 mb-3">Gemini 模型组</h4>
+						<label class="block text-sm font-medium text-gray-700 mb-2">最低阈值 (%)</label>
+						<input type="number" id="threshold-gemini" min="0" max="100" value="${toInputPercent(config.gemini)}"
+							placeholder="留空或0表示不限制"
+							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+						<div class="text-xs text-gray-500 mt-2">包含: gemini-3-pro-high, gemini-3-flash 等</div>
+					</div>
+				</div>
+			`;
+		}
+
+		modal.innerHTML = `
+			<div class="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 animate-scaleIn">
+				<div class="flex items-center justify-between p-6 border-b border-gray-100">
+					<h3 class="text-lg font-semibold text-gray-900">设置阈值 - ${account.email || account.name}</h3>
+					<button onclick="document.getElementById('thresholdModal').remove()" 
+						class="text-gray-400 hover:text-gray-600">
+						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+						</svg>
+					</button>
+				</div>
+				<div class="p-6">
+					${configHtml}
+				</div>
+				<div class="flex justify-end gap-3 p-6 border-t border-gray-100">
+					<button onclick="document.getElementById('thresholdModal').remove()" 
+						class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition">
+						取消
+					</button>
+					<button onclick="saveThresholdConfig('${account.name}', '${account.provider}')" 
+						class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition">
+						保存
+					</button>
+				</div>
+			</div>
+		`;
+
+		document.body.appendChild(modal);
+	} catch (e) {
+		showToast("加载阈值配置失败: " + e.message, "error");
+	}
+}
+
+async function saveThresholdConfig(accountName, provider) {
+	try {
+		const parseThreshold = (raw) => {
+			const text = String(raw ?? "").trim();
+			if (text === "") return null;
+
+			const num = Number(text);
+			if (!Number.isFinite(num)) return null;
+
+			const clamped = Math.max(0, Math.min(100, num));
+			if (clamped <= 0) return null;
+
+			return clamped / 100;
+		};
+
+		const compactConfig = (obj) =>
+			Object.fromEntries(
+				Object.entries(obj).filter(([, value]) => value !== null),
+			);
+
+		let config = {};
+
+		if (provider === "claude") {
+			const fiveHourValue = document.getElementById(
+				"threshold-five-hour",
+			).value;
+			const sevenDayValue = document.getElementById(
+				"threshold-seven-day",
+			).value;
+			const sevenDaySonnetValue = document.getElementById(
+				"threshold-seven-day-sonnet",
+			).value;
+
+			config = compactConfig({
+				five_hour: parseThreshold(fiveHourValue),
+				seven_day: parseThreshold(sevenDayValue),
+				seven_day_sonnet: parseThreshold(sevenDaySonnetValue),
+			});
+		} else if (provider === "codex") {
+			const fiveHourValue = document.getElementById(
+				"threshold-five-hour",
+			).value;
+			const weeklyValue = document.getElementById("threshold-weekly").value;
+			const codeReviewValue = document.getElementById(
+				"threshold-code-review",
+			).value;
+
+			config = compactConfig({
+				five_hour: parseThreshold(fiveHourValue),
+				weekly: parseThreshold(weeklyValue),
+				code_review: parseThreshold(codeReviewValue),
+			});
+		} else {
+			const claudeGptValue = document.getElementById(
+				"threshold-claude-gpt",
+			).value;
+			const geminiValue = document.getElementById("threshold-gemini").value;
+
+			config = compactConfig({
+				claude_gpt: parseThreshold(claudeGptValue),
+				gemini: parseThreshold(geminiValue),
+			});
+		}
+
+		await fetchApi("/api/admin/cliproxy/threshold-config", {
+			method: "POST",
+			body: JSON.stringify({ name: accountName, config }),
+		});
+
+		document.getElementById("thresholdModal").remove();
+		showToast("阈值配置保存成功", "success");
+
+		await loadThresholdBadge(accountName);
+	} catch (e) {
+		showToast("保存阈值配置失败: " + e.message, "error");
 	}
 }
 

@@ -643,7 +643,7 @@ async function loadUserRanking() {
                         <span class="font-mono text-[10px] ${rankColor} w-4 text-center font-semibold">${index + 1}</span>
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center justify-between mb-0.5">
-                                <span class="text-xs text-gray-700 font-medium truncate">${user.username || "unknown"}</span>
+                                <span class="text-xs text-gray-700 font-medium truncate">${escapeHtml(user.username || "unknown")}</span>
                                 <span class="text-[10px] font-mono text-gray-500 ml-2">${formatNumber(requests)}</span>
                             </div>
                             <div class="h-1 bg-gray-100 rounded-full overflow-hidden">
@@ -1975,29 +1975,6 @@ function exportAccountJson(id) {
 	copyText(jsonStr);
 }
 
-async function changeAdminKey() {
-	const newKey = document.getElementById("new-admin-key").value.trim();
-	if (!newKey) {
-		showToast("请输入新的管理密钥", "warning");
-		return;
-	}
-	if (newKey.length < 6) {
-		showToast("密钥长度至少 6 位", "warning");
-		return;
-	}
-	if (!confirm("确定修改管理密钥？修改后需要重新登录。")) return;
-	try {
-		await fetchApi("/api/admin/settings/admin-key", {
-			method: "PUT",
-			body: JSON.stringify({ newKey: newKey }),
-		});
-		showToast("修改成功！请重新登录", "success");
-		setTimeout(() => logout(), 1500);
-	} catch (e) {
-		showToast("修改失败: " + e.message, "error");
-	}
-}
-
 async function loadApiKeys() {
 	try {
 		const keys = await fetchApi("/api/settings/api-keys");
@@ -2006,7 +1983,7 @@ async function loadApiKeys() {
 			container.innerHTML = '<div class="text-gray-500">暂无 API 密钥</div>';
 			return;
 		}
-		container.innerHTML = `<table class="w-full"><thead><tr class="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"><th class="px-4 py-3 rounded-tl-lg">密钥</th><th class="px-4 py-3 rounded-tr-lg">操作</th></tr></thead><tbody class="divide-y divide-gray-100">${keys.map((k) => `<tr class="hover:bg-gray-50 transition"><td class="px-4 py-3 font-mono text-sm text-gray-900">${k.key}</td><td class="px-4 py-3"><button onclick="copyText('${k.key}')" class="text-blue-500 hover:text-blue-700 text-sm font-medium mr-3">复制</button><button onclick="removeApiKey('${k.key}')" class="text-red-500 hover:text-red-700 text-sm font-medium">删除</button></td></tr>`).join("")}</tbody></table>`;
+		container.innerHTML = `<table class="w-full"><thead><tr class="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"><th class="px-4 py-3 rounded-tl-lg">密钥</th><th class="px-4 py-3 rounded-tr-lg">操作</th></tr></thead><tbody class="divide-y divide-gray-100">${keys.map((k) => `<tr class="hover:bg-gray-50 transition"><td class="px-4 py-3 font-mono text-sm text-gray-900">${escapeHtml(k.key)}</td><td class="px-4 py-3"><button onclick="copyText('${escapeHtml(k.key)}')" class="text-blue-500 hover:text-blue-700 text-sm font-medium mr-3">复制</button><button onclick="removeApiKey('${escapeHtml(k.key)}')" class="text-red-500 hover:text-red-700 text-sm font-medium">删除</button></td></tr>`).join("")}</tbody></table>`;
 	} catch (e) {
 		console.error(e);
 	}
@@ -2046,6 +2023,235 @@ async function removeApiKey(key) {
 		showToast("删除成功", "success");
 	} catch (e) {
 		showToast("删除失败: " + e.message, "error");
+	}
+}
+
+async function showModelCooldownConfig() {
+	try {
+		const [modelsResponse, configResponse] = await Promise.all([
+			fetchApi("/api/admin/accounts/models"),
+			fetchApi("/api/admin/settings/model-cooldown-config"),
+		]);
+
+		const models = modelsResponse.models || [];
+		const config = configResponse.config || {};
+
+		if (models.length === 0) {
+			showToast("未找到支持的模型", "warning");
+			return;
+		}
+
+		const modal = document.createElement("div");
+		modal.id = "modelCooldownModal";
+		modal.className =
+			"fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn";
+
+		const selectedModels = new Set(
+			Object.entries(config)
+				.filter(([, cfg]) => cfg.enabled)
+				.map(([id]) => id),
+		);
+
+		const defaultThreshold = 3;
+		const defaultDuration = 15;
+
+		modal.innerHTML = `
+			<div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl mx-4 max-h-[90vh] flex flex-col animate-scaleIn">
+				<!-- Header -->
+				<div class="flex items-center justify-between p-6 border-b border-gray-100">
+					<div>
+						<h3 class="text-xl font-semibold text-gray-900">模型冷却配置</h3>
+						<p class="text-sm text-gray-500 mt-1">选中模型后，当连续失败达到阈值时将自动进入冷却期</p>
+					</div>
+					<button onclick="document.getElementById('modelCooldownModal').remove()" 
+						class="text-gray-400 hover:text-gray-600 transition p-2 hover:bg-gray-100 rounded-lg">
+						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+						</svg>
+					</button>
+				</div>
+
+				<!-- Content -->
+				<div class="flex-1 overflow-hidden flex">
+					<!-- Left: Model Selection -->
+					<div class="w-1/2 border-r border-gray-100 overflow-y-auto p-6">
+						<div class="flex items-center justify-between mb-4">
+							<h4 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">选择模型</h4>
+							<span class="text-xs text-gray-500" id="selected-count">${selectedModels.size} 个已选</span>
+						</div>
+						<div class="space-y-2" id="model-list">
+							${models
+								.map((model) => {
+									const isSelected = selectedModels.has(model.id);
+									return `
+									<label class="flex items-center p-3 rounded-lg border-2 transition cursor-pointer hover:bg-blue-50 ${isSelected ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-blue-300"}">
+										<input type="checkbox" 
+											class="model-checkbox w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500 focus:ring-offset-0" 
+											data-model-id="${model.id}"
+											data-model-name="${model.display_name || model.id}"
+											${isSelected ? "checked" : ""}
+											onchange="updateCooldownConfigPreview()">
+										<div class="ml-3 flex-1">
+											<div class="text-sm font-medium text-gray-900">${model.display_name || model.id}</div>
+											<div class="text-xs text-gray-500">${model.id}</div>
+										</div>
+									</label>
+								`;
+								})
+								.join("")}
+						</div>
+					</div>
+
+					<!-- Right: Configuration Panel -->
+					<div class="w-1/2 overflow-y-auto p-6 bg-gray-50">
+						<div id="config-panel">
+							<!-- Will be populated by updateCooldownConfigPreview() -->
+						</div>
+					</div>
+				</div>
+
+				<!-- Footer -->
+				<div class="flex items-center justify-end gap-3 p-6 border-t border-gray-100 bg-gray-50">
+					<button onclick="document.getElementById('modelCooldownModal').remove()" 
+						class="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg transition font-medium">
+						取消
+					</button>
+					<button onclick="saveModelCooldownConfigFromModal()" 
+						class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition font-medium shadow-lg shadow-blue-500/30">
+						保存配置
+					</button>
+				</div>
+			</div>
+		`;
+
+		document.body.appendChild(modal);
+		updateCooldownConfigPreview();
+	} catch (e) {
+		showToast("加载模型配置失败: " + e.message, "error");
+	}
+}
+
+function updateCooldownConfigPreview() {
+	const checkboxes = document.querySelectorAll(".model-checkbox:checked");
+	const count = checkboxes.length;
+	const countEl = document.getElementById("selected-count");
+	const panel = document.getElementById("config-panel");
+
+	if (countEl) {
+		countEl.textContent = `${count} 个已选`;
+	}
+
+	if (count === 0) {
+		panel.innerHTML = `
+			<div class="flex flex-col items-center justify-center h-full text-center py-12">
+				<svg class="w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+				</svg>
+				<p class="text-gray-500 text-sm">请先选择要配置的模型</p>
+			</div>
+		`;
+	} else {
+		const modelNames = Array.from(checkboxes)
+			.map((cb) => cb.dataset.modelName)
+			.join("、");
+		panel.innerHTML = `
+			<div class="space-y-6">
+				<div class="bg-white rounded-lg p-4 border border-gray-200">
+					<h4 class="text-sm font-semibold text-gray-700 mb-3">已选择的模型</h4>
+					<div class="flex flex-wrap gap-2">
+						${Array.from(checkboxes)
+							.map(
+								(cb) => `
+							<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+								${cb.dataset.modelName}
+							</span>
+						`,
+							)
+							.join("")}
+					</div>
+				</div>
+
+				<div class="bg-white rounded-lg p-4 border border-gray-200">
+					<h4 class="text-sm font-semibold text-gray-700 mb-4">冷却配置</h4>
+					
+					<div class="space-y-4">
+						<div>
+							<label class="block text-sm font-medium text-gray-700 mb-2">
+								失败阈值
+								<span class="text-gray-400 font-normal ml-1">(连续失败次数)</span>
+							</label>
+							<div class="flex items-center gap-3">
+								<input type="range" id="threshold-slider" min="1" max="10" value="3" 
+									class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+									oninput="document.getElementById('threshold-value').textContent = this.value">
+								<span id="threshold-value" class="text-2xl font-bold text-blue-600 w-12 text-center">3</span>
+								<span class="text-sm text-gray-500">次</span>
+							</div>
+							<p class="text-xs text-gray-500 mt-2">当模型连续失败达到此次数时，将进入冷却期</p>
+						</div>
+
+						<div>
+							<label class="block text-sm font-medium text-gray-700 mb-2">
+								冷却时长
+								<span class="text-gray-400 font-normal ml-1">(分钟)</span>
+							</label>
+							<div class="flex items-center gap-3">
+								<input type="range" id="duration-slider" min="5" max="60" step="5" value="15" 
+									class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+									oninput="document.getElementById('duration-value').textContent = this.value">
+								<span id="duration-value" class="text-2xl font-bold text-blue-600 w-12 text-center">15</span>
+								<span class="text-sm text-gray-500">分钟</span>
+							</div>
+							<p class="text-xs text-gray-500 mt-2">冷却期内，请求将自动 fallback 到其他渠道</p>
+						</div>
+					</div>
+				</div>
+
+				<div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+					<div class="flex gap-3">
+						<svg class="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+						</svg>
+						<div class="text-sm text-amber-800">
+							<p class="font-medium mb-1">配置说明</p>
+							<p>以上配置将应用到所有选中的 ${count} 个模型。如需为不同模型设置不同参数，请分批配置。</p>
+						</div>
+					</div>
+				</div>
+			</div>
+		`;
+	}
+}
+
+async function saveModelCooldownConfigFromModal() {
+	try {
+		const checkboxes = document.querySelectorAll(".model-checkbox");
+		const threshold = parseInt(
+			document.getElementById("threshold-slider")?.value || 3,
+		);
+		const duration = parseInt(
+			document.getElementById("duration-slider")?.value || 15,
+		);
+
+		const config = {};
+		checkboxes.forEach((checkbox) => {
+			const modelId = checkbox.dataset.modelId;
+			config[modelId] = {
+				enabled: checkbox.checked,
+				threshold: checkbox.checked ? threshold : 3,
+				duration: checkbox.checked ? duration : 15,
+			};
+		});
+
+		await fetchApi("/api/admin/settings/model-cooldown-config", {
+			method: "POST",
+			body: JSON.stringify({ config }),
+		});
+
+		document.getElementById("modelCooldownModal").remove();
+		showToast("配置保存成功", "success");
+	} catch (e) {
+		showToast("保存配置失败: " + e.message, "error");
 	}
 }
 
