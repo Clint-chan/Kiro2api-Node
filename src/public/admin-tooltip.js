@@ -1,12 +1,12 @@
-        let machineTooltipTimer = null;
+let machineTooltipTimer = null;
 
-        function showMachineIdTooltip(event, machineId, source, title, desc) {
-            const tooltip = document.getElementById('global-machine-tooltip');
-            if (machineTooltipTimer) clearTimeout(machineTooltipTimer);
+function showMachineIdTooltip(event, machineId, source, title, desc) {
+	const tooltip = document.getElementById("global-machine-tooltip");
+	if (machineTooltipTimer) clearTimeout(machineTooltipTimer);
 
-            if (!tooltip) return;
+	if (!tooltip) return;
 
-            const contentHtml = `
+	const contentHtml = `
                 <div class="flex items-start justify-between mb-3">
                     <div>
                         <div class="text-xs font-bold text-gray-800 mb-0.5">Machine ID</div>
@@ -23,29 +23,29 @@
                     ${desc}
                 </div>
             `;
-            tooltip.innerHTML = contentHtml;
+	tooltip.innerHTML = contentHtml;
 
-            const rect = event.currentTarget.getBoundingClientRect();
-            tooltip.style.left = rect.left + 'px';
-            tooltip.style.top = (rect.bottom + 8) + 'px';
-            tooltip.classList.remove('hidden', 'opacity-0', 'invisible');
+	const rect = event.currentTarget.getBoundingClientRect();
+	tooltip.style.left = rect.left + "px";
+	tooltip.style.top = rect.bottom + 8 + "px";
+	tooltip.classList.remove("hidden", "opacity-0", "invisible");
 
-            const tooltipRect = tooltip.getBoundingClientRect();
-            if (tooltipRect.right > window.innerWidth - 20) {
-                tooltip.style.left = (window.innerWidth - tooltipRect.width - 20) + 'px';
-            }
-        }
+	const tooltipRect = tooltip.getBoundingClientRect();
+	if (tooltipRect.right > window.innerWidth - 20) {
+		tooltip.style.left = window.innerWidth - tooltipRect.width - 20 + "px";
+	}
+}
 
-        function hideMachineIdTooltip() {
-            const tooltip = document.getElementById('global-machine-tooltip');
-            if (tooltip) {
-                machineTooltipTimer = setTimeout(() => {
-                    tooltip.classList.add('opacity-0', 'invisible');
-                    setTimeout(() => tooltip.classList.add('hidden'), 200);
-                }, 300);
-            }
-        }
+function hideMachineIdTooltip() {
+	const tooltip = document.getElementById("global-machine-tooltip");
+	if (tooltip) {
+		machineTooltipTimer = setTimeout(() => {
+			tooltip.classList.add("opacity-0", "invisible");
+			setTimeout(() => tooltip.classList.add("hidden"), 200);
+		}, 300);
+	}
+}
 
-        function keepTooltipOpen() {
-            if (machineTooltipTimer) clearTimeout(machineTooltipTimer);
-        }
+function keepTooltipOpen() {
+	if (machineTooltipTimer) clearTimeout(machineTooltipTimer);
+}

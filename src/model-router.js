@@ -1,12 +1,8 @@
-/**
- * 智能模型路由
- * 根据账号池能力自动选择最优渠道
- */
-
 import fs from "fs";
 import { isAntigravityModel } from "./antigravity.js";
 import { isCodexModel } from "./codex.js";
 import { logger } from "./logger.js";
+import { getModelCooldown } from "./model-cooldown.js";
 
 /**
  * Opus 模型需要 Pro 或更高级别的 Kiro 账号
@@ -96,11 +92,59 @@ export function hasKiroAccountForModel(accountPool, model) {
 }
 
 /**
+ * 检查 Antigravity 账号池中是否有高配额账号（>20%）
+ * @param {object} db - 数据库实例
+ * @param {string} modelId - 模型 ID（如 claude-opus-4-6-thinking）
+ * @returns {boolean}
+ */
+function hasAntigravityHighQuota(db, modelId) {
+	try {
+		const accounts = db.getAllAntigravityAccounts("active");
+		if (!accounts || accounts.length === 0) return false;
+
+		for (const account of accounts) {
+			if (!account.model_quotas) continue;
+
+			let quotas;
+			try {
+				quotas =
+					typeof account.model_quotas === "string"
+						? JSON.parse(account.model_quotas)
+						: account.model_quotas;
+			} catch {
+				continue;
+			}
+
+			if (!quotas || typeof quotas !== "object") continue;
+
+			const modelQuota = quotas[modelId];
+			if (!modelQuota || typeof modelQuota !== "object") continue;
+
+			const remainingFraction = Number(modelQuota.remaining_fraction);
+			if (Number.isFinite(remainingFraction) && remainingFraction > 0.2) {
+				logger.debug("Found Antigravity account with high quota", {
+					accountId: account.id,
+					accountName: account.name,
+					modelId,
+					remainingFraction,
+				});
+				return true;
+			}
+		}
+
+		return false;
+	} catch (error) {
+		logger.error("Error checking Antigravity quota", { error });
+		return false;
+	}
+}
+
+/**
  * 智能路由：决定使用哪个渠道
  * @param {string} model - 模型名称
  * @param {object} accountPool - 账号池对象
  * @param {object} user - 用户对象（用于权限检查）
- * @returns {object} { channel: 'kiro'|'antigravity'|'codex', model: string, reason: string }
+ * @returns {object} { channel: 'kiro'|'antigravity'|'codex'|'claudecode', model: string, reason: string }
  */
 export function routeModel(model, accountPool, user = null) {
 	// 1. 如果已经是 Antigravity 专属模型，直接使用 Antigravity
@@ -121,7 +165,6 @@ export function routeModel(model, accountPool, user = null) {
 		};
 	}
 
-	// 2. 如果不需要 Pro 账号（Sonnet/Haiku），优先使用 Kiro
 	if (!requiresProAccount(model)) {
 		return {
 			channel: "kiro",
@@ -130,35 +173,72 @@ export function routeModel(model, accountPool, user = null) {
 		};
 	}
 
-	// 3. Opus 模型：检查 Kiro 是否有 Pro 账号
-	if (hasKiroAccountForModel(accountPool, model)) {
-		return {
-			channel: "kiro",
-			model: model,
-			reason: "kiro_pro_available",
-		};
-	}
+	let kiroInCooldown = false;
+	try {
+		const cooldown = getModelCooldown();
+		kiroInCooldown = cooldown.isInCooldown("kiro", model);
 
-	// 4. Kiro 没有 Pro 账号，fallback 到 Antigravity
-	// 检查用户是否有 Antigravity 权限
+		if (kiroInCooldown) {
+			logger.info("Kiro model in cooldown, skipping Kiro channel", {
+				model,
+				remainingSeconds: cooldown.getRemainingCooldown("kiro", model),
+			});
+		} else {
+			if (hasKiroAccountForModel(accountPool, model)) {
+				return {
+					channel: "kiro",
+					model: model,
+					reason: "kiro_pro_available",
+				};
+			}
+		}
+	} catch (error) {
+		logger.error("Cooldown check failed", { error });
+		if (hasKiroAccountForModel(accountPool, model)) {
+			return {
+				channel: "kiro",
+				model: model,
+				reason: "kiro_pro_available",
+			};
+		}
+	}
 
 	const hasPermission = hasAntigravityPermission(user);
+	const antigravityModel =
+		KIRO_TO_ANTIGRAVITY_FALLBACK[model] || `${model}-thinking`;
 
-	if (!user || !hasPermission) {
+	if (hasPermission && accountPool.db) {
+		const hasHighQuota = hasAntigravityHighQuota(
+			accountPool.db,
+			antigravityModel,
+		);
+
+		if (hasHighQuota) {
+			return {
+				channel: "antigravity",
+				model: antigravityModel,
+				reason: kiroInCooldown
+					? "kiro_cooldown_antigravity_fallback"
+					: "antigravity_high_quota",
+			};
+		}
+	}
+
+	if (hasPermission) {
 		return {
-			channel: null,
-			model: model,
-			reason: "no_available_channel",
-			error: `Model '${model}' requires Pro account. Kiro has no Pro accounts and user does not have Antigravity permission.`,
+			channel: "claudecode",
+			model: "claude-opus-4-6-20251220",
+			reason: kiroInCooldown
+				? "kiro_cooldown_claudecode_fallback"
+				: "antigravity_low_quota_fallback",
 		};
 	}
 
-	const antigravityModel =
-		KIRO_TO_ANTIGRAVITY_FALLBACK[model] || `${model}-thinking`;
 	return {
-		channel: "antigravity",
-		model: antigravityModel,
-		reason: "kiro_pro_unavailable_fallback",
+		channel: null,
+		model: model,
+		reason: "no_available_channel",
+		error: `Model '${model}' requires Pro account. No available channel found.`,
 	};
 }
 

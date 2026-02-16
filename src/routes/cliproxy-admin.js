@@ -196,6 +196,81 @@ export function createCLIProxyAdminRouter() {
 	router.post("/api-call", async (req, res) => {
 		try {
 			const { authIndex, method, url, header, data } = req.body;
+
+			if (!method || !url) {
+				return res.status(400).json({ error: "method and url are required" });
+			}
+
+			const allowedMethods = ["GET", "POST"];
+			if (!allowedMethods.includes(method.toUpperCase())) {
+				return res.status(400).json({
+					error: `Method ${method} not allowed. Only GET and POST are supported.`,
+				});
+			}
+
+			let parsedUrl;
+			try {
+				parsedUrl = new URL(url);
+			} catch (e) {
+				return res.status(400).json({ error: "Invalid URL format" });
+			}
+
+			const allowedDomains = [
+				"daily-cloudcode-pa.googleapis.com",
+				"api.anthropic.com",
+				"api.openai.com",
+				"chatgpt.com",
+			];
+
+			if (!allowedDomains.includes(parsedUrl.hostname)) {
+				return res.status(403).json({
+					error: `Domain ${parsedUrl.hostname} not allowed. Only whitelisted domains are permitted.`,
+				});
+			}
+
+			const blockedIPs = [
+				"127.0.0.1",
+				"localhost",
+				"0.0.0.0",
+				"::1",
+				"169.254.169.254",
+			];
+			if (blockedIPs.includes(parsedUrl.hostname)) {
+				return res.status(403).json({
+					error: "Access to local/private addresses is forbidden",
+				});
+			}
+
+			if (
+				parsedUrl.hostname.match(
+					/^(10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.)/,
+				)
+			) {
+				return res.status(403).json({
+					error: "Access to private network ranges is forbidden",
+				});
+			}
+
+			const allowedHeaders = [
+				"content-type",
+				"authorization",
+				"anthropic-version",
+				"anthropic-beta",
+				"user-agent",
+				"chatgpt-account-id",
+			];
+			if (header && typeof header === "object") {
+				const headerKeys = Object.keys(header).map((k) => k.toLowerCase());
+				const invalidHeaders = headerKeys.filter(
+					(k) => !allowedHeaders.includes(k),
+				);
+				if (invalidHeaders.length > 0) {
+					return res.status(400).json({
+						error: `Headers not allowed: ${invalidHeaders.join(", ")}`,
+					});
+				}
+			}
+
 			const result = await client.apiCall(authIndex, method, url, header, data);
 			res.json(result);
 		} catch (error) {
@@ -246,6 +321,85 @@ export function createCLIProxyAdminRouter() {
 			const { value } = req.body;
 			const result = await client.putQuotaExceededSwitchPreviewModel(value);
 			res.json(result);
+		} catch (error) {
+			res.status(500).json({ error: error.message });
+		}
+	});
+
+	return router;
+}
+
+export function createCLIProxyThresholdRouter(db) {
+	const router = express.Router();
+
+	const allowedKeys = new Set([
+		"five_hour",
+		"seven_day",
+		"seven_day_sonnet",
+		"weekly",
+		"code_review",
+		"claude_gpt",
+		"gemini",
+	]);
+
+	const normalizeThresholdConfig = (input) => {
+		if (!input || typeof input !== "object" || Array.isArray(input)) {
+			return {};
+		}
+
+		const normalized = {};
+		for (const [key, value] of Object.entries(input)) {
+			if (!allowedKeys.has(key)) continue;
+			const num = Number(value);
+			if (Number.isFinite(num) && num > 0 && num <= 1) {
+				normalized[key] = num;
+			}
+		}
+		return normalized;
+	};
+
+	router.get("/threshold-config", (req, res) => {
+		try {
+			const { name } = req.query;
+			if (!name) {
+				return res.status(400).json({ error: "Account name required" });
+			}
+
+			const configJson = db.getSetting(`cliproxy_threshold_${name}`) || "{}";
+			let rawConfig = {};
+			try {
+				rawConfig = JSON.parse(configJson);
+			} catch {
+				rawConfig = {};
+			}
+
+			const config = normalizeThresholdConfig(rawConfig);
+			res.json({ config });
+		} catch (error) {
+			res.status(500).json({ error: error.message });
+		}
+	});
+
+	router.post("/threshold-config", (req, res) => {
+		try {
+			const { name, config } = req.body;
+			if (
+				!name ||
+				!config ||
+				typeof config !== "object" ||
+				Array.isArray(config)
+			) {
+				return res.status(400).json({ error: "Name and config required" });
+			}
+
+			const normalizedConfig = normalizeThresholdConfig(config);
+
+			db.setSetting(
+				`cliproxy_threshold_${name}`,
+				JSON.stringify(normalizedConfig),
+			);
+
+			res.json({ success: true });
 		} catch (error) {
 			res.status(500).json({ error: error.message });
 		}

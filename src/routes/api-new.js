@@ -14,7 +14,8 @@ import { createFailoverHandler } from "../failover-handler.js";
 import { KiroApiError, KiroClient } from "../kiro-client.js";
 import { logger } from "../logger.js";
 import { userAuthMiddleware } from "../middleware/auth.js";
-import { routeModel } from "../model-router.js";
+import { getModelCooldown } from "../model-cooldown.js";
+import { requiresProAccount, routeModel } from "../model-router.js";
 import {
 	countMessagesTokens,
 	countTokens,
@@ -133,7 +134,17 @@ export function createApiRouter(state) {
 
 	async function handleAntigravityClaudeRequest(req, res) {
 		const cliproxyUrl = process.env.CLIPROXY_URL || "http://localhost:19865";
-		const cliproxyApiKey = process.env.CLIPROXY_API_KEY || "zxc123";
+		const cliproxyApiKey = process.env.CLIPROXY_API_KEY;
+
+		if (!cliproxyApiKey) {
+			logger.error("CLIPROXY_API_KEY not configured");
+			return res.status(503).json({
+				error: {
+					type: "configuration_error",
+					message: "CLIProxy service not configured",
+				},
+			});
+		}
 
 		try {
 			const response = await fetch(`${cliproxyUrl}/v1/messages`, {
@@ -178,7 +189,17 @@ export function createApiRouter(state) {
 
 	async function handleAntigravityOpenAIRequest(req, res) {
 		const cliproxyUrl = process.env.CLIPROXY_URL || "http://localhost:19865";
-		const cliproxyApiKey = process.env.CLIPROXY_API_KEY || "zxc123";
+		const cliproxyApiKey = process.env.CLIPROXY_API_KEY;
+
+		if (!cliproxyApiKey) {
+			logger.error("CLIPROXY_API_KEY not configured");
+			return res.status(503).json({
+				error: {
+					type: "configuration_error",
+					message: "CLIProxy service not configured",
+				},
+			});
+		}
 
 		try {
 			const response = await fetch(`${cliproxyUrl}/v1/chat/completions`, {
@@ -300,7 +321,11 @@ export function createApiRouter(state) {
 				return permissionError;
 			}
 
-			if (route.channel === "antigravity") {
+			if (
+				route.channel === "antigravity" ||
+				route.channel === "codex" ||
+				route.channel === "claudecode"
+			) {
 				req.body.model = route.model;
 			}
 
@@ -350,7 +375,11 @@ export function createApiRouter(state) {
 				return permissionError;
 			}
 
-			if (route.channel === "antigravity" || route.channel === "codex") {
+			if (
+				route.channel === "antigravity" ||
+				route.channel === "codex" ||
+				route.channel === "claudecode"
+			) {
 				req.body.model = route.model;
 				return await handleAntigravityClaudeRequest(req, res);
 			}
@@ -442,7 +471,6 @@ export function createApiRouter(state) {
 		} catch (error) {
 			const duration = Date.now() - startTime;
 
-			// 记录失败指标
 			recordApiFailure({
 				userId: req.user?.id,
 				model: req.body.model,
@@ -451,7 +479,6 @@ export function createApiRouter(state) {
 				duration,
 			});
 
-			// 记录错误 (no billing on error)
 			if (selected) {
 				state.accountPool.addLog({
 					accountId: selected.id,
@@ -464,7 +491,6 @@ export function createApiRouter(state) {
 					error: error.message,
 				});
 
-				// 检查是否是月度请求数达到上限或余额不足
 				const isMonthlyLimit =
 					error.status === 402 &&
 					(error.message?.includes("MONTHLY_REQUEST_COUNT") ||
@@ -472,14 +498,12 @@ export function createApiRouter(state) {
 						error.message?.includes("insufficient_balance"));
 
 				if (isMonthlyLimit) {
-					// 将账号标记为不可用
 					logger.warn("账号已达月度请求上限或余额不足，标记为不可用", {
 						accountName: selected.name,
 						accountId: selected.id,
 					});
 					await state.accountPool.markInvalid(selected.id);
 
-					// 异步刷新该账号的余额信息，以便下次启动时能正确识别
 					state.accountPool.refreshAccountUsage(selected.id).catch((err) => {
 						logger.error("刷新账号余额失败", {
 							accountId: selected.id,
@@ -487,11 +511,28 @@ export function createApiRouter(state) {
 						});
 					});
 				} else {
-					// 增加账号错误计数
+					const status = inferHttpStatus(error);
 					const isRateLimit =
-						error.status === 429 ||
+						status === 429 ||
+						status === 423 ||
 						error.message?.includes("rate") ||
-						error.message?.includes("limit");
+						error.message?.includes("limit") ||
+						error.message?.includes("high traffic");
+
+					if (isRateLimit && route.channel === "kiro") {
+						try {
+							const cooldown = getModelCooldown();
+							cooldown.recordFailure("kiro", req.body.model);
+							logger.warn("Kiro rate limit detected, failure recorded", {
+								model: req.body.model,
+								status,
+								error: error.message,
+							});
+						} catch (e) {
+							logger.error("Failed to record cooldown failure", { error: e });
+						}
+					}
+
 					state.accountPool.recordError(selected.id, isRateLimit);
 				}
 			}

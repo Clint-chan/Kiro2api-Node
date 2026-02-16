@@ -82,7 +82,7 @@ function renderUsersPage() {
 														(u, i) => `
                             <tr class="hover:bg-gray-50 transition ${i % 2 === 1 ? "bg-gray-50/50" : ""}">
                                 <td class="px-4 py-4">
-                                    <div class="font-medium text-gray-900">${u.username}</div>
+                                    <div class="font-medium text-gray-900">${escapeHtml(u.username)}</div>
                                     <div class="text-xs text-gray-500">${u.role === "admin" ? "管理员" : "普通用户"}</div>
                                     <div class="mt-1 flex items-center gap-1.5 flex-wrap">${formatUserChannelBadges(u.allowed_channels)}</div>
                                     ${
@@ -94,8 +94,8 @@ function renderUsersPage() {
                                 </td>
                                 <td class="px-4 py-4">
                                     <div class="flex items-center gap-2">
-                                        <code class="text-xs bg-gray-100 px-2 py-1 rounded font-mono select-all">${u.api_key}</code>
-                                        <button onclick="copyText(\`${u.api_key}\`)" class="text-blue-500 hover:text-blue-700 text-xs" title="复制API Key">
+                                        <code class="text-xs bg-gray-100 px-2 py-1 rounded font-mono select-all">${escapeHtml(u.api_key)}</code>
+                                        <button onclick="copyText(\`${escapeHtml(u.api_key)}\`)" class="text-blue-500 hover:text-blue-700 text-xs" title="复制API Key">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
                                             </svg>

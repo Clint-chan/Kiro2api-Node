@@ -1,198 +1,220 @@
-import fetch from 'node-fetch';
-import crypto from 'crypto';
-import { logger } from './logger.js';
+import crypto from "crypto";
+import fetch from "node-fetch";
+import { logger } from "./logger.js";
 
 export class TokenManager {
-  constructor(config, credentials) {
-    this.config = config;
-    this.credentials = {
-      ...credentials,
-      machineId: TokenManager.resolveMachineId(credentials, config)
-    };
-    this.accessToken = credentials.accessToken || null;
-    this.expiresAt = credentials.expiresAt ? new Date(credentials.expiresAt) : new Date(0);
-  }
+	constructor(config, credentials) {
+		this.config = config;
+		this.credentials = {
+			...credentials,
+			machineId: TokenManager.resolveMachineId(credentials, config),
+		};
+		this.accessToken = credentials.accessToken || null;
+		this.expiresAt = credentials.expiresAt
+			? new Date(credentials.expiresAt)
+			: new Date(0);
+	}
 
-  async ensureValidToken() {
-    // 检查 token 是否过期（提前 5 分钟刷新）
-    if (this.accessToken && this.expiresAt > new Date(Date.now() + 5 * 60 * 1000)) {
-      return this.accessToken;
-    }
+	async ensureValidToken() {
+		// 检查 token 是否过期（提前 5 分钟刷新）
+		if (
+			this.accessToken &&
+			this.expiresAt > new Date(Date.now() + 5 * 60 * 1000)
+		) {
+			return this.accessToken;
+		}
 
-    // 刷新 token
-    return await this.refreshToken();
-  }
+		// 刷新 token
+		return await this.refreshToken();
+	}
 
-  async refreshToken() {
-    const authMethod = this.credentials.authMethod || 'social';
-    
-    if (authMethod === 'idc') {
-      return await this.refreshIdcToken();
-    } else {
-      return await this.refreshSocialToken();
-    }
-  }
+	async refreshToken() {
+		const authMethod = this.credentials.authMethod || "social";
 
-  async refreshSocialToken() {
-    const region = this.config.region || 'us-east-1';
-    const tokenUrl = `https://prod.${region}.auth.desktop.kiro.dev/refreshToken`;
-    const machineId = TokenManager.resolveMachineId(this.credentials, this.config);
-    if (!machineId) {
-      throw new Error('缺少可用的 machineId，无法刷新 Social Token');
-    }
-    this.credentials.machineId = machineId;
-    const kiroVersion = this.config.kiroVersion || '1.6.0';
+		if (authMethod === "idc") {
+			return await this.refreshIdcToken();
+		} else {
+			return await this.refreshSocialToken();
+		}
+	}
 
-    logger.info('刷新 Social Token', { refreshTokenPrefix: this.credentials.refreshToken?.substring(0, 20) });
+	async refreshSocialToken() {
+		const region = this.config.region || "us-east-1";
+		const tokenUrl = `https://prod.${region}.auth.desktop.kiro.dev/refreshToken`;
+		const machineId = TokenManager.resolveMachineId(
+			this.credentials,
+			this.config,
+		);
+		if (!machineId) {
+			throw new Error("缺少可用的 machineId，无法刷新 Social Token");
+		}
+		this.credentials.machineId = machineId;
+		const kiroVersion = this.config.kiroVersion || "1.6.0";
 
-    const fetchOptions = {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json, text/plain, */*',
-        'User-Agent': `KiroIDE-${kiroVersion}-${machineId}`,
-        'Accept-Encoding': 'gzip, compress, deflate, br',
-        'Connection': 'close'
-      },
-      body: JSON.stringify({ refreshToken: this.credentials.refreshToken })
-    };
+		logger.info("刷新 Social Token", {
+			refreshTokenPrefix: this.credentials.refreshToken?.substring(0, 20),
+		});
 
-    // 代理支持
-    if (this.config.proxyUrl) {
-      try {
-        const { HttpsProxyAgent } = await import('https-proxy-agent');
-        fetchOptions.agent = new HttpsProxyAgent(this.config.proxyUrl);
-       } catch (e) {
-         logger.warn('代理模块未安装，忽略代理设置');
-       }
-     }
+		const fetchOptions = {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				Accept: "application/json, text/plain, */*",
+				"User-Agent": `KiroIDE-${kiroVersion}-${machineId}`,
+				"Accept-Encoding": "gzip, compress, deflate, br",
+				Connection: "close",
+			},
+			body: JSON.stringify({ refreshToken: this.credentials.refreshToken }),
+		};
 
-     const response = await fetch(tokenUrl, fetchOptions);
+		// 代理支持
+		if (this.config.proxyUrl) {
+			try {
+				const { HttpsProxyAgent } = await import("https-proxy-agent");
+				fetchOptions.agent = new HttpsProxyAgent(this.config.proxyUrl);
+			} catch (e) {
+				logger.warn("代理模块未安装，忽略代理设置");
+			}
+		}
 
-     if (!response.ok) {
-       const error = await response.text();
-       logger.error('Social Token 刷新失败', { status: response.status, error });
-      throw new Error(`Social Token 刷新失败: ${response.status} - ${error}`);
-    }
+		const response = await fetch(tokenUrl, fetchOptions);
 
-    const data = await response.json();
-    this.accessToken = data.accessToken || data.access_token;
-    this.expiresAt = new Date(Date.now() + (data.expiresIn || data.expires_in || 3600) * 1000);
+		if (!response.ok) {
+			const error = await response.text();
+			logger.error("Social Token 刷新失败", { status: response.status, error });
+			throw new Error(`Social Token 刷新失败: ${response.status} - ${error}`);
+		}
 
-    // 如果返回了新的 refreshToken，更新它
-    if (data.refreshToken || data.refresh_token) {
-      this.credentials.refreshToken = data.refreshToken || data.refresh_token;
-    }
+		const data = await response.json();
+		this.accessToken = data.accessToken || data.access_token;
+		this.expiresAt = new Date(
+			Date.now() + (data.expiresIn || data.expires_in || 3600) * 1000,
+		);
 
-     logger.info('Social Token 刷新成功', { accessTokenPrefix: this.accessToken?.substring(0, 20) });
+		// 如果返回了新的 refreshToken，更新它
+		if (data.refreshToken || data.refresh_token) {
+			this.credentials.refreshToken = data.refreshToken || data.refresh_token;
+		}
 
-    return this.accessToken;
-  }
+		logger.info("Social Token 刷新成功", {
+			accessTokenPrefix: this.accessToken?.substring(0, 20),
+		});
 
-  async refreshIdcToken() {
-    const region = this.credentials.region || this.config.region || 'us-east-1';
-    const tokenUrl = `https://oidc.${region}.amazonaws.com/token`;
+		return this.accessToken;
+	}
 
-    // 使用 camelCase 格式（AWS SSO OIDC 要求）
-    const body = {
-      clientId: this.credentials.clientId,
-      clientSecret: this.credentials.clientSecret,
-      refreshToken: this.credentials.refreshToken,
-      grantType: 'refresh_token'
-    };
+	async refreshIdcToken() {
+		const region = this.credentials.region || this.config.region || "us-east-1";
+		const tokenUrl = `https://oidc.${region}.amazonaws.com/token`;
 
-    const fetchOptions = {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': '*/*',
-        'x-amz-user-agent': 'aws-sdk-js/3.738.0 ua/2.1 os/other lang/js md/browser#unknown_unknown api/sso-oidc#3.738.0 m/E KiroIDE',
-        'User-Agent': 'node',
-        'Accept-Encoding': 'br, gzip, deflate'
-      },
-      body: JSON.stringify(body)
-    };
+		// 使用 camelCase 格式（AWS SSO OIDC 要求）
+		const body = {
+			clientId: this.credentials.clientId,
+			clientSecret: this.credentials.clientSecret,
+			refreshToken: this.credentials.refreshToken,
+			grantType: "refresh_token",
+		};
 
-    // 代理支持
-    if (this.config.proxyUrl) {
-      try {
-        const { HttpsProxyAgent } = await import('https-proxy-agent');
-        fetchOptions.agent = new HttpsProxyAgent(this.config.proxyUrl);
-       } catch (e) {
-         logger.warn('代理模块未安装，忽略代理设置');
-       }
-     }
+		const fetchOptions = {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				Accept: "*/*",
+				"x-amz-user-agent":
+					"aws-sdk-js/3.738.0 ua/2.1 os/other lang/js md/browser#unknown_unknown api/sso-oidc#3.738.0 m/E KiroIDE",
+				"User-Agent": "node",
+				"Accept-Encoding": "br, gzip, deflate",
+			},
+			body: JSON.stringify(body),
+		};
 
-     const response = await fetch(tokenUrl, fetchOptions);
-     
-     if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`IdC Token 刷新失败: ${response.status} - ${error}`);
-    }
+		// 代理支持
+		if (this.config.proxyUrl) {
+			try {
+				const { HttpsProxyAgent } = await import("https-proxy-agent");
+				fetchOptions.agent = new HttpsProxyAgent(this.config.proxyUrl);
+			} catch (e) {
+				logger.warn("代理模块未安装，忽略代理设置");
+			}
+		}
 
-    const data = await response.json();
-    this.accessToken = data.accessToken || data.access_token;
-    this.expiresAt = new Date(Date.now() + (data.expiresIn || data.expires_in || 3600) * 1000);
-    
-    // 如果返回了新的 refresh_token，更新它
-    if (data.refreshToken || data.refresh_token) {
-      this.credentials.refreshToken = data.refreshToken || data.refresh_token;
-    }
-    
-    return this.accessToken;
-  }
+		const response = await fetch(tokenUrl, fetchOptions);
 
-  static normalizeMachineId(machineId) {
-    const raw = String(machineId || '').trim();
-    if (!raw) return null;
+		if (!response.ok) {
+			const error = await response.text();
+			throw new Error(`IdC Token 刷新失败: ${response.status} - ${error}`);
+		}
 
-    const hex64 = raw.toLowerCase();
-    if (/^[0-9a-f]{64}$/.test(hex64)) {
-      return hex64;
-    }
+		const data = await response.json();
+		this.accessToken = data.accessToken || data.access_token;
+		this.expiresAt = new Date(
+			Date.now() + (data.expiresIn || data.expires_in || 3600) * 1000,
+		);
 
-    const withoutDashes = raw.replace(/-/g, '').toLowerCase();
-    if (/^[0-9a-f]{32}$/.test(withoutDashes)) {
-      return `${withoutDashes}${withoutDashes}`;
-    }
+		// 如果返回了新的 refresh_token，更新它
+		if (data.refreshToken || data.refresh_token) {
+			this.credentials.refreshToken = data.refreshToken || data.refresh_token;
+		}
 
-    return null;
-  }
+		return this.accessToken;
+	}
 
-  static generateMachineIdFromRefreshToken(refreshToken) {
-    if (!refreshToken) return null;
-    return crypto
-      .createHash('sha256')
-      .update(`KotlinNativeAPI/${refreshToken}`)
-      .digest('hex');
-  }
+	static normalizeMachineId(machineId) {
+		const raw = String(machineId || "").trim();
+		if (!raw) return null;
 
-  static resolveMachineId(credentials = {}, config = {}) {
-    const credentialMachineId = TokenManager.normalizeMachineId(credentials.machineId);
-    if (credentialMachineId) return credentialMachineId;
+		const hex64 = raw.toLowerCase();
+		if (/^[0-9a-f]{64}$/.test(hex64)) {
+			return hex64;
+		}
 
-    const configMachineId = TokenManager.normalizeMachineId(config.machineId);
-    if (configMachineId) return configMachineId;
+		const withoutDashes = raw.replace(/-/g, "").toLowerCase();
+		if (/^[0-9a-f]{32}$/.test(withoutDashes)) {
+			return `${withoutDashes}${withoutDashes}`;
+		}
 
-    return TokenManager.generateMachineIdFromRefreshToken(credentials.refreshToken);
-  }
+		return null;
+	}
 
-  static inferPersistedMachineIdSource(machineId, refreshToken, config = {}) {
-    const normalizedMachineId = TokenManager.normalizeMachineId(machineId);
-    if (!normalizedMachineId) {
-      return 'unavailable';
-    }
+	static generateMachineIdFromRefreshToken(refreshToken) {
+		if (!refreshToken) return null;
+		return crypto
+			.createHash("sha256")
+			.update(`KotlinNativeAPI/${refreshToken}`)
+			.digest("hex");
+	}
 
-    const configMachineId = TokenManager.normalizeMachineId(config.machineId);
-    if (configMachineId && normalizedMachineId === configMachineId) {
-      return 'config';
-    }
+	static resolveMachineId(credentials = {}, config = {}) {
+		const credentialMachineId = TokenManager.normalizeMachineId(
+			credentials.machineId,
+		);
+		if (credentialMachineId) return credentialMachineId;
 
-    const derivedMachineId = TokenManager.generateMachineIdFromRefreshToken(refreshToken);
-    if (derivedMachineId && normalizedMachineId === derivedMachineId) {
-      return 'derived';
-    }
+		const configMachineId = TokenManager.normalizeMachineId(config.machineId);
+		if (configMachineId) return configMachineId;
 
-    return 'explicit';
-  }
+		return TokenManager.generateMachineIdFromRefreshToken(
+			credentials.refreshToken,
+		);
+	}
+
+	static inferPersistedMachineIdSource(machineId, refreshToken, config = {}) {
+		const normalizedMachineId = TokenManager.normalizeMachineId(machineId);
+		if (!normalizedMachineId) {
+			return "unavailable";
+		}
+
+		const configMachineId = TokenManager.normalizeMachineId(config.machineId);
+		if (configMachineId && normalizedMachineId === configMachineId) {
+			return "config";
+		}
+
+		const derivedMachineId =
+			TokenManager.generateMachineIdFromRefreshToken(refreshToken);
+		if (derivedMachineId && normalizedMachineId === derivedMachineId) {
+			return "derived";
+		}
+
+		return "explicit";
+	}
 }

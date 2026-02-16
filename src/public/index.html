@@ -257,7 +257,7 @@
 
     <script>
         let adminKey = localStorage.getItem('kiro_admin_key') || '';
-        let selectedAccounts = new Set();
+        const selectedAccounts = new Set();
         let autoRefreshInterval = null;
         let serverStartTime = null;
         let uptimeInterval = null;
@@ -555,7 +555,7 @@
         }
 
         async function importAccounts() {
-            let jsonContent = document.getElementById('import-json').value.trim();
+            const jsonContent = document.getElementById('import-json').value.trim();
             if (!jsonContent) { showToast('请选择文件或粘贴 JSON 内容', 'warning'); return; }
             try { JSON.parse(jsonContent); } catch { showToast('JSON 格式错误', 'error'); return; }
             try {

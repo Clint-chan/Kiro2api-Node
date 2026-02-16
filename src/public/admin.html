@@ -140,7 +140,7 @@
                 </div>
                 <div class="bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition">
                     <div class="flex items-center justify-between mb-1">
-                        <span class="text-xs font-medium text-gray-500">Claude 账号</span>
+                        <span class="text-xs font-medium text-gray-500">Kiro 账号</span>
                         <svg class="w-3 h-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                     </div>
                     <div class="text-xl font-bold text-gray-900" id="kiro-total-accounts">-</div>
@@ -296,7 +296,7 @@
                             data-tab="users">用户管理</button>
                         <button onclick="switchTab('accounts')"
                             class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1 text-sm font-medium"
-                            data-tab="accounts">Claude账号池</button>
+                            data-tab="accounts">Kiro</button>
                         <button onclick="switchTab('antigravity-accounts')"
                             class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1 text-sm font-medium"
                             data-tab="antigravity-accounts">CLIProxy</button>
@@ -342,7 +342,7 @@
                     </div>
                 </div>
 
-                <!-- Claude账号管理 -->
+                <!-- Kiro账号管理 -->
                 <div id="tab-accounts" class="p-6 tab-content hidden">
                     <div class="flex flex-wrap items-center gap-3 mb-6">
                         <button onclick="showModal('addModal')"
@@ -368,6 +368,15 @@
                                     d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                             </svg>
                             刷新全部额度
+                        </button>
+                        <button onclick="showModelCooldownConfig()"
+                            class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            模型冷却配置
                         </button>
                         <button id="batchDeleteBtn" onclick="batchDeleteAccounts()"
                             class="hidden bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center">
@@ -499,12 +508,12 @@
                             <h3 class="text-lg font-semibold text-gray-900">可用模型 ID</h3>
                         </div>
                         <div class="space-y-6">
-                            <!-- Claude 模型 -->
+                            <!-- Kiro 模型 -->
                             <div>
                                 <div class="flex items-center justify-between mb-3">
                                     <div class="flex items-center gap-2">
                                         <div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
-                                        <p class="text-sm font-medium text-gray-900">Claude 渠道</p>
+                                        <p class="text-sm font-medium text-gray-900">Kiro 渠道</p>
                                     </div>
                                     <button onclick="fetchKiroModels()" class="text-xs text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded-full transition font-medium flex items-center gap-1">
                                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
@@ -555,17 +564,6 @@
                             提示：点击模型名称即可复制
                         </div>
                     </div>
-
-                        <div class="mb-8">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-2">管理密钥</h3>
-                            <p class="text-sm text-gray-500 mb-4">用于登录管理面板</p>
-                            <div class="flex gap-3">
-                                <input type="password" id="new-admin-key" placeholder="输入新的管理密钥"
-                                    class="flex-1 max-w-xs px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <button onclick="changeAdminKey()"
-                                    class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition">修改密钥</button>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
@@ -1490,6 +1488,7 @@
         </div>
     </div>
 
+    <script src="/escape-html.js"></script>
     <script src="/admin-shared.js"></script>
     <script src="/admin-core.js"></script>
     <script src="/admin-users.js"></script>

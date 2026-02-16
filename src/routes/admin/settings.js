@@ -60,37 +60,36 @@ export function createSettingsAdminRouter(db) {
 	});
 
 	/**
-	 * PUT /api/admin/settings/admin-key
-	 * Update admin key (password)
+	 * GET /api/admin/settings/model-cooldown-config
+	 * Get model cooldown configuration
 	 */
-	router.put("/settings/admin-key", (req, res) => {
+	router.get("/settings/model-cooldown-config", (req, res) => {
 		try {
-			const { newKey } = req.body;
+			const configJson = db.getSetting("model_cooldown_config") || "{}";
+			const config = JSON.parse(configJson);
+			res.json({ config });
+		} catch (error) {
+			logger.error("Get model cooldown config error", { error });
+			res.status(500).json({ error: error.message });
+		}
+	});
 
-			if (!newKey || newKey.length < 6) {
-				return res.status(400).json({
-					error: {
-						type: "validation_error",
-						message: "新密钥长度至少为 6 个字符",
-					},
-				});
+	/**
+	 * POST /api/admin/settings/model-cooldown-config
+	 * Save model cooldown configuration
+	 */
+	router.post("/settings/model-cooldown-config", (req, res) => {
+		try {
+			const { config } = req.body;
+			if (!config || typeof config !== "object") {
+				return res.status(400).json({ error: "Invalid config format" });
 			}
 
-			// Update admin key in database
-			db.setSetting("admin_key", newKey);
-
-			res.json({
-				success: true,
-				message: "管理密钥已更新",
-			});
+			db.setSetting("model_cooldown_config", JSON.stringify(config));
+			res.json({ success: true });
 		} catch (error) {
-			logger.error("Update admin key error", { error });
-			res.status(500).json({
-				error: {
-					type: "internal_error",
-					message: "Failed to update admin key.",
-				},
-			});
+			logger.error("Save model cooldown config error", { error });
+			res.status(500).json({ error: error.message });
 		}
 	});
 

@@ -261,11 +261,11 @@ export class DatabaseManager {
 		// Request log queries
 		this.statements.insertRequestLog = this.db.prepare(`
       INSERT INTO request_logs (
-        user_id, user_api_key, kiro_account_id, kiro_account_name,
+        user_id, kiro_account_id, kiro_account_name,
         model, input_tokens, output_tokens, duration_ms,
         input_cost, output_cost, total_cost,
         success, error_message, timestamp
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
 		// Kiro account queries
@@ -296,6 +296,10 @@ export class DatabaseManager {
       INSERT OR REPLACE INTO system_settings (key, value, updated_at)
       VALUES (?, ?, ?)
     `);
+
+		this.statements.deleteSetting = this.db.prepare(
+			"DELETE FROM system_settings WHERE key = ?",
+		);
 	}
 
 	ensureUserPermissionColumns() {
@@ -395,7 +399,6 @@ export class DatabaseManager {
 	insertRequestLog(logData) {
 		return this.statements.insertRequestLog.run(
 			logData.user_id,
-			logData.user_api_key,
 			logData.kiro_account_id,
 			logData.kiro_account_name,
 			logData.model,
@@ -1025,6 +1028,13 @@ export class DatabaseManager {
 	setSetting(key, value) {
 		const now = new Date().toISOString();
 		return this.statements.setSetting.run(key, value, now);
+	}
+
+	/**
+	 * Delete system setting
+	 */
+	deleteSetting(key) {
+		return this.statements.deleteSetting.run(key);
 	}
 
 	/**

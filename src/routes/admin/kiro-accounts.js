@@ -329,6 +329,37 @@ export function createKiroAccountsAdminRouter(db, accountPool) {
 	});
 
 	/**
+	 * GET /api/admin/accounts/models
+	 * Get list of Kiro supported models
+	 */
+	router.get("/accounts/models", (req, res) => {
+		try {
+			const models = [
+				{
+					id: "claude-sonnet-4-5-20250929",
+					display_name: "Claude Sonnet 4.5",
+					owned_by: "anthropic",
+				},
+				{
+					id: "claude-opus-4-6-20251220",
+					display_name: "Claude Opus 4.6",
+					owned_by: "anthropic",
+				},
+				{
+					id: "claude-haiku-4-5-20251001",
+					display_name: "Claude Haiku 4.5",
+					owned_by: "anthropic",
+				},
+			];
+
+			res.json({ models });
+		} catch (error) {
+			logger.error("Get Kiro models error", { error });
+			res.status(500).json({ error: error.message });
+		}
+	});
+
+	/**
 	 * POST /api/admin/accounts/import
 	 * Import accounts from JSON (supports multiple formats and templates)
 	 * Supports: Social, BuilderId, Enterprise templates

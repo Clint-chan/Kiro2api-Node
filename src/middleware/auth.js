@@ -4,6 +4,7 @@
  */
 
 import { logger } from "../logger.js";
+import { recordLoginFailure } from "./rate-limit.js";
 
 function resolveSystemAdminKey(db) {
 	const dbAdminKey = db.getSetting("admin_key");
@@ -206,6 +207,8 @@ export function dualAuthMiddleware(db) {
 					? systemAdminKey.substring(0, 3)
 					: null,
 			});
+
+			recordLoginFailure(req);
 
 			return res.status(401).json({
 				error: {
