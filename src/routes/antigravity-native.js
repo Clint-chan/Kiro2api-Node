@@ -29,6 +29,21 @@ export function createAntigravityNativeRouter(state) {
 		}
 	}
 
+	function getModelGroupName(modelId) {
+		if (
+			/^claude-/.test(modelId) ||
+			/^gpt-/.test(modelId) ||
+			/^o\d/.test(modelId)
+		) {
+			return "claude_gpt";
+		}
+		if (modelId === "gemini-3-pro") return "gemini_3_pro";
+		if (modelId === "gemini-3-pro-high") return "gemini_3_pro_high";
+		if (modelId === "gemini-3-flash") return "gemini_3_flash";
+		if (modelId === "gemini-3-pro-image") return "gemini_3_pro_image";
+		return null;
+	}
+
 	function hasQuotaForModel(account, modelId) {
 		const quotas = parseJsonSafe(account?.model_quotas);
 		if (!quotas || typeof quotas !== "object") return true;
@@ -36,7 +51,25 @@ export function createAntigravityNativeRouter(state) {
 		if (!info || typeof info !== "object") return true;
 		const remaining = Number(info.remaining_fraction);
 		if (!Number.isFinite(remaining)) return true;
-		return remaining > 0;
+		if (remaining <= 0) return false;
+
+		const groupsJson =
+			state.db.getSetting(`cliproxy_auto_disabled_groups_${account.name}`) ||
+			"{}";
+		let disabledGroups = {};
+		try {
+			const parsed = JSON.parse(groupsJson);
+			disabledGroups = parsed.groups || {};
+		} catch {
+			return true;
+		}
+
+		if (Object.keys(disabledGroups).length === 0) return true;
+
+		const groupName = getModelGroupName(modelId);
+		if (!groupName) return true;
+
+		return !disabledGroups[groupName];
 	}
 
 	function getEligibleAntigravityAccounts(modelId, excludedIds = new Set()) {
