@@ -449,6 +449,63 @@
                             <span class="ml-3 text-sm font-medium text-gray-700">自动刷新</span>
                         </label>
                     </div>
+
+                    <!-- 过滤条件 -->
+                    <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">时间范围</label>
+                                <select id="log-time-range" onchange="applyLogFilters()" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="1h">最近 1 小时</option>
+                                    <option value="24h" selected>最近 24 小时</option>
+                                    <option value="7d">最近 7 天</option>
+                                    <option value="30d">最近 30 天</option>
+                                    <option value="all">全部</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">用户</label>
+                                <input type="text" id="log-user-filter" placeholder="用户名或 ID" onchange="applyLogFilters()" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">模型</label>
+                                <input type="text" id="log-model-filter" placeholder="模型名称" onchange="applyLogFilters()" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">状态</label>
+                                <select id="log-status-filter" onchange="applyLogFilters()" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">全部</option>
+                                    <option value="true">成功</option>
+                                    <option value="false">失败</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 概览指标卡 -->
+                    <div id="logs-summary" class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6 hidden">
+                        <div class="bg-white rounded-lg p-4 border border-gray-200">
+                            <div class="text-xs text-gray-500 mb-1">总请求数</div>
+                            <div id="summary-total" class="text-2xl font-bold text-gray-900">-</div>
+                        </div>
+                        <div class="bg-white rounded-lg p-4 border border-green-200">
+                            <div class="text-xs text-green-600 mb-1">成功率</div>
+                            <div id="summary-success-rate" class="text-2xl font-bold text-green-700">-</div>
+                        </div>
+                        <div class="bg-white rounded-lg p-4 border border-red-200">
+                            <div class="text-xs text-red-600 mb-1">失败数</div>
+                            <div id="summary-failures" class="text-2xl font-bold text-red-700">-</div>
+                        </div>
+                        <div class="bg-white rounded-lg p-4 border border-amber-200">
+                            <div class="text-xs text-amber-600 mb-1">平均耗时</div>
+                            <div id="summary-avg-duration" class="text-2xl font-bold text-amber-700">-</div>
+                        </div>
+                        <div class="bg-white rounded-lg p-4 border border-blue-200">
+                            <div class="text-xs text-blue-600 mb-1">总成本</div>
+                            <div id="summary-total-cost" class="text-2xl font-bold text-blue-700">-</div>
+                        </div>
+                    </div>
+
                     <div id="logs-table" class="overflow-x-auto"></div>
 
                     <!-- 日志分页控件 -->

@@ -1,6 +1,12 @@
 let logsCurrentPage = 1;
 const logsPageSize = 50;
 let totalLogs = 0;
+let currentFilters = {
+	timeRange: "24h",
+	userId: "",
+	model: "",
+	success: "",
+};
 
 function _toggleAutoRefresh() {
 	const toggle = document.getElementById("autoRefreshToggle");
@@ -18,19 +24,101 @@ function _toggleAutoRefresh() {
 	}
 }
 
+function _applyLogFilters() {
+	const timeRange = document.getElementById("log-time-range").value;
+	const userFilter = document.getElementById("log-user-filter").value.trim();
+	const modelFilter = document.getElementById("log-model-filter").value.trim();
+	const statusFilter = document.getElementById("log-status-filter").value;
+
+	currentFilters = {
+		timeRange,
+		userId: userFilter,
+		model: modelFilter,
+		success: statusFilter,
+	};
+
+	logsCurrentPage = 1;
+	loadLogs();
+}
+
 async function loadLogs() {
 	try {
 		const offset = (logsCurrentPage - 1) * logsPageSize;
-		const data = await fetchApi(
-			`/api/admin/logs?limit=${logsPageSize}&offset=${offset}`,
-		);
+		let url = `/api/admin/logs?limit=${logsPageSize}&offset=${offset}`;
+
+		if (currentFilters.userId) {
+			url += `&userId=${encodeURIComponent(currentFilters.userId)}`;
+		}
+		if (currentFilters.model) {
+			url += `&model=${encodeURIComponent(currentFilters.model)}`;
+		}
+		if (currentFilters.success) {
+			url += `&success=${currentFilters.success}`;
+		}
+
+		if (currentFilters.timeRange !== "all") {
+			const now = new Date();
+			let startDate;
+			switch (currentFilters.timeRange) {
+				case "1h":
+					startDate = new Date(now.getTime() - 60 * 60 * 1000);
+					break;
+				case "24h":
+					startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+					break;
+				case "7d":
+					startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+					break;
+				case "30d":
+					startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+					break;
+			}
+			if (startDate) {
+				url += `&startDate=${startDate.toISOString()}`;
+			}
+		}
+
+		const data = await fetchApi(url);
 		const logs = data.data || [];
 		totalLogs = data.pagination?.total || 0;
+
 		renderLogsPage(logs);
+		updateLogsSummary(logs);
 	} catch (e) {
 		console.error(e);
 		showToast("加载日志失败", "error");
 	}
+}
+
+function updateLogsSummary(logs) {
+	if (logs.length === 0) {
+		document.getElementById("logs-summary").classList.add("hidden");
+		return;
+	}
+
+	document.getElementById("logs-summary").classList.remove("hidden");
+
+	const successCount = logs.filter((l) => l.success).length;
+	const failureCount = logs.length - successCount;
+	const successRate =
+		logs.length > 0 ? ((successCount / logs.length) * 100).toFixed(1) : 0;
+
+	const totalDuration = logs.reduce((sum, l) => sum + (l.duration_ms || 0), 0);
+	const avgDuration =
+		logs.length > 0 ? Math.round(totalDuration / logs.length) : 0;
+
+	const totalCost = logs.reduce((sum, l) => sum + (l.total_cost || 0), 0);
+
+	document.getElementById("summary-total").textContent =
+		totalLogs.toLocaleString();
+	document.getElementById("summary-success-rate").textContent =
+		`${successRate}%`;
+	document.getElementById("summary-failures").textContent =
+		failureCount.toLocaleString();
+	document.getElementById("summary-avg-duration").textContent =
+		`${avgDuration}ms`;
+	document.getElementById("summary-total-cost").textContent =
+		`$${totalCost.toFixed(4)}`;
 }
 
 function renderLogsPage(logs) {
@@ -242,3 +330,4 @@ window.toggleAutoRefresh = _toggleAutoRefresh;
 window.changeLogsPage = _changeLogsPage;
 window.goToLogsPage = _goToLogsPage;
 window.showLogDetail = _showLogDetail;
+window.applyLogFilters = _applyLogFilters;
