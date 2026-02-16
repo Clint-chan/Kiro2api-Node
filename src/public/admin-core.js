@@ -2283,3 +2283,4 @@ window.copyToClipboard = copyToClipboard;
 window.fetchKiroModels = _fetchKiroModels;
 window.fetchCliProxyModels = _fetchCliProxyModels;
 window.showModelCooldownConfig = _showModelCooldownConfig;
+window.formatUserChannelBadges = _formatUserChannelBadges;
