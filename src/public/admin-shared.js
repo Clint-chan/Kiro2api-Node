@@ -145,3 +145,4 @@ window.fetchApi = _fetchApi;
 window.escapeHtml = _escapeHtml;
 window.copyText = _copyText;
 window.getPaginationPages = _getPaginationPages;
+window.showToast = showToast;
