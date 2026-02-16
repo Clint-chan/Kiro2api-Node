@@ -167,7 +167,7 @@ function noCapacityDelay(attempt) {
 	return delay;
 }
 
-function rateLimitDelay(attempt) {
+function _rateLimitDelay(attempt) {
 	return Math.min(1000 * 2 ** attempt, 4000);
 }
 
@@ -193,7 +193,7 @@ function generateSessionIdFallback() {
 
 function generateStableSessionId(body) {
 	// Try to extract user message content for stable session ID
-	if (body && body.request && Array.isArray(body.request.contents)) {
+	if (body?.request && Array.isArray(body.request.contents)) {
 		for (const content of body.request.contents) {
 			if (
 				content.role === "user" &&

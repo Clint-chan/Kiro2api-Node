@@ -412,13 +412,13 @@ response = client.chat.completions.create(
         function formatTokens(value) {
             const num = Number(value) || 0;
             if (num >= 1000000) {
-                return (num / 1000000).toFixed(2) + 'M';
+                return `${(num / 1000000).toFixed(2)}M`;
             }
             return num.toLocaleString();
         }
 
         function formatCurrency(value) {
-            return '$' + (Number(value) || 0).toFixed(2);
+            return `$${(Number(value) || 0).toFixed(2)}`;
         }
 
         function logout() {
@@ -427,22 +427,22 @@ response = client.chat.completions.create(
             window.location.href = '/login.html';
         }
 
-        function toggleApiKey() {
+        function _toggleApiKey() {
             apiKeyVisible = !apiKeyVisible;
             const input = document.getElementById('apiKeyDisplay');
             input.type = apiKeyVisible ? 'text' : 'password';
         }
 
-        function copyApiKey() {
+        function _copyApiKey() {
             copyToClipboard(user.api_key || token, 'API Key 已复制');
         }
 
-        function copyBaseUrl() {
+        function _copyBaseUrl() {
             const baseUrl = document.getElementById('baseUrl').value;
             copyToClipboard(baseUrl, 'Base URL 已复制');
         }
 
-        function switchTab(tab) {
+        function _switchTab(tab) {
             document.querySelectorAll('.tab-btn').forEach(btn => {
                 btn.classList.remove('border-blue-500', 'text-blue-600');
                 btn.classList.add('border-transparent', 'text-gray-500');
@@ -453,7 +453,7 @@ response = client.chat.completions.create(
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.add('hidden');
             });
-            document.getElementById('tab-' + tab).classList.remove('hidden');
+            document.getElementById(`tab-${tab}`).classList.remove('hidden');
 
             if (tab === 'logs') loadLogs();
             if (tab === 'recharges') loadRecharges();
@@ -473,7 +473,7 @@ response = client.chat.completions.create(
                 document.getElementById('stat-output-tokens').textContent = formatTokens(user.total_output_tokens || 0);
 
                 const apiKey = user.api_key || token;
-                const baseUrl = window.location.origin + '/v1';
+                const baseUrl = `${window.location.origin}/v1`;
 
                 document.getElementById('apiKeyDisplay').value = apiKey;
                 document.getElementById('baseUrl').value = baseUrl;
@@ -522,7 +522,7 @@ response = client.chat.completions.create(
             }
         }
 
-        function switchGuideTab(tab) {
+        function _switchGuideTab(tab) {
             // 更新标签按钮样式
             document.querySelectorAll('.guide-tab').forEach(btn => {
                 btn.classList.remove('border-blue-500', 'text-blue-600');
@@ -540,7 +540,7 @@ response = client.chat.completions.create(
 
         function copyToClipboard(text, successMessage) {
             // 尝试使用现代 Clipboard API
-            if (navigator.clipboard && navigator.clipboard.writeText) {
+            if (navigator.clipboard?.writeText) {
                 navigator.clipboard.writeText(text).then(() => {
                     showToast(successMessage, 'success');
                 }).catch(err => {
@@ -553,12 +553,12 @@ response = client.chat.completions.create(
             }
         }
 
-        function fallbackCopy(text, successMessage) {
+        function fallbackCopy(text, _successMessage) {
             window.prompt('复制失败，请手动复制:', String(text ?? ''));
             showToast('复制失败，请手动复制', 'error');
         }
 
-        function copyClaudeConfig() {
+        function _copyClaudeConfig() {
             const config = `{
   "env": {
     "ANTHROPIC_BASE_URL": "${window.location.origin}",
@@ -568,7 +568,7 @@ response = client.chat.completions.create(
             copyToClipboard(config, 'Claude Code 配置已复制');
         }
 
-        function copyPythonCode() {
+        function _copyPythonCode() {
             const code = `import anthropic
 
 client = anthropic.Anthropic(
@@ -586,7 +586,7 @@ print(response.content[0].text)`;
             copyToClipboard(code, 'Python 代码已复制');
         }
 
-        function copyCurlCode() {
+        function _copyCurlCode() {
             const code = `curl -X POST ${window.location.origin}/v1/messages \\
   -H "Content-Type: application/json" \\
   -H "x-api-key: ${user.api_key || token}" \\
@@ -598,7 +598,7 @@ print(response.content[0].text)`;
             copyToClipboard(code, 'cURL 命令已复制');
         }
 
-        function copyOpenAIPythonCode() {
+        function _copyOpenAIPythonCode() {
             const selectedModel = document.getElementById('modelSelector')?.value || 'claude-sonnet-4-5-20250929';
             const code = `from openai import OpenAI
 
@@ -617,7 +617,7 @@ print(response.choices[0].message.content)`;
             copyToClipboard(code, 'OpenAI Python 代码已复制');
         }
 
-        function copyOpenAICurlCode() {
+        function _copyOpenAICurlCode() {
             const selectedModel = document.getElementById('modelSelector')?.value || 'claude-sonnet-4-5-20250929';
             const code = `curl -X POST ${window.location.origin}/v1/chat/completions \\
   -H "Content-Type: application/json" \\
@@ -814,7 +814,7 @@ print(response.choices[0].message.content)`;
                             legend: { display: false },
                             tooltip: {
                                 callbacks: {
-                                    label: (context) => '请求数: ' + context.parsed.y
+                                    label: (context) => `请求数: ${context.parsed.y}`
                                 }
                             }
                         },
@@ -850,7 +850,7 @@ print(response.choices[0].message.content)`;
                             legend: { display: false },
                             tooltip: {
                                 callbacks: {
-                                    label: (context) => '消费: $' + context.parsed.y.toFixed(4)
+                                    label: (context) => `消费: $${context.parsed.y.toFixed(4)}`
                                 }
                             }
                         },
@@ -858,7 +858,7 @@ print(response.choices[0].message.content)`;
                             y: {
                                 beginAtZero: true,
                                 ticks: {
-                                    callback: (value) => '$' + value.toFixed(2)
+                                    callback: (value) => `$${value.toFixed(2)}`
                                 }
                             }
                         }

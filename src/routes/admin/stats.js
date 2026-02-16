@@ -9,7 +9,7 @@ export function createStatsAdminRouter(db) {
 	 * GET /api/admin/stats/overview
 	 * Get system overview statistics
 	 */
-	router.get("/stats/overview", async (req, res) => {
+	router.get("/stats/overview", async (_req, res) => {
 		try {
 			const users = db.getAllUsers();
 			const activeUsers = users.filter((u) => u.status === "active");
@@ -198,7 +198,7 @@ export function createStatsAdminRouter(db) {
         ORDER BY ${sortField} DESC
         LIMIT ?
       `)
-				.all(parseInt(limit));
+				.all(parseInt(limit, 10));
 
 			res.json({
 				success: true,
@@ -249,7 +249,7 @@ export function createStatsAdminRouter(db) {
 					conditions.push("timestamp <= ?");
 					params.push(endDate);
 				}
-				query += " WHERE " + conditions.join(" AND ");
+				query += ` WHERE ${conditions.join(" AND ")}`;
 			}
 
 			query += " GROUP BY model ORDER BY total_cost DESC";
@@ -286,7 +286,7 @@ export function createStatsAdminRouter(db) {
 	 * GET /api/admin/stats/accounts
 	 * Get Kiro account statistics
 	 */
-	router.get("/stats/accounts", (req, res) => {
+	router.get("/stats/accounts", (_req, res) => {
 		try {
 			const accounts = db.getAllKiroAccounts();
 

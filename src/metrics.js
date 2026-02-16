@@ -96,7 +96,7 @@ export class MetricsCollector {
 			);
 		}
 
-		return lines.join("\n") + "\n";
+		return `${lines.join("\n")}\n`;
 	}
 
 	_makeKey(name, labels) {

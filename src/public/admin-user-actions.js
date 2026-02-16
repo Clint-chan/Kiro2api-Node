@@ -4,7 +4,7 @@ let currentPermissionUserId = null;
 
 function updateUsernamePreview() {
 	const username = document.getElementById("new-username").value.trim();
-	const count = parseInt(document.getElementById("new-count").value) || 1;
+	const count = parseInt(document.getElementById("new-count").value, 10) || 1;
 	const preview = document.getElementById("username-preview");
 
 	if (username && count === 1) {
@@ -18,7 +18,7 @@ function updateUsernamePreview() {
 	}
 }
 
-function setSubQuota(amount, evt) {
+function _setSubQuota(amount, evt) {
 	document.getElementById("new-subscription-quota").value = amount;
 
 	document.querySelectorAll(".sub-quota-btn").forEach((btn) => {
@@ -29,7 +29,7 @@ function setSubQuota(amount, evt) {
 		);
 		btn.classList.add("border-gray-200");
 	});
-	const target = evt && evt.target ? evt.target : null;
+	const target = evt?.target ? evt.target : null;
 	if (target) {
 		target.classList.remove("border-gray-200");
 		target.classList.add(
@@ -40,7 +40,7 @@ function setSubQuota(amount, evt) {
 	}
 }
 
-function setSubDuration(months, evt) {
+function _setSubDuration(months, evt) {
 	document.getElementById("new-subscription-duration").value = months;
 
 	document.querySelectorAll(".sub-duration-btn").forEach((btn) => {
@@ -51,7 +51,7 @@ function setSubDuration(months, evt) {
 		);
 		btn.classList.add("border-gray-200");
 	});
-	const target = evt && evt.target ? evt.target : null;
+	const target = evt?.target ? evt.target : null;
 	if (target) {
 		target.classList.remove("border-gray-200");
 		target.classList.add(
@@ -72,9 +72,9 @@ function toggleSubscriptionOptions() {
 	}
 }
 
-async function createUser() {
+async function _createUser() {
 	const username = document.getElementById("new-username").value.trim();
-	const count = parseInt(document.getElementById("new-count").value) || 1;
+	const count = parseInt(document.getElementById("new-count").value, 10) || 1;
 	const balance = parseFloat(document.getElementById("new-balance").value) || 0;
 	const withSubscription = document.getElementById(
 		"new-with-subscription",
@@ -101,6 +101,7 @@ async function createUser() {
 		);
 		subDuration = parseInt(
 			document.getElementById("new-subscription-duration").value,
+			10,
 		);
 
 		if (!subQuota || subQuota <= 0) {
@@ -193,7 +194,7 @@ async function createUser() {
 			);
 		}
 	} catch (e) {
-		showToast("创建失败: " + e.message, "error");
+		showToast(`创建失败: ${e.message}`, "error");
 	}
 }
 
@@ -201,13 +202,13 @@ function showRechargeModal(userId, username, balance) {
 	currentRechargeUserId = userId;
 	document.getElementById("recharge-username").textContent = username;
 	document.getElementById("recharge-balance").textContent =
-		"$" + balance.toFixed(4);
+		`$${balance.toFixed(4)}`;
 	document.getElementById("recharge-amount").value = "";
 	document.getElementById("recharge-notes").value = "";
 	showModal("rechargeModal");
 }
 
-async function doRecharge() {
+async function _doRecharge() {
 	const amount = parseFloat(document.getElementById("recharge-amount").value);
 	const notes = document.getElementById("recharge-notes").value.trim();
 
@@ -225,33 +226,33 @@ async function doRecharge() {
 		loadUsers();
 		showToast(amount > 0 ? "额度增加成功" : "额度扣减成功", "success");
 	} catch (e) {
-		showToast("额度调整失败: " + e.message, "error");
+		showToast(`额度调整失败: ${e.message}`, "error");
 	}
 }
 
-async function deleteUser(userId) {
+async function _deleteUser(userId) {
 	if (!confirm("确定删除此用户？此操作不可恢复！")) return;
 	try {
 		await fetchApi(`/api/admin/users/${userId}`, { method: "DELETE" });
 		loadUsers();
 		showToast("用户已删除", "error");
 	} catch (e) {
-		showToast("删除失败: " + e.message, "error");
+		showToast(`删除失败: ${e.message}`, "error");
 	}
 }
 
-async function refreshUserStats(userId) {
+async function _refreshUserStats(userId) {
 	try {
 		showToast("正在刷新统计...", "info");
 		await fetchApi(`/api/admin/users/${userId}`);
 		loadUsers();
 		showToast("统计已刷新", "success");
 	} catch (e) {
-		showToast("刷新失败: " + e.message, "error");
+		showToast(`刷新失败: ${e.message}`, "error");
 	}
 }
 
-async function toggleUserStatus(userId, newStatus) {
+async function _toggleUserStatus(userId, newStatus) {
 	const action = newStatus === "active" ? "启用" : "禁用";
 	if (newStatus === "suspended" && !confirm(`确定禁用此用户？`)) return;
 	try {
@@ -265,15 +266,15 @@ async function toggleUserStatus(userId, newStatus) {
 			newStatus === "active" ? "success" : "warning",
 		);
 	} catch (e) {
-		showToast(`${action}失败: ` + e.message, "error");
+		showToast(`${action}失败: ${e.message}`, "error");
 	}
 }
 
-function showSubscriptionModalFromButton(button) {
+function _showSubscriptionModalFromButton(button) {
 	showSubscriptionModal(button.dataset.userId, button.dataset.username || "");
 }
 
-function showRechargeModalFromButton(button) {
+function _showRechargeModalFromButton(button) {
 	const balance = Number.parseFloat(button.dataset.balance);
 	showRechargeModal(
 		button.dataset.userId,
@@ -282,7 +283,7 @@ function showRechargeModalFromButton(button) {
 	);
 }
 
-function showPermissionModalFromButton(button) {
+function _showPermissionModalFromButton(button) {
 	showPermissionModal(button.dataset.userId, button.dataset.username || "");
 }
 
@@ -349,7 +350,7 @@ async function showPermissionModal(userId, username) {
 			cb.addEventListener("change", updateModelCheckboxes);
 		});
 	} catch (e) {
-		showToast("加载权限失败: " + e.message, "error");
+		showToast(`加载权限失败: ${e.message}`, "error");
 	}
 
 	showModal("permissionModal");
@@ -427,13 +428,13 @@ function updateModelCheckboxes() {
 	container.innerHTML = containerHTML;
 }
 
-function batchSelectModels(channel, selectAll) {
+function _batchSelectModels(channel, selectAll) {
 	document.querySelectorAll(`.model-checkbox-${channel}`).forEach((cb) => {
 		cb.checked = selectAll;
 	});
 }
 
-async function saveUserPermissions() {
+async function _saveUserPermissions() {
 	if (!currentPermissionUserId) return;
 
 	const selectedChannels = Array.from(
@@ -461,7 +462,7 @@ async function saveUserPermissions() {
 		await loadUsers();
 		showToast("权限已更新", "success");
 	} catch (e) {
-		showToast("保存权限失败: " + e.message, "error");
+		showToast(`保存权限失败: ${e.message}`, "error");
 	}
 }
 
@@ -500,12 +501,12 @@ function showSubscriptionModal(userId, username) {
 	showModal("subscriptionModal");
 }
 
-function updateSubscriptionType(type) {
+function _updateSubscriptionType(type) {
 	document.getElementById("sub-type").value = type;
 	updatePreview();
 }
 
-function applyTemplate(type, quota, duration) {
+function _applyTemplate(type, quota, duration) {
 	document.getElementById("sub-type").value = type;
 	const radio = document.querySelector(
 		`input[name="sub-type-radio"][value="${type}"]`,
@@ -527,13 +528,13 @@ function applyTemplate(type, quota, duration) {
 	showToast("已应用套餐模板", "success");
 }
 
-function setDuration(months, evt) {
+function _setDuration(months, evt) {
 	document.getElementById("sub-duration").value = months;
 
 	document.querySelectorAll(".duration-btn").forEach((btn) => {
 		btn.classList.remove("border-purple-500", "bg-purple-50");
 	});
-	const target = evt && evt.target ? evt.target : null;
+	const target = evt?.target ? evt.target : null;
 	const button = target ? target.closest(".duration-btn") : null;
 	if (button) {
 		button.classList.add("border-purple-500", "bg-purple-50");
@@ -545,7 +546,7 @@ function setDuration(months, evt) {
 function updatePreview() {
 	const type = document.getElementById("sub-type").value;
 	const quota = parseFloat(document.getElementById("sub-quota").value);
-	const months = parseInt(document.getElementById("sub-duration").value);
+	const months = parseInt(document.getElementById("sub-duration").value, 10);
 
 	const preview = document.getElementById("subscription-preview");
 
@@ -558,8 +559,8 @@ function updatePreview() {
 
 	const typeName = type === "daily" ? "每日重置" : "每月重置";
 	document.getElementById("preview-type").textContent = typeName;
-	document.getElementById("preview-quota").textContent = "$" + quota.toFixed(2);
-	document.getElementById("preview-duration").textContent = months + " 个月";
+	document.getElementById("preview-quota").textContent = `$${quota.toFixed(2)}`;
+	document.getElementById("preview-duration").textContent = `${months} 个月`;
 
 	const now = new Date();
 	const expiresDate = new Date(now);
@@ -610,10 +611,10 @@ function updatePreview() {
 		")";
 }
 
-async function setSubscription() {
+async function _setSubscription() {
 	const type = document.getElementById("sub-type").value;
 	const quota = parseFloat(document.getElementById("sub-quota").value);
-	const months = parseInt(document.getElementById("sub-duration").value);
+	const months = parseInt(document.getElementById("sub-duration").value, 10);
 
 	if (!type) {
 		showToast("请选择订阅类型", "warning");
@@ -642,11 +643,11 @@ async function setSubscription() {
 		loadUsers();
 		showToast("订阅设置成功", "success");
 	} catch (e) {
-		showToast("设置失败: " + e.message, "error");
+		showToast(`设置失败: ${e.message}`, "error");
 	}
 }
 
-async function cancelSubscription() {
+async function _cancelSubscription() {
 	if (
 		!confirm(
 			"确定取消此用户的订阅？\n\n取消后将停止自动充值，但不会扣除已充值的余额。",
@@ -665,6 +666,6 @@ async function cancelSubscription() {
 		loadUsers();
 		showToast("订阅已取消", "success");
 	} catch (e) {
-		showToast("取消失败: " + e.message, "error");
+		showToast(`取消失败: ${e.message}`, "error");
 	}
 }

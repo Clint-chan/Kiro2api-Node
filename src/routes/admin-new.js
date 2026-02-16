@@ -523,7 +523,7 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
 	 * GET /api/admin/stats/overview
 	 * Get overall statistics
 	 */
-	router.get("/stats/overview", (req, res) => {
+	router.get("/stats/overview", (_req, res) => {
 		try {
 			const users = db.getAllUsers();
 			const activeUsers = users.filter((u) => u.status === "active");
@@ -636,7 +636,7 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
         ORDER BY ${sortField} DESC
         LIMIT ?
       `)
-				.all(parseInt(limit));
+				.all(parseInt(limit, 10));
 
 			res.json({
 				success: true,
@@ -684,7 +684,7 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
 					conditions.push("timestamp <= ?");
 					params.push(endDate);
 				}
-				query += " WHERE " + conditions.join(" AND ");
+				query += ` WHERE ${conditions.join(" AND ")}`;
 			}
 
 			query += " GROUP BY model ORDER BY total_cost DESC";
@@ -710,7 +710,7 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
 	 * GET /api/admin/stats/accounts
 	 * Get Kiro account statistics
 	 */
-	router.get("/stats/accounts", (req, res) => {
+	router.get("/stats/accounts", (_req, res) => {
 		try {
 			const accounts = db.getAllKiroAccounts();
 
@@ -790,7 +790,7 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
 			}
 
 			query += " ORDER BY timestamp DESC LIMIT ? OFFSET ?";
-			params.push(parseInt(limit), parseInt(offset));
+			params.push(parseInt(limit, 10), parseInt(offset, 10));
 
 			const logs = db.db.prepare(query).all(...params);
 
@@ -830,8 +830,8 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
 				data: logs,
 				pagination: {
 					total: totalCount,
-					limit: parseInt(limit),
-					offset: parseInt(offset),
+					limit: parseInt(limit, 10),
+					offset: parseInt(offset, 10),
 				},
 			});
 		} catch (error) {
@@ -849,7 +849,7 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
 	 * DELETE /api/admin/logs
 	 * Clear all request logs
 	 */
-	router.delete("/logs", (req, res) => {
+	router.delete("/logs", (_req, res) => {
 		try {
 			const result = db.db.prepare("DELETE FROM request_logs").run();
 
@@ -874,7 +874,7 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
 	 * GET /api/admin/settings
 	 * Get system settings
 	 */
-	router.get("/settings", (req, res) => {
+	router.get("/settings", (_req, res) => {
 		try {
 			const settings = db.db.prepare("SELECT * FROM system_settings").all();
 
@@ -931,7 +931,7 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
 	 * GET /api/admin/accounts
 	 * Get all Kiro accounts
 	 */
-	router.get("/accounts", (req, res) => {
+	router.get("/accounts", (_req, res) => {
 		try {
 			const accounts = db.getAllKiroAccounts();
 
@@ -984,8 +984,6 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
 	 */
 	router.post("/accounts/:id/refresh-usage", async (req, res) => {
 		try {
-			const { id } = req.params;
-
 			if (!accountPool) {
 				return res.status(500).json({
 					error: {
@@ -1035,7 +1033,7 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
 	 * POST /api/admin/accounts/refresh-all-usage
 	 * Refresh usage for all Kiro accounts
 	 */
-	router.post("/accounts/refresh-all-usage", async (req, res) => {
+	router.post("/accounts/refresh-all-usage", async (_req, res) => {
 		try {
 			if (!accountPool) {
 				return res.status(500).json({
@@ -1399,7 +1397,7 @@ export function createAdminRouter(db, billing, subscription, accountPool) {
 		}
 	});
 
-	router.get("/antigravity-accounts", (req, res) => {
+	router.get("/antigravity-accounts", (_req, res) => {
 		try {
 			const accounts = db.getAllAntigravityAccounts().map((account) => ({
 				...account,

@@ -188,8 +188,8 @@ export function createUserRouter(db, billing, subscription) {
 
 			const logs = db.getUserLogs(
 				req.user.id,
-				parseInt(limit),
-				parseInt(offset),
+				parseInt(limit, 10),
+				parseInt(offset, 10),
 			);
 
 			// Get total count
@@ -204,8 +204,8 @@ export function createUserRouter(db, billing, subscription) {
 				data: logs,
 				pagination: {
 					total: totalCount,
-					limit: parseInt(limit),
-					offset: parseInt(offset),
+					limit: parseInt(limit, 10),
+					offset: parseInt(offset, 10),
 				},
 			});
 		} catch (error) {
@@ -231,8 +231,8 @@ export function createUserRouter(db, billing, subscription) {
 
 			const recharges = db.getRechargeRecords(
 				req.user.id,
-				parseInt(limit),
-				parseInt(offset),
+				parseInt(limit, 10),
+				parseInt(offset, 10),
 			);
 
 			// Get total count
@@ -247,8 +247,8 @@ export function createUserRouter(db, billing, subscription) {
 				data: recharges,
 				pagination: {
 					total: totalCount,
-					limit: parseInt(limit),
-					offset: parseInt(offset),
+					limit: parseInt(limit, 10),
+					offset: parseInt(offset, 10),
 				},
 			});
 		} catch (error) {
@@ -318,16 +318,16 @@ export function createUserRouter(db, billing, subscription) {
 			}
 
 			const cost = billing.estimateCost(
-				parseInt(inputTokens),
-				parseInt(outputTokens),
+				parseInt(inputTokens, 10),
+				parseInt(outputTokens, 10),
 				req.user,
 			);
 
 			res.json({
 				success: true,
 				data: {
-					inputTokens: parseInt(inputTokens),
-					outputTokens: parseInt(outputTokens),
+					inputTokens: parseInt(inputTokens, 10),
+					outputTokens: parseInt(outputTokens, 10),
 					inputCost: cost.inputCost,
 					outputCost: cost.outputCost,
 					totalCost: cost.totalCost,
@@ -395,7 +395,7 @@ export function createUserRouter(db, billing, subscription) {
         ORDER BY reset_at DESC
         LIMIT ? OFFSET ?
       `)
-				.all(req.user.id, parseInt(limit), parseInt(offset));
+				.all(req.user.id, parseInt(limit, 10), parseInt(offset, 10));
 
 			const totalCount = db.db
 				.prepare(`
@@ -408,8 +408,8 @@ export function createUserRouter(db, billing, subscription) {
 				data: logs,
 				pagination: {
 					total: totalCount,
-					limit: parseInt(limit),
-					offset: parseInt(offset),
+					limit: parseInt(limit, 10),
+					offset: parseInt(offset, 10),
 				},
 			});
 		} catch (error) {

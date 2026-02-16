@@ -173,7 +173,7 @@ export class BalanceMonitor {
 export function createBalanceMonitor(accountPool, config = {}) {
 	const options = {
 		refreshInterval:
-			parseInt(process.env.BALANCE_REFRESH_INTERVAL) || 5 * 60 * 1000,
+			parseInt(process.env.BALANCE_REFRESH_INTERVAL, 10) || 5 * 60 * 1000,
 		batchSize: 5,
 		enabled: process.env.BALANCE_MONITOR_ENABLED !== "false",
 		...config,

@@ -1,16 +1,15 @@
 import "dotenv/config";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
-import path from "path";
-import { fileURLToPath } from "url";
 import { createBalanceMonitor } from "./balance-monitor.js";
 import { BillingManager } from "./billing.js";
 import { CLIProxyClient } from "./cliproxy-client.js";
 import { CLIProxyThresholdChecker } from "./cliproxy-threshold-checker.js";
 import { DatabaseManager } from "./database.js";
 import { logger } from "./logger.js";
-import { metrics } from "./metrics.js";
 import { adminRateLimiter } from "./middleware/admin-rate-limit.js";
 import {
 	adminAuthMiddleware,
@@ -18,10 +17,7 @@ import {
 	userAuthMiddleware,
 } from "./middleware/auth.js";
 import { concurrencyLimiter } from "./middleware/concurrency-limit.js";
-import {
-	loginRateLimiter,
-	recordLoginFailure,
-} from "./middleware/rate-limit.js";
+import { loginRateLimiter } from "./middleware/rate-limit.js";
 import { initModelCooldown } from "./model-cooldown.js";
 import { AccountPool } from "./pool.js";
 import { createAdminRouter } from "./routes/admin/index.js";
@@ -33,7 +29,6 @@ import {
 } from "./routes/cliproxy-admin.js";
 import { createConfigRouter } from "./routes/config.js";
 import { createObservabilityRouter } from "./routes/observability.js";
-import { createUiRouter } from "./routes/ui.js";
 import { createUserRouter } from "./routes/user.js";
 import { SubscriptionManager } from "./subscription.js";
 
@@ -61,7 +56,7 @@ async function startServer() {
 				process.env.NODE_ENV === "production"
 					? process.env.CORS_ORIGIN?.split(",") || false
 					: "*",
-			credentials: process.env.NODE_ENV === "production" ? false : true,
+			credentials: process.env.NODE_ENV !== "production",
 			methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
 			allowedHeaders: [
 				"Content-Type",
@@ -76,7 +71,7 @@ async function startServer() {
 
 		// 配置
 		const config = {
-			port: parseInt(process.env.PORT) || 8080,
+			port: parseInt(process.env.PORT, 10) || 8080,
 			dataDir: process.env.DATA_DIR || "./data",
 			dbPath: process.env.DB_PATH || "./data/database.db",
 			region: process.env.REGION || "us-east-1",
@@ -120,7 +115,7 @@ async function startServer() {
 
 		logger.info("账号池初始化完成");
 
-		const modelCooldown = initModelCooldown(db);
+		const _modelCooldown = initModelCooldown(db);
 		logger.info("模型冷却管理器初始化完成");
 
 		let cliproxyClient = null;
@@ -177,19 +172,19 @@ async function startServer() {
 		console.log("静态文件目录:", publicPath);
 
 		// Root redirect to login
-		app.get("/", (req, res) => res.redirect("/login.html"));
+		app.get("/", (_req, res) => res.redirect("/login.html"));
 
 		// Custom admin path (configurable)
 		const adminPath =
 			process.env.ADMIN_PATH || db.getSetting("admin_path") || "/admin.html";
 
 		// Serve admin page only at custom path
-		app.get(adminPath, (req, res) => {
+		app.get(adminPath, (_req, res) => {
 			res.sendFile(path.join(publicPath, "admin.html"));
 		});
 
 		// Block direct access to admin.html
-		app.get("/admin.html", (req, res) => {
+		app.get("/admin.html", (_req, res) => {
 			res.status(404).send("Not Found");
 		});
 
@@ -221,7 +216,7 @@ async function startServer() {
 			},
 		);
 
-		app.get("/api/strategy", adminAuthMiddleware(db), (req, res) => {
+		app.get("/api/strategy", adminAuthMiddleware(db), (_req, res) => {
 			res.json({ strategy: accountPool.getStrategy() });
 		});
 
@@ -287,7 +282,7 @@ async function startServer() {
 		app.use("/", createAntigravityNativeRouter(state));
 
 		// UI routes - redirect root to login
-		app.get("/", (req, res) => res.redirect("/login.html"));
+		app.get("/", (_req, res) => res.redirect("/login.html"));
 
 		// ==================== Observability ====================
 
@@ -296,7 +291,7 @@ async function startServer() {
 
 		// ==================== Error Handler ====================
 
-		app.use((err, req, res, next) => {
+		app.use((err, _req, res, _next) => {
 			console.error("Unhandled error:", err);
 			res.status(500).json({
 				error: {

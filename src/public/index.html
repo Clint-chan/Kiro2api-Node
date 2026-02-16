@@ -272,7 +272,7 @@
             setTimeout(() => { toast.classList.add('animate-slideOut'); setTimeout(() => toast.remove(), 300); }, 3000);
         }
 
-        function toggleAutoRefresh() {
+        function _toggleAutoRefresh() {
             const toggle = document.getElementById('autoRefreshToggle');
             if (toggle.checked) {
                 autoRefreshInterval = setInterval(() => {
@@ -304,17 +304,17 @@
         }
 
         async function fetchApi(url, options = {}) {
-            const res = await fetch(url, { ...options, headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + adminKey, ...options.headers } });
+            const res = await fetch(url, { ...options, headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminKey}`, ...options.headers } });
             if (res.status === 401) { logout(); throw new Error('认证失败'); }
             if (!res.ok && res.status !== 204) throw new Error(await res.text() || res.statusText);
             return res.status === 204 ? null : res.json();
         }
 
-        async function login() {
+        async function _login() {
             const key = document.getElementById('adminKeyInput').value.trim();
             if (!key) { showToast('请输入管理密钥', 'warning'); return; }
             try {
-                const res = await fetch('/api/status', { headers: { 'Authorization': 'Bearer ' + key } });
+                const res = await fetch('/api/status', { headers: { 'Authorization': `Bearer ${key}` } });
                 if (res.ok) { adminKey = key; localStorage.setItem('kiro_admin_key', key); showMainPanel(); showToast('登录成功', 'success'); }
                 else { document.getElementById('loginError').classList.remove('hidden'); }
             } catch { document.getElementById('loginError').classList.remove('hidden'); }
@@ -347,8 +347,8 @@
         }
 
         function formatNumber(n) {
-            if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
-            if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+            if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
+            if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
             return n.toString();
         }
 
@@ -419,13 +419,13 @@
             } catch (e) { console.error(e); }
         }
 
-        function toggleSelect(id, checked) {
+        function _toggleSelect(id, checked) {
             if (checked) selectedAccounts.add(id);
             else selectedAccounts.delete(id);
             updateBatchDeleteBtn();
         }
 
-        function toggleSelectAll(checked) {
+        function _toggleSelectAll(checked) {
             document.querySelectorAll('.account-checkbox').forEach(cb => {
                 cb.checked = checked;
                 if (checked) selectedAccounts.add(cb.dataset.id);
@@ -440,24 +440,24 @@
             btn.classList.toggle('hidden', selectedAccounts.size === 0);
         }
 
-        async function batchDeleteAccounts() {
+        async function _batchDeleteAccounts() {
             if (selectedAccounts.size === 0) return;
             if (!confirm(`确定删除选中的 ${selectedAccounts.size} 个账号？`)) return;
             try {
                 const result = await fetchApi('/api/accounts/batch', { method: 'DELETE', body: JSON.stringify({ ids: Array.from(selectedAccounts) }) });
                 showToast(`成功删除 ${result.removed} 个账号`, 'success');
                 refresh();
-            } catch (e) { showToast('批量删除失败: ' + e.message, 'error'); }
+            } catch (e) { showToast(`批量删除失败: ${e.message}`, 'error'); }
         }
 
-        async function clearLogs() {
+        async function _clearLogs() {
             if (!confirm('确定清空所有请求记录？')) return;
             try {
                 await fetchApi('/api/logs', { method: 'DELETE' });
                 loadLogs();
                 loadStatus();
                 showToast('记录已清空', 'success');
-            } catch (e) { showToast('清空失败: ' + e.message, 'error'); }
+            } catch (e) { showToast(`清空失败: ${e.message}`, 'error'); }
         }
 
         function formatStatus(status) {
@@ -475,14 +475,14 @@
             return `<div class="w-32"><div class="flex justify-between text-xs mb-1"><span class="${textColor} font-medium">${available.toFixed(1)}</span><span class="text-gray-400">/ ${limit.toFixed(0)}</span></div><div class="h-2 bg-gray-100 rounded-full overflow-hidden"><div class="${barColor} h-full rounded-full transition-all" style="width: ${percent}%"></div></div><div class="text-xs text-gray-400 mt-1">${percent}% 已用</div></div>`;
         }
 
-        async function refreshUsage(id) {
+        async function _refreshUsage(id) {
             try { await fetchApi(`/api/accounts/${id}/refresh-usage`, { method: 'POST' }); loadAccounts(); showToast('刷新成功', 'success'); }
-            catch (e) { showToast('刷新失败: ' + e.message, 'error'); }
+            catch (e) { showToast(`刷新失败: ${e.message}`, 'error'); }
         }
 
-        async function refreshAllUsage() {
+        async function _refreshAllUsage() {
             try { showToast('正在刷新...', 'info'); await fetchApi('/api/accounts/refresh-all-usage', { method: 'POST' }); loadAccounts(); showToast('刷新完成！', 'success'); }
-            catch (e) { showToast('刷新失败: ' + e.message, 'error'); }
+            catch (e) { showToast(`刷新失败: ${e.message}`, 'error'); }
         }
 
         async function loadLogs() {
@@ -515,23 +515,23 @@
             catch (e) { console.error(e); }
         }
 
-        async function setStrategy(value) {
+        async function _setStrategy(value) {
             try { await fetchApi('/api/strategy', { method: 'POST', body: JSON.stringify({ strategy: value }) }); showToast('策略已更新', 'success'); }
-            catch (e) { showToast('设置失败: ' + e.message, 'error'); }
+            catch (e) { showToast(`设置失败: ${e.message}`, 'error'); }
         }
 
-        function switchTab(tab) {
+        function _switchTab(tab) {
             document.querySelectorAll('.tab-btn').forEach(t => { t.classList.remove('border-blue-500', 'text-blue-600'); t.classList.add('border-transparent', 'text-gray-500'); });
             document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.remove('border-transparent', 'text-gray-500');
             document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.add('border-blue-500', 'text-blue-600');
             document.querySelectorAll('.tab-content').forEach(c => {
                 c.classList.add('hidden');
             });
-            document.getElementById('tab-' + tab).classList.remove('hidden');
+            document.getElementById(`tab-${tab}`).classList.remove('hidden');
             if (tab === 'logs') {
                 loadLogs();
                 const toggle = document.getElementById('autoRefreshToggle');
-                if (toggle && toggle.checked && !autoRefreshInterval) {
+                if (toggle?.checked && !autoRefreshInterval) {
                     autoRefreshInterval = setInterval(() => { loadLogs(); }, 5000);
                 }
             } else {
@@ -543,18 +543,18 @@
             if (tab === 'settings') { loadApiKeys(); document.getElementById('baseUrl').textContent = location.origin; }
         }
 
-        function showModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        function _showModal(id) { document.getElementById(id).classList.remove('hidden'); }
         function hideModal(id) { document.getElementById(id).classList.add('hidden'); }
-        function toggleIdcFields() { document.getElementById('idc-fields').classList.toggle('hidden', document.getElementById('acc-auth').value !== 'idc'); }
+        function _toggleIdcFields() { document.getElementById('idc-fields').classList.toggle('hidden', document.getElementById('acc-auth').value !== 'idc'); }
 
-        async function addAccount() {
+        async function _addAccount() {
             const data = { name: document.getElementById('acc-name').value || '未命名账号', auth_method: document.getElementById('acc-auth').value, refresh_token: document.getElementById('acc-refresh').value, client_id: document.getElementById('acc-client-id').value || null, client_secret: document.getElementById('acc-client-secret').value || null };
             if (!data.refresh_token) { showToast('请填写 Refresh Token', 'warning'); return; }
             try { await fetchApi('/api/accounts', { method: 'POST', body: JSON.stringify(data) }); hideModal('addModal'); refresh(); showToast('添加成功', 'success'); }
-            catch (e) { showToast('添加失败: ' + e.message, 'error'); }
+            catch (e) { showToast(`添加失败: ${e.message}`, 'error'); }
         }
 
-        async function importAccounts() {
+        async function _importAccounts() {
             const jsonContent = document.getElementById('import-json').value.trim();
             if (!jsonContent) { showToast('请选择文件或粘贴 JSON 内容', 'warning'); return; }
             try { JSON.parse(jsonContent); } catch { showToast('JSON 格式错误', 'error'); return; }
@@ -562,10 +562,10 @@
                 const result = await fetchApi('/api/accounts/import', { method: 'POST', body: JSON.stringify({ raw_json: jsonContent }) });
                 hideModal('importModal'); document.getElementById('import-json').value = ''; document.getElementById('file-name').textContent = ''; refresh();
                 showToast(`导入完成！成功: ${result.success} 个，失败: ${result.failed} 个`, result.failed > 0 ? 'warning' : 'success');
-            } catch (e) { showToast('导入失败: ' + e.message, 'error'); }
+            } catch (e) { showToast(`导入失败: ${e.message}`, 'error'); }
         }
 
-        function handleFileSelect(event) {
+        function _handleFileSelect(event) {
             const file = event.target.files[0];
             if (!file) return;
             document.getElementById('file-name').textContent = `已选择: ${file.name}`;
@@ -574,29 +574,29 @@
             reader.readAsText(file);
         }
 
-        async function removeAccount(id) {
+        async function _removeAccount(id) {
             if (!confirm('确定删除？')) return;
             try { await fetchApi(`/api/accounts/${id}`, { method: 'DELETE' }); refresh(); showToast('删除成功', 'success'); }
-            catch (e) { showToast('删除失败: ' + e.message, 'error'); }
+            catch (e) { showToast(`删除失败: ${e.message}`, 'error'); }
         }
 
-        async function enableAccount(id) {
+        async function _enableAccount(id) {
             try { await fetchApi(`/api/accounts/${id}/enable`, { method: 'POST' }); refresh(); showToast('已启用', 'success'); }
-            catch (e) { showToast('启用失败: ' + e.message, 'error'); }
+            catch (e) { showToast(`启用失败: ${e.message}`, 'error'); }
         }
 
-        async function disableAccount(id) {
+        async function _disableAccount(id) {
             try { await fetchApi(`/api/accounts/${id}/disable`, { method: 'POST' }); refresh(); showToast('已禁用', 'success'); }
-            catch (e) { showToast('禁用失败: ' + e.message, 'error'); }
+            catch (e) { showToast(`禁用失败: ${e.message}`, 'error'); }
         }
 
-        async function changeAdminKey() {
+        async function _changeAdminKey() {
             const newKey = document.getElementById('new-admin-key').value.trim();
             if (!newKey) { showToast('请输入新的管理密钥', 'warning'); return; }
             if (newKey.length < 6) { showToast('密钥长度至少 6 位', 'warning'); return; }
             if (!confirm('确定修改管理密钥？修改后需要重新登录。')) return;
             try { await fetchApi('/api/settings/admin-key', { method: 'POST', body: JSON.stringify({ new_key: newKey }) }); showToast('修改成功！请重新登录', 'success'); logout(); }
-            catch (e) { showToast('修改失败: ' + e.message, 'error'); }
+            catch (e) { showToast(`修改失败: ${e.message}`, 'error'); }
         }
 
         async function loadApiKeys() {
@@ -608,22 +608,22 @@
             } catch (e) { console.error(e); }
         }
 
-        async function addApiKey() {
+        async function _addApiKey() {
             const newKey = document.getElementById('new-api-key').value.trim();
             if (!newKey) { showToast('请输入 API 密钥', 'warning'); return; }
             if (newKey.length < 6) { showToast('密钥长度至少 6 位', 'warning'); return; }
             try { await fetchApi('/api/settings/api-keys', { method: 'POST', body: JSON.stringify({ key: newKey }) }); document.getElementById('new-api-key').value = ''; loadApiKeys(); showToast('添加成功', 'success'); }
-            catch (e) { showToast('添加失败: ' + e.message, 'error'); }
+            catch (e) { showToast(`添加失败: ${e.message}`, 'error'); }
         }
 
-        async function removeApiKey(key) {
+        async function _removeApiKey(key) {
             if (!confirm('确定删除此 API 密钥？')) return;
             try { await fetchApi('/api/settings/api-keys', { method: 'DELETE', body: JSON.stringify({ key }) }); loadApiKeys(); showToast('删除成功', 'success'); }
-            catch (e) { showToast('删除失败: ' + e.message, 'error'); }
+            catch (e) { showToast(`删除失败: ${e.message}`, 'error'); }
         }
 
-        function copyText(text) {
-            if (navigator.clipboard && navigator.clipboard.writeText) {
+        function _copyText(text) {
+            if (navigator.clipboard?.writeText) {
                 navigator.clipboard.writeText(text).then(() => {
                     showToast('已复制到剪贴板', 'success');
                 }).catch(() => {
@@ -640,7 +640,7 @@
 
         (async () => {
             if (adminKey) {
-                try { const res = await fetch('/api/status', { headers: { 'Authorization': 'Bearer ' + adminKey } }); if (res.ok) { showMainPanel(); return; } } catch {}
+                try { const res = await fetch('/api/status', { headers: { 'Authorization': `Bearer ${adminKey}` } }); if (res.ok) { showMainPanel(); return; } } catch {}
             }
             document.getElementById('loginPage').classList.remove('hidden');
         })();

@@ -1,5 +1,5 @@
-import fs from "fs/promises";
-import path from "path";
+import fs from "node:fs/promises";
+import path from "node:path";
 import { v4 as uuidv4 } from "uuid";
 import { logger } from "./logger.js";
 import { TokenManager } from "./token.js";
@@ -332,7 +332,7 @@ export class AccountPool {
 				if (this.db) {
 					this.db.updateKiroAccountStatus(id, "error");
 				}
-				return { error: "账号已被封禁: " + e.message.substring(7) };
+				return { error: `账号已被封禁: ${e.message.substring(7)}` };
 			}
 
 			// 检查是否 token 无效
@@ -342,7 +342,7 @@ export class AccountPool {
 				if (this.db) {
 					this.db.updateKiroAccountStatus(id, "error");
 				}
-				return { error: "Token已失效: " + e.message.substring(14) };
+				return { error: `Token已失效: ${e.message.substring(14)}` };
 			}
 
 			// 检查其他token过期情况
@@ -367,7 +367,7 @@ export class AccountPool {
 
 	async refreshAllUsage() {
 		const accounts = Array.from(this.accounts.entries()).filter(
-			([id, account]) => account.status !== "error",
+			([_id, account]) => account.status !== "error",
 		);
 
 		const results = [];
@@ -409,7 +409,7 @@ export class AccountPool {
 
 		// 第三道防线：本地软限流 - 余额低于 5 时停止使用
 		const minBalance = parseFloat(process.env.MIN_BALANCE_THRESHOLD) || 5;
-		const maxInflight = parseInt(process.env.MAX_INFLIGHT_PER_ACCOUNT) || 5;
+		const maxInflight = parseInt(process.env.MAX_INFLIGHT_PER_ACCOUNT, 10) || 5;
 
 		const available = Array.from(this.accounts.values()).filter((a) => {
 			if (excludedIds.has(a.id)) return false;

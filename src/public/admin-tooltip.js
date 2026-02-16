@@ -1,6 +1,6 @@
 let machineTooltipTimer = null;
 
-function showMachineIdTooltip(event, machineId, source, title, desc) {
+function _showMachineIdTooltip(event, machineId, source, title, desc) {
 	const tooltip = document.getElementById("global-machine-tooltip");
 	if (machineTooltipTimer) clearTimeout(machineTooltipTimer);
 
@@ -26,17 +26,17 @@ function showMachineIdTooltip(event, machineId, source, title, desc) {
 	tooltip.innerHTML = contentHtml;
 
 	const rect = event.currentTarget.getBoundingClientRect();
-	tooltip.style.left = rect.left + "px";
-	tooltip.style.top = rect.bottom + 8 + "px";
+	tooltip.style.left = `${rect.left}px`;
+	tooltip.style.top = `${rect.bottom + 8}px`;
 	tooltip.classList.remove("hidden", "opacity-0", "invisible");
 
 	const tooltipRect = tooltip.getBoundingClientRect();
 	if (tooltipRect.right > window.innerWidth - 20) {
-		tooltip.style.left = window.innerWidth - tooltipRect.width - 20 + "px";
+		tooltip.style.left = `${window.innerWidth - tooltipRect.width - 20}px`;
 	}
 }
 
-function hideMachineIdTooltip() {
+function _hideMachineIdTooltip() {
 	const tooltip = document.getElementById("global-machine-tooltip");
 	if (tooltip) {
 		machineTooltipTimer = setTimeout(() => {
@@ -46,6 +46,6 @@ function hideMachineIdTooltip() {
 	}
 }
 
-function keepTooltipOpen() {
+function _keepTooltipOpen() {
 	if (machineTooltipTimer) clearTimeout(machineTooltipTimer);
 }

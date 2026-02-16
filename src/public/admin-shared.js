@@ -2,7 +2,7 @@ const token = localStorage.getItem("kiro_token");
 const adminKey = token || "";
 let adminLogoutHandler = null;
 
-function setAdminLogoutHandler(handler) {
+function _setAdminLogoutHandler(handler) {
 	adminLogoutHandler = typeof handler === "function" ? handler : null;
 }
 
@@ -24,7 +24,7 @@ function showToast(message, type = "info") {
 	}, 3000);
 }
 
-async function fetchApi(url, options = {}) {
+async function _fetchApi(url, options = {}) {
 	const res = await fetch(url, {
 		...options,
 		headers: {
@@ -52,7 +52,7 @@ async function fetchApi(url, options = {}) {
 	return res.status === 204 ? null : res.json();
 }
 
-function escapeHtml(value) {
+function _escapeHtml(value) {
 	return String(value || "")
 		.replace(/&/g, "&amp;")
 		.replace(/</g, "&lt;")
@@ -61,9 +61,9 @@ function escapeHtml(value) {
 		.replace(/'/g, "&#39;");
 }
 
-function copyText(text) {
+function _copyText(text) {
 	// 尝试使用现代 Clipboard API
-	if (navigator.clipboard && navigator.clipboard.writeText) {
+	if (navigator.clipboard?.writeText) {
 		navigator.clipboard
 			.writeText(text)
 			.then(() => {
@@ -108,7 +108,7 @@ function fallbackCopy(text) {
 	}
 }
 
-function getPaginationPages(currentPage, totalPages, maxVisible = 5) {
+function _getPaginationPages(currentPage, totalPages, maxVisible = 5) {
 	if (totalPages <= 0) {
 		return [];
 	}

@@ -146,7 +146,7 @@ export function createAntigravityNativeRouter(state) {
 	});
 
 	router.post("/v1internal:streamGenerateContent", async (req, res) => {
-		let selectedAccount = null;
+		let _selectedAccount = null;
 		try {
 			if (!isChannelAllowed(req.user, "antigravity")) {
 				return res.status(403).json({
@@ -160,7 +160,7 @@ export function createAntigravityNativeRouter(state) {
 			const upstream = await executeWithFailover(
 				req.body?.model,
 				async (account) => {
-					selectedAccount = account;
+					_selectedAccount = account;
 					const response = await callAntigravityStream(
 						state.db,
 						account,
@@ -208,7 +208,7 @@ export function createAntigravityNativeRouter(state) {
 	});
 
 	router.post("/v1/models/:model\\:streamGenerateContent", async (req, res) => {
-		let selectedAccount = null;
+		let _selectedAccount = null;
 		try {
 			const modelFromUrl = req.params.model;
 			req.body = req.body || {};
@@ -226,7 +226,7 @@ export function createAntigravityNativeRouter(state) {
 			const upstream = await executeWithFailover(
 				req.body.model,
 				async (account) => {
-					selectedAccount = account;
+					_selectedAccount = account;
 					const response = await callAntigravityStream(
 						state.db,
 						account,

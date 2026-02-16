@@ -63,7 +63,7 @@ export function createSettingsAdminRouter(db) {
 	 * GET /api/admin/settings/model-cooldown-config
 	 * Get model cooldown configuration
 	 */
-	router.get("/settings/model-cooldown-config", (req, res) => {
+	router.get("/settings/model-cooldown-config", (_req, res) => {
 		try {
 			const configJson = db.getSetting("model_cooldown_config") || "{}";
 			const config = JSON.parse(configJson);

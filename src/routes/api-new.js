@@ -1,12 +1,11 @@
+import fs from "node:fs/promises";
+import path from "node:path";
 import { Router } from "express";
-import fs from "fs/promises";
-import path from "path";
 import { v4 as uuidv4 } from "uuid";
 import {
 	ANTIGRAVITY_STATIC_MODELS,
 	fetchAntigravityModels,
 	isAntigravityModel,
-	resolveAntigravityUpstreamModel,
 } from "../antigravity.js";
 import { CODEX_STATIC_MODELS, isCodexModel } from "../codex.js";
 import { EventStreamDecoder, parseKiroEvent } from "../event-parser.js";
@@ -15,16 +14,13 @@ import { KiroApiError, KiroClient } from "../kiro-client.js";
 import { logger } from "../logger.js";
 import { userAuthMiddleware } from "../middleware/auth.js";
 import { getModelCooldown } from "../model-cooldown.js";
-import { requiresProAccount, routeModel } from "../model-router.js";
+import { routeModel } from "../model-router.js";
 import {
 	countMessagesTokens,
 	countTokens,
 	countToolUseTokens,
 } from "../tokenizer.js";
-import {
-	canAccessModel,
-	filterModelsByPermission,
-} from "../user-permissions.js";
+import { canAccessModel } from "../user-permissions.js";
 import {
 	recordApiFailure,
 	recordApiStart,
@@ -61,7 +57,7 @@ export function createApiRouter(state) {
 	const failoverHandler = createFailoverHandler(state.accountPool);
 
 	// GET /v1/models - 不需要认证，公开访问
-	router.get("/models", (req, res) => {
+	router.get("/models", (_req, res) => {
 		const antigravityModels = ANTIGRAVITY_STATIC_MODELS.map((model) => ({
 			id: model.id,
 			object: "model",
@@ -122,7 +118,7 @@ export function createApiRouter(state) {
 		}
 	}
 
-	function hasQuotaForModel(account, modelId) {
+	function _hasQuotaForModel(account, modelId) {
 		const quotas = parseJsonSafe(account?.model_quotas);
 		if (!quotas || typeof quotas !== "object") return true;
 		const info = quotas[modelId];
@@ -586,7 +582,7 @@ export function createApiRouter(state) {
 		}
 	});
 
-	router.post("/antigravity/models/refresh", async (req, res) => {
+	router.post("/antigravity/models/refresh", async (_req, res) => {
 		try {
 			const account = await selectAgtAccount();
 			const models = await fetchAntigravityModels(state.db, account);
@@ -664,7 +660,7 @@ async function handleStreamResponseWithBilling(
 	res.setHeader("Cache-Control", "no-cache");
 	res.setHeader("Connection", "keep-alive");
 
-	const messageId = "msg_" + uuidv4().replace(/-/g, "");
+	const messageId = `msg_${uuidv4().replace(/-/g, "")}`;
 	const decoder = new EventStreamDecoder();
 	const toolNameReverse = new Map();
 	for (const [originalName, kiroName] of toolNameMap || []) {
@@ -677,7 +673,7 @@ async function handleStreamResponseWithBilling(
 	let thinkingBlockIndex = -1;
 	let textBlockIndex = -1;
 	let hasToolUse = false;
-	let eventCount = 0;
+	let _eventCount = 0;
 	let outputTextBuffer = "";
 	let outputThinkingBuffer = "";
 	const toolUseBuffers = new Map(); // toolUseId -> { name, input }
@@ -889,7 +885,7 @@ async function handleStreamResponseWithBilling(
 				const event = parseKiroEvent(frame);
 				if (!event || !event.data) continue;
 
-				eventCount++;
+				_eventCount++;
 				const eventType = event.type;
 				const data = event.data;
 
@@ -1071,7 +1067,7 @@ async function handleStreamResponseWithBilling(
 			durationMs: Date.now() - startTime,
 			success: true,
 		});
-	} catch (error) {
+	} catch (_error) {
 		res.end();
 	}
 }
@@ -1104,155 +1100,150 @@ async function handleNonStreamResponseWithBilling(
 
 	// 工具调用 JSON 缓冲区
 	const toolJsonBuffers = new Map();
+	// node-fetch v3 的 body 是一个 ReadableStream
+	for await (const chunk of response.body) {
+		decoder.feed(chunk);
 
-	try {
-		// node-fetch v3 的 body 是一个 ReadableStream
-		for await (const chunk of response.body) {
-			decoder.feed(chunk);
+		for (const frame of decoder.decode()) {
+			const event = parseKiroEvent(frame);
+			if (!event || !event.data) continue;
 
-			for (const frame of decoder.decode()) {
-				const event = parseKiroEvent(frame);
-				if (!event || !event.data) continue;
+			const eventType = event.type;
+			const data = event.data;
 
-				const eventType = event.type;
-				const data = event.data;
+			if (eventType === "thinkingEvent") {
+				thinkingContent += data.thinking || "";
+			} else if (eventType === "assistantResponseEvent") {
+				textContent += data.content || "";
+			} else if (eventType === "toolUseEvent") {
+				const toolUseId = data.toolUseId;
+				const toolName = toolNameReverse.get(data.name) || data.name;
+				const toolInput = data.input || "";
+				const isStop = data.stop || false;
 
-				if (eventType === "thinkingEvent") {
-					thinkingContent += data.thinking || "";
-				} else if (eventType === "assistantResponseEvent") {
-					textContent += data.content || "";
-				} else if (eventType === "toolUseEvent") {
-					const toolUseId = data.toolUseId;
-					const toolName = toolNameReverse.get(data.name) || data.name;
-					const toolInput = data.input || "";
-					const isStop = data.stop || false;
+				// 累积工具的 JSON 输入
+				if (!toolJsonBuffers.has(toolUseId)) {
+					toolJsonBuffers.set(toolUseId, { name: toolName, input: "" });
+				}
+				toolJsonBuffers.get(toolUseId).input += toolInput;
 
-					// 累积工具的 JSON 输入
-					if (!toolJsonBuffers.has(toolUseId)) {
-						toolJsonBuffers.set(toolUseId, { name: toolName, input: "" });
+				// 如果是完整的工具调用，添加到列表
+				if (isStop) {
+					const buffer = toolJsonBuffers.get(toolUseId);
+					try {
+						const input = JSON.parse(buffer.input);
+						toolUses.push({
+							type: "tool_use",
+							id: toolUseId,
+							name: buffer.name,
+							input: input,
+						});
+					} catch (_e) {
+						toolUses.push({
+							type: "tool_use",
+							id: toolUseId,
+							name: buffer.name,
+							input: {},
+						});
 					}
-					toolJsonBuffers.get(toolUseId).input += toolInput;
-
-					// 如果是完整的工具调用，添加到列表
-					if (isStop) {
-						const buffer = toolJsonBuffers.get(toolUseId);
-						try {
-							const input = JSON.parse(buffer.input);
-							toolUses.push({
-								type: "tool_use",
-								id: toolUseId,
-								name: buffer.name,
-								input: input,
-							});
-						} catch (e) {
-							toolUses.push({
-								type: "tool_use",
-								id: toolUseId,
-								name: buffer.name,
-								input: {},
-							});
-						}
-					}
-				} else if (eventType === "contextUsageEvent") {
-					const percentage = normalizeContextUsagePercentage(
-						data.contextUsagePercentage || 0,
-					);
-					const estimated = Math.round(percentage * modelContextLength);
-					if (estimated > inputTokens) {
-						inputTokens = estimated;
-					}
+				}
+			} else if (eventType === "contextUsageEvent") {
+				const percentage = normalizeContextUsagePercentage(
+					data.contextUsagePercentage || 0,
+				);
+				const estimated = Math.round(percentage * modelContextLength);
+				if (estimated > inputTokens) {
+					inputTokens = estimated;
 				}
 			}
 		}
-
-		// 构建响应内容
-		const content = [];
-
-		if (thinkingContent) {
-			content.push({
-				type: "thinking",
-				thinking: thinkingContent,
-			});
-		}
-
-		if (textContent) {
-			content.push({
-				type: "text",
-				text: textContent,
-			});
-		}
-
-		content.push(...toolUses);
-
-		// 使用 tiktoken 计算输出 tokens
-		outputTokens =
-			countTokens(textContent) +
-			countTokens(thinkingContent) +
-			countToolUseTokens(toolJsonBuffers);
-
-		const messageId = "msg_" + uuidv4().replace(/-/g, "");
-		const stopReason = toolUses.length > 0 ? "tool_use" : "end_turn";
-
-		res.json({
-			id: messageId,
-			type: "message",
-			role: "assistant",
-			content: content,
-			model: model,
-			stop_reason: stopReason,
-			stop_sequence: null,
-			usage: {
-				input_tokens: inputTokens || 0,
-				output_tokens: outputTokens,
-			},
-		});
-
-		// Record request and charge user (transaction)
-		try {
-			const billingResult = state.billing.recordRequestAndCharge({
-				user_id: user.id,
-				user_api_key: user.api_key,
-				kiro_account_id: selected.id,
-				kiro_account_name: selected.name,
-				model: model,
-				input_tokens: inputTokens || 0,
-				output_tokens: outputTokens,
-				duration_ms: Date.now() - startTime,
-				success: true,
-				timestamp: new Date().toISOString(),
-			});
-
-			console.log(
-				`✓ Billed user ${user.username}: $${billingResult.cost.toFixed(6)} (${model})`,
-			);
-
-			// 记录成功指标
-			recordApiSuccess({
-				userId: user.id,
-				model,
-				inputTokens,
-				outputTokens,
-				duration: Date.now() - startTime,
-				cost: billingResult.cost,
-				stream: false,
-			});
-		} catch (billingError) {
-			logger.error("Billing error", { error: billingError });
-			// Note: Response already sent, but billing failed
-			// This should be logged for manual review
-		}
-
-		// Also log to old system for compatibility
-		state.accountPool.addLog({
-			accountId: selected.id,
-			accountName: selected.name,
-			model: model,
-			inputTokens: inputTokens || 0,
-			outputTokens: outputTokens,
-			durationMs: Date.now() - startTime,
-			success: true,
-		});
-	} catch (error) {
-		throw error;
 	}
+
+	// 构建响应内容
+	const content = [];
+
+	if (thinkingContent) {
+		content.push({
+			type: "thinking",
+			thinking: thinkingContent,
+		});
+	}
+
+	if (textContent) {
+		content.push({
+			type: "text",
+			text: textContent,
+		});
+	}
+
+	content.push(...toolUses);
+
+	// 使用 tiktoken 计算输出 tokens
+	outputTokens =
+		countTokens(textContent) +
+		countTokens(thinkingContent) +
+		countToolUseTokens(toolJsonBuffers);
+
+	const messageId = `msg_${uuidv4().replace(/-/g, "")}`;
+	const stopReason = toolUses.length > 0 ? "tool_use" : "end_turn";
+
+	res.json({
+		id: messageId,
+		type: "message",
+		role: "assistant",
+		content: content,
+		model: model,
+		stop_reason: stopReason,
+		stop_sequence: null,
+		usage: {
+			input_tokens: inputTokens || 0,
+			output_tokens: outputTokens,
+		},
+	});
+
+	// Record request and charge user (transaction)
+	try {
+		const billingResult = state.billing.recordRequestAndCharge({
+			user_id: user.id,
+			user_api_key: user.api_key,
+			kiro_account_id: selected.id,
+			kiro_account_name: selected.name,
+			model: model,
+			input_tokens: inputTokens || 0,
+			output_tokens: outputTokens,
+			duration_ms: Date.now() - startTime,
+			success: true,
+			timestamp: new Date().toISOString(),
+		});
+
+		console.log(
+			`✓ Billed user ${user.username}: $${billingResult.cost.toFixed(6)} (${model})`,
+		);
+
+		// 记录成功指标
+		recordApiSuccess({
+			userId: user.id,
+			model,
+			inputTokens,
+			outputTokens,
+			duration: Date.now() - startTime,
+			cost: billingResult.cost,
+			stream: false,
+		});
+	} catch (billingError) {
+		logger.error("Billing error", { error: billingError });
+		// Note: Response already sent, but billing failed
+		// This should be logged for manual review
+	}
+
+	// Also log to old system for compatibility
+	state.accountPool.addLog({
+		accountId: selected.id,
+		accountName: selected.name,
+		model: model,
+		inputTokens: inputTokens || 0,
+		outputTokens: outputTokens,
+		durationMs: Date.now() - startTime,
+		success: true,
+	});
 }

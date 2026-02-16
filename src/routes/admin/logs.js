@@ -49,7 +49,7 @@ export function createLogsAdminRouter(db) {
 			}
 
 			query += " ORDER BY timestamp DESC LIMIT ? OFFSET ?";
-			params.push(parseInt(limit), parseInt(offset));
+			params.push(parseInt(limit, 10), parseInt(offset, 10));
 
 			const logs = db.db.prepare(query).all(...params);
 
@@ -89,8 +89,8 @@ export function createLogsAdminRouter(db) {
 				data: logs,
 				pagination: {
 					total: totalCount,
-					limit: parseInt(limit),
-					offset: parseInt(offset),
+					limit: parseInt(limit, 10),
+					offset: parseInt(offset, 10),
 				},
 			});
 		} catch (error) {

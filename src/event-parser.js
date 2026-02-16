@@ -3,7 +3,7 @@
  * 解析 Kiro API 返回的二进制事件流
  */
 
-import zlib from "zlib";
+import zlib from "node:zlib";
 
 const PRELUDE_SIZE = 12; // 4 (total_length) + 4 (headers_length) + 4 (prelude_crc)
 const MESSAGE_CRC_SIZE = 4;
@@ -12,7 +12,7 @@ const MIN_MESSAGE_SIZE = PRELUDE_SIZE + MESSAGE_CRC_SIZE;
 /**
  * CRC32C 计算（简化版，用于验证）
  */
-function crc32c(data) {
+function _crc32c(data) {
 	// 简化实现，实际生产环境应使用 crc32c 库
 	let crc = 0xffffffff;
 	const table = getCrc32cTable();
@@ -86,7 +86,7 @@ function parseFrame(buffer, offset = 0) {
 			if (payload[0] === 0x1f && payload[1] === 0x8b) {
 				payload = zlib.gunzipSync(payload);
 			}
-		} catch (e) {
+		} catch (_e) {
 			// 解压失败，使用原始数据
 		}
 	}
@@ -210,7 +210,7 @@ export class EventStreamDecoder {
 				} else {
 					yield frame;
 				}
-			} catch (e) {
+			} catch (_e) {
 				// 解析错误，跳过一个字节继续
 				this.buffer = this.buffer.slice(1);
 			}
@@ -231,7 +231,7 @@ export function parseKiroEvent(frame) {
 	try {
 		const data = JSON.parse(frame.payload.toString("utf8"));
 		return { type: eventType, data };
-	} catch (e) {
+	} catch (_e) {
 		return { type: eventType, data: frame.payload.toString("utf8") };
 	}
 }

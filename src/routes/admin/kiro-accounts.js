@@ -9,7 +9,7 @@ export function createKiroAccountsAdminRouter(db, accountPool) {
 	 * GET /api/admin/accounts
 	 * List all Kiro accounts with dependency tracking
 	 */
-	router.get("/accounts", (req, res) => {
+	router.get("/accounts", (_req, res) => {
 		try {
 			const accounts = db.getAllKiroAccounts();
 
@@ -62,8 +62,6 @@ export function createKiroAccountsAdminRouter(db, accountPool) {
 	 */
 	router.post("/accounts/:id/refresh-usage", async (req, res) => {
 		try {
-			const { id } = req.params;
-
 			if (!accountPool) {
 				return res.status(500).json({
 					error: {
@@ -113,7 +111,7 @@ export function createKiroAccountsAdminRouter(db, accountPool) {
 	 * POST /api/admin/accounts/refresh-all-usage
 	 * Refresh usage for all Kiro accounts
 	 */
-	router.post("/accounts/refresh-all-usage", async (req, res) => {
+	router.post("/accounts/refresh-all-usage", async (_req, res) => {
 		try {
 			if (!accountPool) {
 				return res.status(500).json({
@@ -332,7 +330,7 @@ export function createKiroAccountsAdminRouter(db, accountPool) {
 	 * GET /api/admin/accounts/models
 	 * Get list of Kiro supported models
 	 */
-	router.get("/accounts/models", (req, res) => {
+	router.get("/accounts/models", (_req, res) => {
 		try {
 			const models = [
 				{

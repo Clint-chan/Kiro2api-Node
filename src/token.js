@@ -1,4 +1,4 @@
-import crypto from "crypto";
+import crypto from "node:crypto";
 import fetch from "node-fetch";
 import { logger } from "./logger.js";
 
@@ -72,7 +72,7 @@ export class TokenManager {
 			try {
 				const { HttpsProxyAgent } = await import("https-proxy-agent");
 				fetchOptions.agent = new HttpsProxyAgent(this.config.proxyUrl);
-			} catch (e) {
+			} catch (_e) {
 				logger.warn("代理模块未安装，忽略代理设置");
 			}
 		}
@@ -133,7 +133,7 @@ export class TokenManager {
 			try {
 				const { HttpsProxyAgent } = await import("https-proxy-agent");
 				fetchOptions.agent = new HttpsProxyAgent(this.config.proxyUrl);
-			} catch (e) {
+			} catch (_e) {
 				logger.warn("代理模块未安装，忽略代理设置");
 			}
 		}

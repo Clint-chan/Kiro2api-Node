@@ -50,7 +50,7 @@ export function createCLIProxyAdminRouter() {
 	});
 
 	// OAuth 流程
-	router.get("/antigravity-auth-url", async (req, res) => {
+	router.get("/antigravity-auth-url", async (_req, res) => {
 		try {
 			const result = await client.getAntigravityAuthUrl();
 			res.json(result);
@@ -70,7 +70,7 @@ export function createCLIProxyAdminRouter() {
 	});
 
 	// 使用统计
-	router.get("/usage", async (req, res) => {
+	router.get("/usage", async (_req, res) => {
 		try {
 			const result = await client.getUsage();
 			res.json(result);
@@ -79,7 +79,7 @@ export function createCLIProxyAdminRouter() {
 		}
 	});
 
-	router.get("/usage/export", async (req, res) => {
+	router.get("/usage/export", async (_req, res) => {
 		try {
 			const result = await client.exportUsage();
 			res.json(result);
@@ -108,7 +108,7 @@ export function createCLIProxyAdminRouter() {
 		}
 	});
 
-	router.delete("/logs", async (req, res) => {
+	router.delete("/logs", async (_req, res) => {
 		try {
 			const result = await client.deleteLogs();
 			res.json(result);
@@ -117,7 +117,7 @@ export function createCLIProxyAdminRouter() {
 		}
 	});
 
-	router.get("/request-error-logs", async (req, res) => {
+	router.get("/request-error-logs", async (_req, res) => {
 		try {
 			const result = await client.getRequestErrorLogs();
 			res.json(result);
@@ -137,7 +137,7 @@ export function createCLIProxyAdminRouter() {
 	});
 
 	// 配置
-	router.get("/config", async (req, res) => {
+	router.get("/config", async (_req, res) => {
 		try {
 			const result = await client.getConfig();
 			res.json(result);
@@ -146,7 +146,7 @@ export function createCLIProxyAdminRouter() {
 		}
 	});
 
-	router.get("/debug", async (req, res) => {
+	router.get("/debug", async (_req, res) => {
 		try {
 			const result = await client.getDebug();
 			res.json(result);
@@ -165,7 +165,7 @@ export function createCLIProxyAdminRouter() {
 		}
 	});
 
-	router.get("/proxy-url", async (req, res) => {
+	router.get("/proxy-url", async (_req, res) => {
 		try {
 			const result = await client.getProxyUrl();
 			res.json(result);
@@ -184,7 +184,7 @@ export function createCLIProxyAdminRouter() {
 		}
 	});
 
-	router.delete("/proxy-url", async (req, res) => {
+	router.delete("/proxy-url", async (_req, res) => {
 		try {
 			const result = await client.deleteProxyUrl();
 			res.json(result);
@@ -211,7 +211,7 @@ export function createCLIProxyAdminRouter() {
 			let parsedUrl;
 			try {
 				parsedUrl = new URL(url);
-			} catch (e) {
+			} catch (_e) {
 				return res.status(400).json({ error: "Invalid URL format" });
 			}
 
@@ -278,7 +278,7 @@ export function createCLIProxyAdminRouter() {
 		}
 	});
 
-	router.get("/request-retry", async (req, res) => {
+	router.get("/request-retry", async (_req, res) => {
 		try {
 			const result = await client.getRequestRetry();
 			res.json(result);
@@ -297,7 +297,7 @@ export function createCLIProxyAdminRouter() {
 		}
 	});
 
-	router.get("/quota-exceeded", async (req, res) => {
+	router.get("/quota-exceeded", async (_req, res) => {
 		try {
 			const result = await client.getQuotaExceeded();
 			res.json(result);

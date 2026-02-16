@@ -2,7 +2,7 @@ let logsCurrentPage = 1;
 const logsPageSize = 20;
 let allLogs = [];
 
-function toggleAutoRefresh() {
+function _toggleAutoRefresh() {
 	const toggle = document.getElementById("autoRefreshToggle");
 	if (toggle.checked) {
 		autoRefreshInterval = setInterval(() => {
@@ -95,7 +95,7 @@ function renderLogsPageNumbers(totalPages) {
 		.join("");
 }
 
-function changeLogsPage(direction) {
+function _changeLogsPage(direction) {
 	if (direction === "prev" && logsCurrentPage > 1) {
 		logsCurrentPage--;
 		renderLogsPage();
@@ -108,7 +108,7 @@ function changeLogsPage(direction) {
 	}
 }
 
-function goToLogsPage(page) {
+function _goToLogsPage(page) {
 	logsCurrentPage = page;
 	renderLogsPage();
 }

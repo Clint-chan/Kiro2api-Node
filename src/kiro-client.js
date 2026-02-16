@@ -1,4 +1,3 @@
-import crypto from "crypto";
 import fetch from "node-fetch";
 import { v4 as uuidv4 } from "uuid";
 import { logger } from "./logger.js";
@@ -182,10 +181,7 @@ export class KiroClient {
 		const toolNames = [];
 
 		for (const msg of history) {
-			if (
-				msg.assistantResponseMessage &&
-				msg.assistantResponseMessage.toolUses
-			) {
+			if (msg.assistantResponseMessage?.toolUses) {
 				for (const toolUse of msg.assistantResponseMessage.toolUses) {
 					if (!toolNames.includes(toolUse.name)) {
 						toolNames.push(toolUse.name);
@@ -239,7 +235,7 @@ export class KiroClient {
 		// 限制历史消息数量（仅在配置了 MAX_HISTORY_TURNS 时生效）
 		let limitedMessages = messages;
 		const maxHistoryTurns = process.env.MAX_HISTORY_TURNS
-			? parseInt(process.env.MAX_HISTORY_TURNS)
+			? parseInt(process.env.MAX_HISTORY_TURNS, 10)
 			: null;
 
 		if (maxHistoryTurns && messages.length > maxHistoryTurns * 2) {
@@ -547,7 +543,7 @@ export class KiroClient {
 		const textParts = [];
 		const toolResults = [];
 		const MAX_TOOL_RESULT_LENGTH =
-			parseInt(process.env.MAX_TOOL_RESULT_LENGTH) || 50000; // 限制单个工具结果的最大长度
+			parseInt(process.env.MAX_TOOL_RESULT_LENGTH, 10) || 50000; // 限制单个工具结果的最大长度
 
 		for (const block of content) {
 			if (block.type === "text") {
@@ -792,7 +788,7 @@ export class KiroClient {
 		const requestDebug = this.summarizeForDebug(kiroReq);
 
 		// 超时控制（防止上游 hang 住）
-		const timeout = parseInt(process.env.REQUEST_TIMEOUT) || 60000; // 默认 60 秒
+		const timeout = parseInt(process.env.REQUEST_TIMEOUT, 10) || 60000; // 默认 60 秒
 		const controller = new AbortController();
 		const timeoutId = setTimeout(() => controller.abort(), timeout);
 
@@ -808,7 +804,7 @@ export class KiroClient {
 			try {
 				const { HttpsProxyAgent } = await import("https-proxy-agent");
 				fetchOptions.agent = new HttpsProxyAgent(this.config.proxyUrl);
-			} catch (e) {
+			} catch (_e) {
 				// 代理模块未安装，忽略
 			}
 		}

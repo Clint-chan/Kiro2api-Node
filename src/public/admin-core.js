@@ -6,7 +6,7 @@ let currentPage = 1;
 const pageSize = 15;
 let allAccounts = [];
 let weeklyChart = null;
-const weeklyTokenChart = null;
+const _weeklyTokenChart = null;
 
 function startUptimeCounter() {
 	if (uptimeInterval) {
@@ -33,7 +33,7 @@ function logout() {
 
 setAdminLogoutHandler(logout);
 
-function showMainPanel() {
+function _showMainPanel() {
 	const loginPage = document.getElementById("loginPage");
 	if (loginPage) {
 		loginPage.classList.add("hidden");
@@ -66,8 +66,8 @@ function formatUptime(secs) {
 }
 
 function formatNumber(n) {
-	if (n >= 1000000) return (n / 1000000).toFixed(1) + "M";
-	if (n >= 1000) return (n / 1000).toFixed(1) + "K";
+	if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
+	if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
 	return n.toString();
 }
 
@@ -128,7 +128,7 @@ async function loadStatus() {
 		setElementText("today-requests", formatNumber(stats.today?.requests || 0));
 		setElementText(
 			"today-revenue",
-			"$" + (stats.today?.revenue || 0).toFixed(2),
+			`$${(stats.today?.revenue || 0).toFixed(2)}`,
 		);
 		setElementText("today-input", formatNumber(stats.today?.inputTokens || 0));
 		setElementText(
@@ -226,8 +226,8 @@ async function loadQuotaStats() {
 
 		setElementText("stat-total-quota", totalQuota.toFixed(1));
 		setElementText("stat-available-quota", totalAvailable.toFixed(1));
-		setElementText("stat-used-percent", usedPercent + "%");
-		setElementWidth("quota-progress", usedPercent + "%");
+		setElementText("stat-used-percent", `${usedPercent}%`);
+		setElementWidth("quota-progress", `${usedPercent}%`);
 	} catch (e) {
 		console.error("Load quota stats error:", e);
 	}
@@ -248,7 +248,7 @@ async function loadMiniCharts() {
 			const date = new Date(startDate);
 			date.setDate(date.getDate() + i);
 			const dateStr = date.toISOString().split("T")[0];
-			labels.push(date.getMonth() + 1 + "/" + date.getDate());
+			labels.push(`${date.getMonth() + 1}/${date.getDate()}`);
 			dailyStats[dateStr] = {
 				count: 0,
 				total_tokens: 0,
@@ -300,12 +300,12 @@ async function loadMiniCharts() {
 		setElementText("trend-total", formatNumber(totalRequests));
 		setElementText(
 			"trend-change",
-			(avgChange > 0 ? "+" : "") + avgChange + "%",
+			`${(avgChange > 0 ? "+" : "") + avgChange}%`,
 		);
 		setElementText("token-total", formatNumber(totalTokens));
 		setElementText(
 			"token-change",
-			(tokenChange > 0 ? "+" : "") + tokenChange + "%",
+			`${(tokenChange > 0 ? "+" : "") + tokenChange}%`,
 		);
 
 		createMiniChart(
@@ -387,7 +387,7 @@ function createMiniChart(canvasId, data, bgColor, borderColor) {
 	});
 }
 
-async function loadWeeklyChart() {
+async function _loadWeeklyChart() {
 	try {
 		const endDate = new Date();
 		const startDate = new Date();
@@ -404,7 +404,7 @@ async function loadWeeklyChart() {
 			const date = new Date(startDate);
 			date.setDate(date.getDate() + i);
 			const dateStr = date.toISOString().split("T")[0];
-			labels.push(date.getMonth() + 1 + "/" + date.getDate());
+			labels.push(`${date.getMonth() + 1}/${date.getDate()}`);
 			dailyStats[dateStr] = {
 				count: 0,
 				input_tokens: 0,
@@ -624,7 +624,7 @@ async function loadUserRanking() {
                 ${users
 									.map((user, index) => {
 										const requests = user.total_requests || 0;
-										const totalTokens =
+										const _totalTokens =
 											(user.total_input_tokens || 0) +
 											(user.total_output_tokens || 0);
 										const percent = Math.round((requests / maxRequests) * 100);
@@ -666,11 +666,11 @@ async function loadModelTypeStats() {
 		const data = await fetchApi("/v1/models");
 		const models = data.data || [];
 
-		const claudeCount = models.filter(
-			(m) => m.id && m.id.toLowerCase().includes("claude"),
+		const claudeCount = models.filter((m) =>
+			m.id?.toLowerCase().includes("claude"),
 		).length;
-		const geminiCount = models.filter(
-			(m) => m.id && m.id.toLowerCase().includes("gemini"),
+		const geminiCount = models.filter((m) =>
+			m.id?.toLowerCase().includes("gemini"),
 		).length;
 		const gptCount = models.filter(
 			(m) =>
@@ -707,7 +707,7 @@ async function loadModelStats() {
                 ${models
 									.map((model, index) => {
 										const requests = model.request_count || 0;
-										const totalTokens =
+										const _totalTokens =
 											model.total_tokens ||
 											(model.total_input_tokens || 0) +
 												(model.total_output_tokens || 0);
@@ -771,7 +771,7 @@ async function loadAgtAccounts() {
 	}
 }
 
-function loadAntigravityTemplate() {
+function _loadAntigravityTemplate() {
 	const template = JSON.stringify(
 		{
 			type: "antigravity",
@@ -789,7 +789,7 @@ function loadAntigravityTemplate() {
 	document.getElementById("antigravity-import-json").value = template;
 }
 
-async function importAntigravityAccounts() {
+async function _importAntigravityAccounts() {
 	const jsonContent = document
 		.getElementById("antigravity-import-json")
 		.value.trim();
@@ -816,7 +816,7 @@ async function importAntigravityAccounts() {
 			result.failed > 0 ? "warning" : "success",
 		);
 	} catch (e) {
-		showToast("Antigravity 导入失败: " + e.message, "error");
+		showToast(`Antigravity 导入失败: ${e.message}`, "error");
 	}
 }
 
@@ -936,7 +936,7 @@ function renderPageNumbers(totalPages) {
 		.join("");
 }
 
-function changePage(direction) {
+function _changePage(direction) {
 	if (direction === "prev" && currentPage > 1) {
 		currentPage--;
 		renderAccountsPage();
@@ -949,18 +949,18 @@ function changePage(direction) {
 	}
 }
 
-function goToPage(page) {
+function _goToPage(page) {
 	currentPage = page;
 	renderAccountsPage();
 }
 
-function toggleSelect(id, checked) {
+function _toggleSelect(id, checked) {
 	if (checked) selectedAccounts.add(id);
 	else selectedAccounts.delete(id);
 	updateBatchDeleteBtn();
 }
 
-function toggleSelectAll(checked) {
+function _toggleSelectAll(checked) {
 	document.querySelectorAll(".account-checkbox").forEach((cb) => {
 		cb.checked = checked;
 		if (checked) selectedAccounts.add(cb.dataset.id);
@@ -975,7 +975,7 @@ function updateBatchDeleteBtn() {
 	btn.classList.toggle("hidden", selectedAccounts.size === 0);
 }
 
-async function batchDeleteAccounts() {
+async function _batchDeleteAccounts() {
 	if (selectedAccounts.size === 0) return;
 	if (!confirm(`确定删除选中的 ${selectedAccounts.size} 个账号？`)) return;
 	try {
@@ -986,11 +986,11 @@ async function batchDeleteAccounts() {
 		showToast(`成功删除 ${result.removed} 个账号`, "success");
 		refresh();
 	} catch (e) {
-		showToast("批量删除失败: " + e.message, "error");
+		showToast(`批量删除失败: ${e.message}`, "error");
 	}
 }
 
-async function clearLogs() {
+async function _clearLogs() {
 	if (!confirm("确定清空所有请求记录？")) return;
 	try {
 		await fetchApi("/api/logs", { method: "DELETE" });
@@ -998,7 +998,7 @@ async function clearLogs() {
 		loadStatus();
 		showToast("记录已清空", "success");
 	} catch (e) {
-		showToast("清空失败: " + e.message, "error");
+		showToast(`清空失败: ${e.message}`, "error");
 	}
 }
 
@@ -1014,7 +1014,7 @@ function formatStatus(status) {
 	return `<span class="px-2 py-1 rounded-full text-xs font-medium ${styles[status] || styles.disabled}">${status}</span>`;
 }
 
-function formatUserChannelBadges(channels) {
+function _formatUserChannelBadges(channels) {
 	const list =
 		Array.isArray(channels) && channels.length > 0 ? channels : ["kiro"];
 	return list
@@ -1204,7 +1204,7 @@ function formatResetTimeBadge(nextReset) {
             `;
 }
 
-function copyMachineId(machineId, event) {
+function _copyMachineId(machineId, event) {
 	event.stopPropagation();
 	navigator.clipboard
 		.writeText(machineId)
@@ -1258,7 +1258,7 @@ function formatSubscriptionBadge(subscriptionType) {
 	return `<span class="inline-flex items-center px-1 py-0.5 rounded text-[10px] font-medium leading-none border ${badges.free.color}">${badges.free.label}</span>`;
 }
 
-async function refreshUsage(id) {
+async function _refreshUsage(id) {
 	try {
 		const response = await fetchApi(`/api/admin/accounts/${id}/refresh-usage`, {
 			method: "POST",
@@ -1287,11 +1287,11 @@ async function refreshUsage(id) {
 			await loadStatus();
 		}
 	} catch (e) {
-		showToast("刷新失败: " + e.message, "error");
+		showToast(`刷新失败: ${e.message}`, "error");
 	}
 }
 
-async function refreshAllUsage() {
+async function _refreshAllUsage() {
 	try {
 		showToast("正在刷新所有账号，请稍候...", "info");
 
@@ -1322,19 +1322,19 @@ async function refreshAllUsage() {
 		const successCount = data.data.filter(
 			(r) => r.usage && !r.usage.error,
 		).length;
-		const failCount = data.data.filter((r) => r.usage && r.usage.error).length;
+		const failCount = data.data.filter((r) => r.usage?.error).length;
 
 		showToast(`刷新完成！成功: ${successCount}, 失败: ${failCount}`, "success");
 	} catch (e) {
 		if (e.name === "AbortError") {
 			showToast("刷新超时，请稍后重试", "error");
 		} else {
-			showToast("刷新失败: " + e.message, "error");
+			showToast(`刷新失败: ${e.message}`, "error");
 		}
 	}
 }
 
-async function loadStrategy() {
+async function _loadStrategy() {
 	try {
 		const data = await fetchApi("/api/strategy");
 		document.getElementById("strategy").value = data.strategy;
@@ -1343,7 +1343,7 @@ async function loadStrategy() {
 	}
 }
 
-async function setStrategy(value) {
+async function _setStrategy(value) {
 	try {
 		await fetchApi("/api/strategy", {
 			method: "POST",
@@ -1351,11 +1351,11 @@ async function setStrategy(value) {
 		});
 		showToast("策略已更新", "success");
 	} catch (e) {
-		showToast("设置失败: " + e.message, "error");
+		showToast(`设置失败: ${e.message}`, "error");
 	}
 }
 
-function switchTab(tab) {
+function _switchTab(tab) {
 	document.querySelectorAll(".tab-btn").forEach((t) => {
 		t.classList.remove("border-blue-500", "text-blue-600");
 		t.classList.add("border-transparent", "text-gray-500");
@@ -1369,7 +1369,7 @@ function switchTab(tab) {
 	document.querySelectorAll(".tab-content").forEach((c) => {
 		c.classList.add("hidden");
 	});
-	document.getElementById("tab-" + tab).classList.remove("hidden");
+	document.getElementById(`tab-${tab}`).classList.remove("hidden");
 	if (tab === "users") loadUsers();
 	if (tab === "accounts") loadAccounts();
 	if (tab === "antigravity-accounts") {
@@ -1383,7 +1383,7 @@ function switchTab(tab) {
 	if (tab === "logs") {
 		loadLogs();
 		const toggle = document.getElementById("autoRefreshToggle");
-		if (toggle && toggle.checked && !autoRefreshInterval) {
+		if (toggle?.checked && !autoRefreshInterval) {
 			autoRefreshInterval = setInterval(() => {
 				loadLogs();
 			}, 5000);
@@ -1399,7 +1399,7 @@ function switchTab(tab) {
 	}
 }
 
-function showModal(id) {
+function _showModal(id) {
 	if (id === "importModal") resetImportResultView(false);
 	document.getElementById(id).classList.remove("hidden");
 }
@@ -1408,7 +1408,7 @@ function hideModal(id) {
 	document.getElementById(id).classList.add("hidden");
 	if (id === "importModal") resetImportResultView(true);
 }
-function toggleIdcFields() {
+function _toggleIdcFields() {
 	document
 		.getElementById("idc-fields")
 		.classList.toggle(
@@ -1417,7 +1417,7 @@ function toggleIdcFields() {
 		);
 }
 
-async function addAccount() {
+async function _addAccount() {
 	const data = {
 		name: document.getElementById("acc-name").value || "未命名账号",
 		auth_method: document.getElementById("acc-auth").value,
@@ -1438,7 +1438,7 @@ async function addAccount() {
 		refresh();
 		showToast("添加成功", "success");
 	} catch (e) {
-		showToast("添加失败: " + e.message, "error");
+		showToast(`添加失败: ${e.message}`, "error");
 	}
 }
 
@@ -1601,7 +1601,7 @@ function copyText(text) {
 // Model Management: Fetch & Refresh
 // ---------------------------------------------------------------------
 
-async function fetchKiroModels() {
+async function _fetchKiroModels() {
 	const btn = event.currentTarget;
 	const originalHtml = btn.innerHTML;
 
@@ -1625,14 +1625,14 @@ async function fetchKiroModels() {
 			showToast("未找到 Kiro 模型", "info");
 		}
 	} catch (e) {
-		showToast("获取 Kiro 模型失败: " + e.message, "error");
+		showToast(`获取 Kiro 模型失败: ${e.message}`, "error");
 	} finally {
 		btn.disabled = false;
 		btn.innerHTML = originalHtml;
 	}
 }
 
-async function fetchCliProxyModels(provider) {
+async function _fetchCliProxyModels(provider) {
 	const btn = event.currentTarget;
 	const originalHtml = btn.innerHTML;
 	const colorConfig =
@@ -1675,7 +1675,7 @@ async function fetchCliProxyModels(provider) {
 			showToast(`未找到 ${provider} 模型`, "info");
 		}
 	} catch (e) {
-		showToast(`获取 ${provider} 模型失败: ` + e.message, "error");
+		showToast(`获取 ${provider} 模型失败: ${e.message}`, "error");
 	} finally {
 		btn.disabled = false;
 		btn.innerHTML = originalHtml;
@@ -1740,7 +1740,7 @@ async function loadSettings() {
 	}
 }
 
-async function importAccounts() {
+async function _importAccounts() {
 	const jsonContent = document.getElementById("import-json").value.trim();
 	if (!jsonContent) {
 		showToast("请选择文件或粘贴 JSON 内容", "warning");
@@ -1771,7 +1771,7 @@ async function importAccounts() {
 			result.failed > 0 ? "warning" : "success",
 		);
 	} catch (e) {
-		showToast("导入失败: " + e.message, "error");
+		showToast(`导入失败: ${e.message}`, "error");
 	} finally {
 		submitBtn.disabled = false;
 		submitBtn.innerHTML =
@@ -1779,7 +1779,7 @@ async function importAccounts() {
 	}
 }
 
-function handleFileSelect(event) {
+function _handleFileSelect(event) {
 	const file = event.target.files[0];
 	if (!file) return;
 	document.getElementById("file-name").textContent = `已选择: ${file.name}`;
@@ -1790,7 +1790,7 @@ function handleFileSelect(event) {
 	reader.readAsText(file);
 }
 
-function loadTemplate(type) {
+function _loadTemplate(type) {
 	let template;
 	if (type === "social") {
 		template = JSON.stringify(
@@ -1842,7 +1842,7 @@ function loadTemplate(type) {
 	showToast("模板已加载，请替换示例数据", "info");
 }
 
-async function removeAccount(id, dependencyCount = 0) {
+async function _removeAccount(id, dependencyCount = 0) {
 	let force = false;
 	if (dependencyCount > 0) {
 		const confirmed = confirm(
@@ -1879,11 +1879,11 @@ async function removeAccount(id, dependencyCount = 0) {
 			}
 			return;
 		}
-		showToast("删除失败: " + e.message, "error");
+		showToast(`删除失败: ${e.message}`, "error");
 	}
 }
 
-async function enableAccount(id, buttonEl = null) {
+async function _enableAccount(id, buttonEl = null) {
 	const originalHtml = buttonEl ? buttonEl.innerHTML : "";
 	try {
 		if (buttonEl) {
@@ -1901,7 +1901,7 @@ async function enableAccount(id, buttonEl = null) {
 		loadStatus();
 		showToast("账号已启用", "success");
 	} catch (e) {
-		showToast("启用失败: " + e.message, "error");
+		showToast(`启用失败: ${e.message}`, "error");
 	} finally {
 		if (buttonEl) {
 			buttonEl.disabled = false;
@@ -1911,7 +1911,7 @@ async function enableAccount(id, buttonEl = null) {
 	}
 }
 
-async function disableAccount(id, buttonEl = null) {
+async function _disableAccount(id, buttonEl = null) {
 	if (!confirm("确定禁用此账号？")) return;
 	const originalHtml = buttonEl ? buttonEl.innerHTML : "";
 	try {
@@ -1930,7 +1930,7 @@ async function disableAccount(id, buttonEl = null) {
 		loadStatus();
 		showToast("账号已禁用", "warning");
 	} catch (e) {
-		showToast("禁用失败: " + e.message, "error");
+		showToast(`禁用失败: ${e.message}`, "error");
 	} finally {
 		if (buttonEl) {
 			buttonEl.disabled = false;
@@ -1940,7 +1940,7 @@ async function disableAccount(id, buttonEl = null) {
 	}
 }
 
-function exportAccountJson(id) {
+function _exportAccountJson(id) {
 	const account = allAccounts.find((a) => a.id === id);
 	if (!account) {
 		showToast("账号不存在", "error");
@@ -1989,7 +1989,7 @@ async function loadApiKeys() {
 	}
 }
 
-async function addApiKey() {
+async function _addApiKey() {
 	const newKey = document.getElementById("new-api-key").value.trim();
 	if (!newKey) {
 		showToast("请输入 API 密钥", "warning");
@@ -2008,11 +2008,11 @@ async function addApiKey() {
 		loadApiKeys();
 		showToast("添加成功", "success");
 	} catch (e) {
-		showToast("添加失败: " + e.message, "error");
+		showToast(`添加失败: ${e.message}`, "error");
 	}
 }
 
-async function removeApiKey(key) {
+async function _removeApiKey(key) {
 	if (!confirm("确定删除此 API 密钥？")) return;
 	try {
 		await fetchApi("/api/settings/api-keys", {
@@ -2022,11 +2022,11 @@ async function removeApiKey(key) {
 		loadApiKeys();
 		showToast("删除成功", "success");
 	} catch (e) {
-		showToast("删除失败: " + e.message, "error");
+		showToast(`删除失败: ${e.message}`, "error");
 	}
 }
 
-async function showModelCooldownConfig() {
+async function _showModelCooldownConfig() {
 	try {
 		const [modelsResponse, configResponse] = await Promise.all([
 			fetchApi("/api/admin/accounts/models"),
@@ -2052,8 +2052,8 @@ async function showModelCooldownConfig() {
 				.map(([id]) => id),
 		);
 
-		const defaultThreshold = 3;
-		const defaultDuration = 15;
+		const _defaultThreshold = 3;
+		const _defaultDuration = 15;
 
 		modal.innerHTML = `
 			<div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl mx-4 max-h-[90vh] flex flex-col animate-scaleIn">
@@ -2127,7 +2127,7 @@ async function showModelCooldownConfig() {
 		document.body.appendChild(modal);
 		updateCooldownConfigPreview();
 	} catch (e) {
-		showToast("加载模型配置失败: " + e.message, "error");
+		showToast(`加载模型配置失败: ${e.message}`, "error");
 	}
 }
 
@@ -2151,7 +2151,7 @@ function updateCooldownConfigPreview() {
 			</div>
 		`;
 	} else {
-		const modelNames = Array.from(checkboxes)
+		const _modelNames = Array.from(checkboxes)
 			.map((cb) => cb.dataset.modelName)
 			.join("、");
 		panel.innerHTML = `
@@ -2223,14 +2223,16 @@ function updateCooldownConfigPreview() {
 	}
 }
 
-async function saveModelCooldownConfigFromModal() {
+async function _saveModelCooldownConfigFromModal() {
 	try {
 		const checkboxes = document.querySelectorAll(".model-checkbox");
 		const threshold = parseInt(
 			document.getElementById("threshold-slider")?.value || 3,
+			10,
 		);
 		const duration = parseInt(
 			document.getElementById("duration-slider")?.value || 15,
+			10,
 		);
 
 		const config = {};
@@ -2251,7 +2253,7 @@ async function saveModelCooldownConfigFromModal() {
 		document.getElementById("modelCooldownModal").remove();
 		showToast("配置保存成功", "success");
 	} catch (e) {
-		showToast("保存配置失败: " + e.message, "error");
+		showToast(`保存配置失败: ${e.message}`, "error");
 	}
 }
 

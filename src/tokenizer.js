@@ -20,7 +20,7 @@ export function countTokens(text) {
 	try {
 		const enc = getEncoder();
 		return enc.encode(text).length;
-	} catch (e) {
+	} catch (_e) {
 		// 降级到估算
 		return Math.ceil(text.length / 2);
 	}

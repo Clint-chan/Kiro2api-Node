@@ -14,7 +14,7 @@ export function createObservabilityRouter(state) {
 	 * GET /metrics - Prometheus 格式指标
 	 * 需要管理员认证
 	 */
-	router.get("/metrics", adminAuthMiddleware(state.db), (req, res) => {
+	router.get("/metrics", adminAuthMiddleware(state.db), (_req, res) => {
 		// 更新实时指标
 		updateMetrics(state);
 
@@ -26,7 +26,7 @@ export function createObservabilityRouter(state) {
 	 * GET /health - 健康检查
 	 * Kubernetes liveness + readiness
 	 */
-	router.get("/health", (req, res) => {
+	router.get("/health", (_req, res) => {
 		const health = checkHealth(state);
 
 		const status = health.status === "healthy" ? 200 : 503;
@@ -37,7 +37,7 @@ export function createObservabilityRouter(state) {
 	 * GET /health/live - Liveness probe
 	 * 检查进程是否存活
 	 */
-	router.get("/health/live", (req, res) => {
+	router.get("/health/live", (_req, res) => {
 		res.json({ status: "ok" });
 	});
 
@@ -45,7 +45,7 @@ export function createObservabilityRouter(state) {
 	 * GET /health/ready - Readiness probe
 	 * 检查服务是否就绪
 	 */
-	router.get("/health/ready", (req, res) => {
+	router.get("/health/ready", (_req, res) => {
 		const ready = isReady(state);
 
 		if (ready) {
@@ -67,13 +67,13 @@ function updateMetrics(state) {
 	// 账号状态分布
 	const statusCounts = { active: 0, depleted: 0, disabled: 0, error: 0 };
 	let totalBalance = 0;
-	let totalRequests = 0;
+	let _totalRequests = 0;
 	let totalInflight = 0;
 
 	for (const account of accounts) {
 		statusCounts[account.status] = (statusCounts[account.status] || 0) + 1;
 		totalBalance += getAccountAvailableBalance(account);
-		totalRequests += account.requestCount || 0;
+		_totalRequests += account.requestCount || 0;
 		totalInflight += account.inflight || 0;
 	}
 

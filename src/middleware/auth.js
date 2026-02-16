@@ -233,7 +233,7 @@ export function dualAuthMiddleware(db) {
  * Attaches user if valid API key is provided, but doesn't require it
  */
 export function optionalAuthMiddleware(db) {
-	return (req, res, next) => {
+	return (req, _res, next) => {
 		try {
 			let apiKey = req.headers["x-api-key"];
 

@@ -1,4 +1,3 @@
-import fs from "fs";
 import { isAntigravityModel } from "./antigravity.js";
 import { isCodexModel } from "./codex.js";
 import { logger } from "./logger.js";

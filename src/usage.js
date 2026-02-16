@@ -24,7 +24,7 @@ export async function checkUsageLimits(accessToken, config = {}) {
 		try {
 			const { HttpsProxyAgent } = await import("https-proxy-agent");
 			fetchOptions.agent = new HttpsProxyAgent(config.proxyUrl);
-		} catch (e) {
+		} catch (_e) {
 			// 代理模块未安装，忽略
 		}
 	}

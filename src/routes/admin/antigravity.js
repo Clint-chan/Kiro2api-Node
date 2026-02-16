@@ -15,7 +15,7 @@ export function createAntigravityAdminRouter(db) {
 	const router = express.Router();
 
 	// GET / - List all Antigravity accounts
-	router.get("/", (req, res) => {
+	router.get("/", (_req, res) => {
 		try {
 			const accounts = db.getAllAntigravityAccounts().map((account) => ({
 				...account,

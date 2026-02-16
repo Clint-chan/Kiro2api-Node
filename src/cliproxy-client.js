@@ -51,7 +51,7 @@ export class CLIProxyClient {
 				try {
 					const error = await response.json();
 					errorMessage = error.error || error.message || errorMessage;
-				} catch (e) {
+				} catch (_e) {
 					// 如果响应不是 JSON，使用默认错误消息
 				}
 				throw new Error(errorMessage);

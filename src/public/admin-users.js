@@ -26,14 +26,14 @@ function bindUserActionButtons(container) {
 	});
 }
 
-async function loadUsers() {
+async function _loadUsers() {
 	try {
 		const data = await fetchApi("/api/admin/users");
 		allUsers = data.data || [];
 		renderUsersPage();
 	} catch (e) {
 		console.error(e);
-		showToast("加载用户列表失败: " + e.message, "error");
+		showToast(`加载用户列表失败: ${e.message}`, "error");
 	}
 }
 
@@ -199,7 +199,7 @@ function renderUsersPageNumbers(totalPages) {
 		.join("");
 }
 
-function changeUsersPage(direction) {
+function _changeUsersPage(direction) {
 	if (direction === "prev" && usersCurrentPage > 1) {
 		usersCurrentPage--;
 		renderUsersPage();
@@ -212,7 +212,7 @@ function changeUsersPage(direction) {
 	}
 }
 
-function goToUsersPage(page) {
+function _goToUsersPage(page) {
 	usersCurrentPage = page;
 	renderUsersPage();
 }

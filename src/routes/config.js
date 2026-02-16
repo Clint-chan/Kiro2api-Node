@@ -15,7 +15,7 @@ export function createConfigRouter(state) {
 	/**
 	 * GET /api/config - 获取当前配置
 	 */
-	router.get("/", (req, res) => {
+	router.get("/", (_req, res) => {
 		const config = getRuntimeConfig(state);
 		res.json({ success: true, data: config });
 	});
@@ -37,7 +37,7 @@ export function createConfigRouter(state) {
 	/**
 	 * POST /api/config/reset - 重置为默认配置
 	 */
-	router.post("/reset", (req, res) => {
+	router.post("/reset", (_req, res) => {
 		resetToDefaults(state);
 		res.json({ success: true, message: "Configuration reset to defaults" });
 	});
@@ -109,7 +109,7 @@ function updateRuntimeConfig(state, updates) {
 			}
 
 			if (maxConcurrentPerAccount !== undefined) {
-				const value = parseInt(maxConcurrentPerAccount);
+				const value = parseInt(maxConcurrentPerAccount, 10);
 				if (value < 1 || value > 100) {
 					errors.push("maxConcurrentPerAccount must be between 1 and 100");
 				} else {
@@ -141,7 +141,7 @@ function updateRuntimeConfig(state, updates) {
 			}
 
 			if (refreshInterval !== undefined) {
-				const value = parseInt(refreshInterval);
+				const value = parseInt(refreshInterval, 10);
 				if (value < 10000 || value > 3600000) {
 					errors.push(
 						"refreshInterval must be between 10000 (10s) and 3600000 (1h)",
@@ -157,7 +157,7 @@ function updateRuntimeConfig(state, updates) {
 			}
 
 			if (batchSize !== undefined) {
-				const value = parseInt(batchSize);
+				const value = parseInt(batchSize, 10);
 				if (value < 1 || value > 20) {
 					errors.push("batchSize must be between 1 and 20");
 				} else {
@@ -171,7 +171,7 @@ function updateRuntimeConfig(state, updates) {
 			const { maxRetries, initialDelay, maxDelay } = updates.retry;
 
 			if (maxRetries !== undefined) {
-				const value = parseInt(maxRetries);
+				const value = parseInt(maxRetries, 10);
 				if (value < 0 || value > 10) {
 					errors.push("maxRetries must be between 0 and 10");
 				} else {
@@ -180,7 +180,7 @@ function updateRuntimeConfig(state, updates) {
 			}
 
 			if (initialDelay !== undefined) {
-				const value = parseInt(initialDelay);
+				const value = parseInt(initialDelay, 10);
 				if (value < 100 || value > 10000) {
 					errors.push("initialDelay must be between 100 and 10000");
 				} else {
@@ -189,7 +189,7 @@ function updateRuntimeConfig(state, updates) {
 			}
 
 			if (maxDelay !== undefined) {
-				const value = parseInt(maxDelay);
+				const value = parseInt(maxDelay, 10);
 				if (value < 1000 || value > 60000) {
 					errors.push("maxDelay must be between 1000 and 60000");
 				} else {

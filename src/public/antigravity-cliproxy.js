@@ -22,11 +22,11 @@ async function loadCliProxyAccounts() {
 
 		await refreshAllQuotas();
 	} catch (e) {
-		showToast("加载 CLIProxy 账号失败: " + e.message, "error");
+		showToast(`加载 CLIProxy 账号失败: ${e.message}`, "error");
 	}
 }
 
-async function forceRefreshCliProxyAccounts() {
+async function _forceRefreshCliProxyAccounts() {
 	try {
 		const result = await fetchApi(
 			"/api/admin/cliproxy/auth-files?refresh=true",
@@ -38,7 +38,7 @@ async function forceRefreshCliProxyAccounts() {
 		await refreshAllQuotas();
 		showToast("账号列表已刷新", "success");
 	} catch (e) {
-		showToast("刷新账号列表失败: " + e.message, "error");
+		showToast(`刷新账号列表失败: ${e.message}`, "error");
 	}
 }
 
@@ -211,7 +211,7 @@ async function refreshAllQuotas() {
 }
 
 // Backward compatibility
-async function refreshAllAgtQuotas() {
+async function _refreshAllAgtQuotas() {
 	await refreshAllQuotas();
 }
 
@@ -369,11 +369,11 @@ async function loadThresholdBadge(accountName) {
 }
 
 // Backward compatibility
-function renderCliProxyAgtAccounts() {
+function _renderCliProxyAgtAccounts() {
 	renderCliProxyAccounts();
 }
 
-async function viewModels(name) {
+async function _viewModels(name) {
 	try {
 		const modal = document.createElement("div");
 		modal.id = "modelsModal";
@@ -436,7 +436,7 @@ async function viewModels(name) {
 			})
 			.join("");
 	} catch (e) {
-		showToast("获取模型列表失败: " + e.message, "error");
+		showToast(`获取模型列表失败: ${e.message}`, "error");
 		const loading = document.getElementById("models-list-loading");
 		if (loading) {
 			loading.innerHTML = `<div class="text-red-500 text-center">加载失败: ${escapeHtml(e.message)}</div>`;
@@ -471,7 +471,7 @@ function formatCliProxyStatus(account) {
 	return '<span class="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">未知</span>';
 }
 
-function formatDateTime(dateStr) {
+function _formatDateTime(dateStr) {
 	if (!dateStr) return "-";
 	const date = new Date(dateStr);
 	return date.toLocaleString("zh-CN", {
@@ -495,12 +495,12 @@ async function toggleCliProxyAccount(name, disabled) {
 		);
 		await loadCliProxyAccounts();
 	} catch (e) {
-		showToast((disabled ? "禁用" : "启用") + "失败: " + e.message, "error");
+		showToast(`${disabled ? "禁用" : "启用"}失败: ${e.message}`, "error");
 	}
 }
 
 // Backward compatibility
-async function toggleCliProxyAgtAccount(name, disabled) {
+async function _toggleCliProxyAgtAccount(name, disabled) {
 	await toggleCliProxyAccount(name, disabled);
 }
 
@@ -514,11 +514,11 @@ async function deleteCliProxyAccount(name) {
 		showToast("CLIProxy 账号已删除", "success");
 		await loadCliProxyAccounts();
 	} catch (e) {
-		showToast("删除失败: " + e.message, "error");
+		showToast(`删除失败: ${e.message}`, "error");
 	}
 }
 
-async function showThresholdConfig(account) {
+async function _showThresholdConfig(account) {
 	try {
 		const response = await fetchApi(
 			`/api/admin/cliproxy/threshold-config?name=${encodeURIComponent(account.name)}`,
@@ -638,11 +638,11 @@ async function showThresholdConfig(account) {
 
 		document.body.appendChild(modal);
 	} catch (e) {
-		showToast("加载阈值配置失败: " + e.message, "error");
+		showToast(`加载阈值配置失败: ${e.message}`, "error");
 	}
 }
 
-async function saveThresholdConfig(accountName, provider) {
+async function _saveThresholdConfig(accountName, provider) {
 	try {
 		const parseThreshold = (raw) => {
 			const text = String(raw ?? "").trim();
@@ -716,12 +716,12 @@ async function saveThresholdConfig(accountName, provider) {
 
 		await loadThresholdBadge(accountName);
 	} catch (e) {
-		showToast("保存阈值配置失败: " + e.message, "error");
+		showToast(`保存阈值配置失败: ${e.message}`, "error");
 	}
 }
 
 // Backward compatibility
-async function deleteCliProxyAgtAccount(name) {
+async function _deleteCliProxyAgtAccount(name) {
 	await deleteCliProxyAccount(name);
 }
 
@@ -789,7 +789,7 @@ async function refreshSingleQuota(account) {
 }
 
 // Backward compatibility
-async function refreshSingleAgtQuota(account) {
+async function _refreshSingleAgtQuota(account) {
 	await refreshSingleQuota(account);
 }
 
@@ -1060,7 +1060,7 @@ function formatCodexQuota(account) {
 		return `${month}/${day} ${hour}:${minute}`;
 	};
 
-	const planTypeMap = {
+	const _planTypeMap = {
 		team: "Team",
 		plus: "Plus",
 		free: "Free",
@@ -1084,7 +1084,7 @@ function formatCodexQuota(account) {
 <div class="mb-3">
     <div class="flex justify-between items-center mb-1">
         <span class="text-sm font-medium text-gray-700">5 小时限额</span>
-        <span class="text-xs text-gray-500">${remainingPercent}%${resetTime ? " · " + resetTime : ""}</span>
+        <span class="text-xs text-gray-500">${remainingPercent}%${resetTime ? ` · ${resetTime}` : ""}</span>
     </div>
     <div class="w-full bg-gray-200 rounded-full h-2">
         <div class="${bgColor} h-2 rounded-full transition-all" style="width: ${remainingPercent}%"></div>
@@ -1110,7 +1110,7 @@ function formatCodexQuota(account) {
 <div class="mb-3">
     <div class="flex justify-between items-center mb-1">
         <span class="text-sm font-medium text-gray-700">周限额</span>
-        <span class="text-xs text-gray-500">${remainingPercent}%${resetTime ? " · " + resetTime : ""}</span>
+        <span class="text-xs text-gray-500">${remainingPercent}%${resetTime ? ` · ${resetTime}` : ""}</span>
     </div>
     <div class="w-full bg-gray-200 rounded-full h-2">
         <div class="${bgColor} h-2 rounded-full transition-all" style="width: ${remainingPercent}%"></div>
@@ -1137,7 +1137,7 @@ function formatCodexQuota(account) {
 <div class="mb-3 last:mb-0">
     <div class="flex justify-between items-center mb-1">
         <span class="text-sm font-medium text-gray-700">代码审查周限额</span>
-        <span class="text-xs text-gray-500">${remainingPercent}%${resetTime ? " · " + resetTime : ""}</span>
+        <span class="text-xs text-gray-500">${remainingPercent}%${resetTime ? ` · ${resetTime}` : ""}</span>
     </div>
     <div class="w-full bg-gray-200 rounded-full h-2">
         <div class="${bgColor} h-2 rounded-full transition-all" style="width: ${remainingPercent}%"></div>
@@ -1149,7 +1149,7 @@ function formatCodexQuota(account) {
 	return items.join("");
 }
 
-function loadAgtAccounts() {
+function _loadAgtAccounts() {
 	loadCliProxyAgtAccounts();
 }
 
@@ -1200,7 +1200,7 @@ function formatClaudeQuota(account) {
 <div class="mb-3">
     <div class="flex justify-between items-center mb-1">
         <span class="text-sm font-medium text-gray-700">5 小时限额</span>
-        <span class="text-xs text-gray-500">${remainingPercent.toFixed(0)}%${resetTime ? " · " + resetTime : ""}</span>
+        <span class="text-xs text-gray-500">${remainingPercent.toFixed(0)}%${resetTime ? ` · ${resetTime}` : ""}</span>
     </div>
     <div class="w-full bg-gray-200 rounded-full h-2">
         <div class="${bgColor} h-2 rounded-full transition-all" style="width: ${remainingPercent}%"></div>
@@ -1224,7 +1224,7 @@ function formatClaudeQuota(account) {
 <div class="mb-3">
     <div class="flex justify-between items-center mb-1">
         <span class="text-sm font-medium text-gray-700">7 天限额</span>
-        <span class="text-xs text-gray-500">${remainingPercent.toFixed(0)}%${resetTime ? " · " + resetTime : ""}</span>
+        <span class="text-xs text-gray-500">${remainingPercent.toFixed(0)}%${resetTime ? ` · ${resetTime}` : ""}</span>
     </div>
     <div class="w-full bg-gray-200 rounded-full h-2">
         <div class="${bgColor} h-2 rounded-full transition-all" style="width: ${remainingPercent}%"></div>
@@ -1248,7 +1248,7 @@ function formatClaudeQuota(account) {
 <div class="mb-3">
     <div class="flex justify-between items-center mb-1">
         <span class="text-sm font-medium text-gray-700">7 天 Sonnet</span>
-        <span class="text-xs text-gray-500">${remainingPercent.toFixed(0)}%${resetTime ? " · " + resetTime : ""}</span>
+        <span class="text-xs text-gray-500">${remainingPercent.toFixed(0)}%${resetTime ? ` · ${resetTime}` : ""}</span>
     </div>
     <div class="w-full bg-gray-200 rounded-full h-2">
         <div class="${bgColor} h-2 rounded-full transition-all" style="width: ${remainingPercent}%"></div>
@@ -1385,7 +1385,7 @@ function formatAgtQuota(account) {
 <div class="mb-3 last:mb-0">
     <div class="flex justify-between items-center mb-1">
         <span class="text-sm font-medium text-gray-700">${displayName}</span>
-        <span class="text-xs text-gray-500">${percent}%${resetDate ? " · " + resetDate : ""}</span>
+        <span class="text-xs text-gray-500">${percent}%${resetDate ? ` · ${resetDate}` : ""}</span>
     </div>
     <div class="w-full bg-gray-200 rounded-full h-2">
         <div class="${bgColor} h-2 rounded-full transition-all" style="width: ${percent}%"></div>

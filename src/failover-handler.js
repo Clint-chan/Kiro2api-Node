@@ -202,7 +202,7 @@ export class FailoverHandler {
 	 *
 	 * 策略：判"死刑"，永久移出轮询列表，并立即更新缓存
 	 */
-	async handlePermanentError(error, accountId) {
+	async handlePermanentError(_error, accountId) {
 		if (!accountId) return;
 
 		try {
@@ -211,7 +211,7 @@ export class FailoverHandler {
 
 			// ✅ 立即更新内存缓存（被动刷新）
 			const account = this.accountPool.accounts.get(accountId);
-			if (account && account.usage) {
+			if (account?.usage) {
 				account.usage.available = 0;
 				account.usage.updatedAt = new Date().toISOString();
 			}
@@ -259,8 +259,8 @@ export class FailoverHandler {
  */
 export function createFailoverHandler(accountPool, config = {}) {
 	const options = {
-		maxRetries: parseInt(process.env.FAILOVER_MAX_RETRIES) || 3,
-		retryDelay: parseInt(process.env.FAILOVER_RETRY_DELAY) || 100,
+		maxRetries: parseInt(process.env.FAILOVER_MAX_RETRIES, 10) || 3,
+		retryDelay: parseInt(process.env.FAILOVER_RETRY_DELAY, 10) || 100,
 		...config,
 	};
 
