@@ -381,7 +381,12 @@ export function createApiRouter(state) {
 		}
 
 		// Check balance before making request
-		const balanceCheck = state.billing.checkBalance(user, inputTokens);
+		const balanceCheck = state.billing.checkBalance(
+			user,
+			inputTokens,
+			DEFAULT_MAX_OUTPUT_TOKENS,
+			req.body.model,
+		);
 		if (!balanceCheck.sufficient) {
 			return res.status(402).json({
 				error: {
@@ -718,7 +723,12 @@ export function createApiRouter(state) {
 			}
 
 			// Check balance before making request
-			const balanceCheck = state.billing.checkBalance(user, inputTokens);
+			const balanceCheck = state.billing.checkBalance(
+				user,
+				inputTokens,
+				DEFAULT_MAX_OUTPUT_TOKENS,
+				model,
+			);
 
 			if (!balanceCheck.sufficient) {
 				return res.status(402).json({
