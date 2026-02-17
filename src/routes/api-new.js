@@ -210,14 +210,18 @@ export function createApiRouter(state) {
 				res.setHeader("Connection", "keep-alive");
 
 				let outputTokens = 0;
+				let actualInputTokens = inputTokens;
 				const decoder = new TextDecoder();
+				let buffer = "";
 
 				for await (const chunk of response.body) {
 					const text = decoder.decode(chunk, { stream: true });
 					res.write(chunk);
 
-					// Parse SSE to extract token usage
-					const lines = text.split("\n");
+					buffer += text;
+					const lines = buffer.split("\n");
+					buffer = lines.pop() || "";
+
 					for (const line of lines) {
 						if (line.startsWith("data: ")) {
 							try {
@@ -229,9 +233,15 @@ export function createApiRouter(state) {
 									if (data.usage?.output_tokens) {
 										outputTokens = data.usage.output_tokens;
 									}
+									if (data.usage?.input_tokens) {
+										actualInputTokens = data.usage.input_tokens;
+									}
 								}
 								if (data.delta?.usage?.output_tokens) {
 									outputTokens = data.delta.usage.output_tokens;
+								}
+								if (data.delta?.usage?.input_tokens) {
+									actualInputTokens = data.delta.usage.input_tokens;
 								}
 							} catch (e) {
 								// Ignore parse errors
@@ -241,7 +251,6 @@ export function createApiRouter(state) {
 				}
 				res.end();
 
-				// Record successful request
 				try {
 					state.billing.recordRequestAndCharge({
 						user_id: user.id,
@@ -249,7 +258,7 @@ export function createApiRouter(state) {
 						kiro_account_id: "cliproxy",
 						kiro_account_name: "CLIProxy",
 						model: model,
-						input_tokens: inputTokens,
+						input_tokens: actualInputTokens,
 						output_tokens: outputTokens,
 						duration_ms: Date.now() - startTime,
 						success: true,
@@ -261,10 +270,9 @@ export function createApiRouter(state) {
 			} else {
 				const data = await response.json();
 
-				// Extract token usage from response
+				const actualInputTokens = data.usage?.input_tokens || inputTokens;
 				const outputTokens = data.usage?.output_tokens || 0;
 
-				// Record successful request
 				try {
 					state.billing.recordRequestAndCharge({
 						user_id: user.id,
@@ -272,7 +280,7 @@ export function createApiRouter(state) {
 						kiro_account_id: "cliproxy",
 						kiro_account_name: "CLIProxy",
 						model: model,
-						input_tokens: inputTokens,
+						input_tokens: actualInputTokens,
 						output_tokens: outputTokens,
 						duration_ms: Date.now() - startTime,
 						success: true,
@@ -414,6 +422,9 @@ export function createApiRouter(state) {
 				const decoder = new TextDecoder();
 
 				let outputTokens = 0;
+				let actualInputTokens = inputTokens;
+				let buffer = "";
+
 				try {
 					while (true) {
 						const { done, value } = await reader.read();
@@ -421,14 +432,19 @@ export function createApiRouter(state) {
 						const chunk = decoder.decode(value, { stream: true });
 						res.write(chunk);
 
-						// Parse SSE to extract token usage
-						const lines = chunk.split("\n");
+						buffer += chunk;
+						const lines = buffer.split("\n");
+						buffer = lines.pop() || "";
+
 						for (const line of lines) {
 							if (line.startsWith("data: ")) {
 								try {
 									const data = JSON.parse(line.slice(6));
 									if (data.usage?.completion_tokens) {
 										outputTokens = data.usage.completion_tokens;
+									}
+									if (data.usage?.prompt_tokens) {
+										actualInputTokens = data.usage.prompt_tokens;
 									}
 								} catch (e) {
 									// Ignore parse errors
@@ -444,7 +460,6 @@ export function createApiRouter(state) {
 					res.end();
 				}
 
-				// Record successful request
 				try {
 					state.billing.recordRequestAndCharge({
 						user_id: user.id,
@@ -452,7 +467,7 @@ export function createApiRouter(state) {
 						kiro_account_id: "cliproxy",
 						kiro_account_name: "CLIProxy",
 						model: model,
-						input_tokens: inputTokens,
+						input_tokens: actualInputTokens,
 						output_tokens: outputTokens,
 						duration_ms: Date.now() - startTime,
 						success: true,
@@ -466,10 +481,9 @@ export function createApiRouter(state) {
 
 			const data = await response.json();
 
-			// Extract token usage from response
+			const actualInputTokens = data.usage?.prompt_tokens || inputTokens;
 			const outputTokens = data.usage?.completion_tokens || 0;
 
-			// Record successful request
 			try {
 				state.billing.recordRequestAndCharge({
 					user_id: user.id,
@@ -477,7 +491,7 @@ export function createApiRouter(state) {
 					kiro_account_id: "cliproxy",
 					kiro_account_name: "CLIProxy",
 					model: model,
-					input_tokens: inputTokens,
+					input_tokens: actualInputTokens,
 					output_tokens: outputTokens,
 					duration_ms: Date.now() - startTime,
 					success: true,
