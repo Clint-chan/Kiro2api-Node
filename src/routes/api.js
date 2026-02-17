@@ -58,6 +58,38 @@ function sendInsufficientBalanceError(
 		);
 }
 
+// 记录请求并计费的辅助函数
+function recordBilling(state, params) {
+	const {
+		user,
+		selected,
+		model,
+		inputTokens,
+		outputTokens,
+		startTime,
+		success,
+		errorMessage,
+	} = params;
+
+	try {
+		state.billing.recordRequestAndCharge({
+			user_id: user.id,
+			user_api_key: user.api_key,
+			kiro_account_id: selected?.id || "cliproxy",
+			kiro_account_name: selected?.name || "CLIProxy",
+			model: model,
+			input_tokens: inputTokens || 0,
+			output_tokens: outputTokens || 0,
+			duration_ms: Date.now() - startTime,
+			success: success,
+			error_message: errorMessage,
+			timestamp: new Date().toISOString(),
+		});
+	} catch (billingError) {
+		logger.error("Billing error", { error: billingError });
+	}
+}
+
 // 获取模型上下文长度
 function getModelContextLength(model, config) {
 	const configured = Number(config?.modelContextLength);
@@ -206,25 +238,16 @@ export function createApiRouter(state) {
 				const error = await response.json().catch(() => ({}));
 
 				// Record failed request
-				try {
-					state.billing.recordRequestAndCharge({
-						user_id: user.id,
-						user_api_key: user.api_key,
-						kiro_account_id: "cliproxy",
-						kiro_account_name: "CLIProxy",
-						model: model,
-						input_tokens: inputTokens,
-						output_tokens: 0,
-						duration_ms: Date.now() - startTime,
-						success: false,
-						error_message: error.error?.message || "Request failed",
-						timestamp: new Date().toISOString(),
-					});
-				} catch (billingError) {
-					logger.error("Billing error for failed request", {
-						error: billingError,
-					});
-				}
+				recordBilling(state, {
+					user,
+					selected: { id: "cliproxy", name: "CLIProxy" },
+					model,
+					inputTokens,
+					outputTokens: 0,
+					startTime,
+					success: false,
+					errorMessage: error.error?.message || "Request failed",
+				});
 
 				return res.status(response.status).json(error);
 			}
@@ -290,44 +313,30 @@ export function createApiRouter(state) {
 					});
 				}
 
-				try {
-					state.billing.recordRequestAndCharge({
-						user_id: user.id,
-						user_api_key: user.api_key,
-						kiro_account_id: "cliproxy",
-						kiro_account_name: "CLIProxy",
-						model: model,
-						input_tokens: actualInputTokens,
-						output_tokens: outputTokens,
-						duration_ms: Date.now() - startTime,
-						success: true,
-						timestamp: new Date().toISOString(),
-					});
-				} catch (billingError) {
-					logger.error("Billing error", { error: billingError });
-				}
+				recordBilling(state, {
+					user,
+					selected: { id: "cliproxy", name: "CLIProxy" },
+					model,
+					inputTokens: actualInputTokens,
+					outputTokens,
+					startTime,
+					success: true,
+				});
 			} else {
 				const data = await response.json();
 
 				const actualInputTokens = data.usage?.input_tokens || inputTokens;
 				const outputTokens = data.usage?.output_tokens || 0;
 
-				try {
-					state.billing.recordRequestAndCharge({
-						user_id: user.id,
-						user_api_key: user.api_key,
-						kiro_account_id: "cliproxy",
-						kiro_account_name: "CLIProxy",
-						model: model,
-						input_tokens: actualInputTokens,
-						output_tokens: outputTokens,
-						duration_ms: Date.now() - startTime,
-						success: true,
-						timestamp: new Date().toISOString(),
-					});
-				} catch (billingError) {
-					logger.error("Billing error", { error: billingError });
-				}
+				recordBilling(state, {
+					user,
+					selected: { id: "cliproxy", name: "CLIProxy" },
+					model,
+					inputTokens: actualInputTokens,
+					outputTokens,
+					startTime,
+					success: true,
+				});
 
 				return res.json(data);
 			}
@@ -335,25 +344,16 @@ export function createApiRouter(state) {
 			logger.error("Antigravity Claude request failed", { error });
 
 			// Record failed request
-			try {
-				state.billing.recordRequestAndCharge({
-					user_id: user.id,
-					user_api_key: user.api_key,
-					kiro_account_id: "cliproxy",
-					kiro_account_name: "CLIProxy",
-					model: model,
-					input_tokens: inputTokens,
-					output_tokens: 0,
-					duration_ms: Date.now() - startTime,
-					success: false,
-					error_message: error.message,
-					timestamp: new Date().toISOString(),
-				});
-			} catch (billingError) {
-				logger.error("Billing error for failed request", {
-					error: billingError,
-				});
-			}
+			recordBilling(state, {
+				user,
+				selected: { id: "cliproxy", name: "CLIProxy" },
+				model,
+				inputTokens,
+				outputTokens: 0,
+				startTime,
+				success: false,
+				errorMessage: error.message,
+			});
 
 			return res.status(500).json({
 				type: "error",
@@ -433,25 +433,16 @@ export function createApiRouter(state) {
 				}
 
 				// Record failed request
-				try {
-					state.billing.recordRequestAndCharge({
-						user_id: user.id,
-						user_api_key: user.api_key,
-						kiro_account_id: "cliproxy",
-						kiro_account_name: "CLIProxy",
-						model: model,
-						input_tokens: inputTokens,
-						output_tokens: 0,
-						duration_ms: Date.now() - startTime,
-						success: false,
-						error_message: errorJson.error?.message || "Request failed",
-						timestamp: new Date().toISOString(),
-					});
-				} catch (billingError) {
-					logger.error("Billing error for failed request", {
-						error: billingError,
-					});
-				}
+				recordBilling(state, {
+					user,
+					selected: { id: "cliproxy", name: "CLIProxy" },
+					model,
+					inputTokens,
+					outputTokens: 0,
+					startTime,
+					success: false,
+					errorMessage: errorJson.error?.message || "Request failed",
+				});
 
 				return res.status(response.status).json(errorJson);
 			}
@@ -519,22 +510,15 @@ export function createApiRouter(state) {
 					});
 				}
 
-				try {
-					state.billing.recordRequestAndCharge({
-						user_id: user.id,
-						user_api_key: user.api_key,
-						kiro_account_id: "cliproxy",
-						kiro_account_name: "CLIProxy",
-						model: model,
-						input_tokens: actualInputTokens,
-						output_tokens: outputTokens,
-						duration_ms: Date.now() - startTime,
-						success: true,
-						timestamp: new Date().toISOString(),
-					});
-				} catch (billingError) {
-					logger.error("Billing error", { error: billingError });
-				}
+				recordBilling(state, {
+					user,
+					selected: { id: "cliproxy", name: "CLIProxy" },
+					model,
+					inputTokens: actualInputTokens,
+					outputTokens,
+					startTime,
+					success: true,
+				});
 				return;
 			}
 
@@ -543,47 +527,31 @@ export function createApiRouter(state) {
 			const actualInputTokens = data.usage?.prompt_tokens || inputTokens;
 			const outputTokens = data.usage?.completion_tokens || 0;
 
-			try {
-				state.billing.recordRequestAndCharge({
-					user_id: user.id,
-					user_api_key: user.api_key,
-					kiro_account_id: "cliproxy",
-					kiro_account_name: "CLIProxy",
-					model: model,
-					input_tokens: actualInputTokens,
-					output_tokens: outputTokens,
-					duration_ms: Date.now() - startTime,
-					success: true,
-					timestamp: new Date().toISOString(),
-				});
-			} catch (billingError) {
-				logger.error("Billing error", { error: billingError });
-			}
+			recordBilling(state, {
+				user,
+				selected: { id: "cliproxy", name: "CLIProxy" },
+				model,
+				inputTokens: actualInputTokens,
+				outputTokens,
+				startTime,
+				success: true,
+			});
 
 			return res.json(data);
 		} catch (error) {
 			logger.error("Antigravity OpenAI request failed", { error });
 
 			// Record failed request
-			try {
-				state.billing.recordRequestAndCharge({
-					user_id: user.id,
-					user_api_key: user.api_key,
-					kiro_account_id: "cliproxy",
-					kiro_account_name: "CLIProxy",
-					model: model,
-					input_tokens: inputTokens,
-					output_tokens: 0,
-					duration_ms: Date.now() - startTime,
-					success: false,
-					error_message: error.message,
-					timestamp: new Date().toISOString(),
-				});
-			} catch (billingError) {
-				logger.error("Billing error for failed request", {
-					error: billingError,
-				});
-			}
+			recordBilling(state, {
+				user,
+				selected: { id: "cliproxy", name: "CLIProxy" },
+				model,
+				inputTokens,
+				outputTokens: 0,
+				startTime,
+				success: false,
+				errorMessage: error.message,
+			});
 
 			return res.status(500).json({
 				error: {
