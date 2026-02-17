@@ -142,6 +142,31 @@ export function createApiRouter(state) {
 			});
 		}
 
+		const user = req.user;
+		const startTime = Date.now();
+		const model = req.body.model || "claude-3-5-sonnet-20241022";
+
+		// Estimate input tokens
+		let inputTokens = 0;
+		try {
+			inputTokens = countMessagesTokens(req.body.messages || []);
+		} catch (e) {
+			logger.warn("Failed to estimate input tokens", { error: e });
+			inputTokens = 1000;
+		}
+
+		// Check balance before making request
+		const balanceCheck = state.billing.checkBalance(user, inputTokens);
+		if (!balanceCheck.sufficient) {
+			return res.status(402).json({
+				type: "error",
+				error: {
+					type: "insufficient_balance_error",
+					message: `Insufficient balance. Current: $${balanceCheck.currentBalance.toFixed(4)}, Estimated cost: $${balanceCheck.estimatedMaxCost.toFixed(4)}. Please recharge your account.`,
+				},
+			});
+		}
+
 		try {
 			const response = await fetch(`${cliproxyUrl}/v1/messages`, {
 				method: "POST",
@@ -155,6 +180,28 @@ export function createApiRouter(state) {
 
 			if (!response.ok) {
 				const error = await response.json().catch(() => ({}));
+
+				// Record failed request
+				try {
+					state.billing.recordRequestAndCharge({
+						user_id: user.id,
+						user_api_key: user.api_key,
+						kiro_account_id: "cliproxy",
+						kiro_account_name: "CLIProxy",
+						model: model,
+						input_tokens: inputTokens,
+						output_tokens: 0,
+						duration_ms: Date.now() - startTime,
+						success: false,
+						error_message: error.error?.message || "Request failed",
+						timestamp: new Date().toISOString(),
+					});
+				} catch (billingError) {
+					logger.error("Billing error for failed request", {
+						error: billingError,
+					});
+				}
+
 				return res.status(response.status).json(error);
 			}
 
@@ -163,16 +210,105 @@ export function createApiRouter(state) {
 				res.setHeader("Cache-Control", "no-cache");
 				res.setHeader("Connection", "keep-alive");
 
+				let outputTokens = 0;
+				const decoder = new TextDecoder();
+
 				for await (const chunk of response.body) {
+					const text = decoder.decode(chunk, { stream: true });
 					res.write(chunk);
+
+					// Parse SSE to extract token usage
+					const lines = text.split("\n");
+					for (const line of lines) {
+						if (line.startsWith("data: ")) {
+							try {
+								const data = JSON.parse(line.slice(6));
+								if (
+									data.type === "message_stop" ||
+									data.type === "message_delta"
+								) {
+									if (data.usage?.output_tokens) {
+										outputTokens = data.usage.output_tokens;
+									}
+								}
+								if (data.delta?.usage?.output_tokens) {
+									outputTokens = data.delta.usage.output_tokens;
+								}
+							} catch (e) {
+								// Ignore parse errors
+							}
+						}
+					}
 				}
 				res.end();
+
+				// Record successful request
+				try {
+					state.billing.recordRequestAndCharge({
+						user_id: user.id,
+						user_api_key: user.api_key,
+						kiro_account_id: "cliproxy",
+						kiro_account_name: "CLIProxy",
+						model: model,
+						input_tokens: inputTokens,
+						output_tokens: outputTokens,
+						duration_ms: Date.now() - startTime,
+						success: true,
+						timestamp: new Date().toISOString(),
+					});
+				} catch (billingError) {
+					logger.error("Billing error", { error: billingError });
+				}
 			} else {
 				const data = await response.json();
+
+				// Extract token usage from response
+				const outputTokens = data.usage?.output_tokens || 0;
+
+				// Record successful request
+				try {
+					state.billing.recordRequestAndCharge({
+						user_id: user.id,
+						user_api_key: user.api_key,
+						kiro_account_id: "cliproxy",
+						kiro_account_name: "CLIProxy",
+						model: model,
+						input_tokens: inputTokens,
+						output_tokens: outputTokens,
+						duration_ms: Date.now() - startTime,
+						success: true,
+						timestamp: new Date().toISOString(),
+					});
+				} catch (billingError) {
+					logger.error("Billing error", { error: billingError });
+				}
+
 				return res.json(data);
 			}
 		} catch (error) {
 			logger.error("Antigravity Claude request failed", { error });
+
+			// Record failed request
+			try {
+				state.billing.recordRequestAndCharge({
+					user_id: user.id,
+					user_api_key: user.api_key,
+					kiro_account_id: "cliproxy",
+					kiro_account_name: "CLIProxy",
+					model: model,
+					input_tokens: inputTokens,
+					output_tokens: 0,
+					duration_ms: Date.now() - startTime,
+					success: false,
+					error_message: error.message,
+					timestamp: new Date().toISOString(),
+				});
+			} catch (billingError) {
+				logger.error("Billing error for failed request", {
+					error: billingError,
+				});
+			}
+
 			return res.status(500).json({
 				type: "error",
 				error: {
@@ -197,6 +333,37 @@ export function createApiRouter(state) {
 			});
 		}
 
+		const user = req.user;
+		const startTime = Date.now();
+		const model = req.body.model || "gpt-4";
+
+		// Estimate input tokens from messages
+		let inputTokens = 0;
+		try {
+			if (req.body.messages && Array.isArray(req.body.messages)) {
+				for (const msg of req.body.messages) {
+					if (msg.content) {
+						inputTokens += countTokens(msg.content);
+					}
+				}
+			}
+			if (inputTokens === 0) inputTokens = 1000;
+		} catch (e) {
+			logger.warn("Failed to estimate input tokens", { error: e });
+			inputTokens = 1000;
+		}
+
+		// Check balance before making request
+		const balanceCheck = state.billing.checkBalance(user, inputTokens);
+		if (!balanceCheck.sufficient) {
+			return res.status(402).json({
+				error: {
+					type: "insufficient_balance_error",
+					message: `Insufficient balance. Current: $${balanceCheck.currentBalance.toFixed(4)}, Estimated cost: $${balanceCheck.estimatedMaxCost.toFixed(4)}. Please recharge your account.`,
+				},
+			});
+		}
+
 		try {
 			const response = await fetch(`${cliproxyUrl}/v1/chat/completions`, {
 				method: "POST",
@@ -217,12 +384,33 @@ export function createApiRouter(state) {
 						error: { type: "api_error", message: errorText || "Unknown error" },
 					};
 				}
+
+				// Record failed request
+				try {
+					state.billing.recordRequestAndCharge({
+						user_id: user.id,
+						user_api_key: user.api_key,
+						kiro_account_id: "cliproxy",
+						kiro_account_name: "CLIProxy",
+						model: model,
+						input_tokens: inputTokens,
+						output_tokens: 0,
+						duration_ms: Date.now() - startTime,
+						success: false,
+						error_message: errorJson.error?.message || "Request failed",
+						timestamp: new Date().toISOString(),
+					});
+				} catch (billingError) {
+					logger.error("Billing error for failed request", {
+						error: billingError,
+					});
+				}
+
 				return res.status(response.status).json(errorJson);
 			}
 
 			const contentType = response.headers.get("content-type") || "";
 
-			// Stream response: pipe SSE directly to client
 			if (contentType.includes("text/event-stream") || req.body.stream) {
 				res.setHeader("Content-Type", "text/event-stream");
 				res.setHeader("Cache-Control", "no-cache");
@@ -231,12 +419,28 @@ export function createApiRouter(state) {
 				const reader = response.body.getReader();
 				const decoder = new TextDecoder();
 
+				let outputTokens = 0;
 				try {
 					while (true) {
 						const { done, value } = await reader.read();
 						if (done) break;
 						const chunk = decoder.decode(value, { stream: true });
 						res.write(chunk);
+
+						// Parse SSE to extract token usage
+						const lines = chunk.split("\n");
+						for (const line of lines) {
+							if (line.startsWith("data: ")) {
+								try {
+									const data = JSON.parse(line.slice(6));
+									if (data.usage?.completion_tokens) {
+										outputTokens = data.usage.completion_tokens;
+									}
+								} catch (e) {
+									// Ignore parse errors
+								}
+							}
+						}
 					}
 				} catch (streamError) {
 					logger.error("Antigravity OpenAI stream error", {
@@ -245,14 +449,75 @@ export function createApiRouter(state) {
 				} finally {
 					res.end();
 				}
+
+				// Record successful request
+				try {
+					state.billing.recordRequestAndCharge({
+						user_id: user.id,
+						user_api_key: user.api_key,
+						kiro_account_id: "cliproxy",
+						kiro_account_name: "CLIProxy",
+						model: model,
+						input_tokens: inputTokens,
+						output_tokens: outputTokens,
+						duration_ms: Date.now() - startTime,
+						success: true,
+						timestamp: new Date().toISOString(),
+					});
+				} catch (billingError) {
+					logger.error("Billing error", { error: billingError });
+				}
 				return;
 			}
 
-			// Non-stream response: parse JSON normally
 			const data = await response.json();
+
+			// Extract token usage from response
+			const outputTokens = data.usage?.completion_tokens || 0;
+
+			// Record successful request
+			try {
+				state.billing.recordRequestAndCharge({
+					user_id: user.id,
+					user_api_key: user.api_key,
+					kiro_account_id: "cliproxy",
+					kiro_account_name: "CLIProxy",
+					model: model,
+					input_tokens: inputTokens,
+					output_tokens: outputTokens,
+					duration_ms: Date.now() - startTime,
+					success: true,
+					timestamp: new Date().toISOString(),
+				});
+			} catch (billingError) {
+				logger.error("Billing error", { error: billingError });
+			}
+
 			return res.json(data);
 		} catch (error) {
 			logger.error("Antigravity OpenAI request failed", { error });
+
+			// Record failed request
+			try {
+				state.billing.recordRequestAndCharge({
+					user_id: user.id,
+					user_api_key: user.api_key,
+					kiro_account_id: "cliproxy",
+					kiro_account_name: "CLIProxy",
+					model: model,
+					input_tokens: inputTokens,
+					output_tokens: 0,
+					duration_ms: Date.now() - startTime,
+					success: false,
+					error_message: error.message,
+					timestamp: new Date().toISOString(),
+				});
+			} catch (billingError) {
+				logger.error("Billing error for failed request", {
+					error: billingError,
+				});
+			}
+
 			return res.status(500).json({
 				error: {
 					type: "api_error",

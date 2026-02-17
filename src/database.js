@@ -261,11 +261,11 @@ export class DatabaseManager {
 		// Request log queries
 		this.statements.insertRequestLog = this.db.prepare(`
       INSERT INTO request_logs (
-        user_id, kiro_account_id, kiro_account_name,
+        user_id, user_api_key, kiro_account_id, kiro_account_name,
         model, input_tokens, output_tokens, duration_ms,
         input_cost, output_cost, total_cost,
         success, error_message, timestamp
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
 		// Kiro account queries
@@ -399,6 +399,7 @@ export class DatabaseManager {
 	insertRequestLog(logData) {
 		return this.statements.insertRequestLog.run(
 			logData.user_id,
+			logData.user_api_key,
 			logData.kiro_account_id,
 			logData.kiro_account_name,
 			logData.model,

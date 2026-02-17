@@ -21,13 +21,16 @@ export function concurrencyLimiter(req, res, next) {
 
 	activeRequests++;
 
-	res.on("finish", () => {
-		activeRequests--;
-	});
+	let decremented = false;
+	const decrement = () => {
+		if (!decremented) {
+			activeRequests--;
+			decremented = true;
+		}
+	};
 
-	res.on("close", () => {
-		activeRequests--;
-	});
+	res.on("finish", decrement);
+	res.on("close", decrement);
 
 	next();
 }
