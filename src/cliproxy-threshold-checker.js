@@ -304,15 +304,58 @@ export class CLIProxyThresholdChecker {
 	}
 
 	async checkCodexThreshold(account, config) {
-		const quota = account.quota || {};
+		const quota = {};
 
-		if (config.five_hour !== undefined && quota.five_hour !== undefined) {
-			const remaining = 1 - quota.five_hour;
-			if (remaining < config.five_hour) {
-				return {
-					shouldDisable: true,
-					reason: `5小时额度剩余 ${(remaining * 100).toFixed(1)}% < ${(config.five_hour * 100).toFixed(1)}%`,
-				};
+		const authIndex = account.auth_index || account.authIndex;
+		const accountId = account.id_token?.chatgpt_account_id;
+
+		if (authIndex && accountId) {
+			try {
+				const result = await this.cliproxyClient.apiCall(
+					authIndex,
+					"GET",
+					"https://chatgpt.com/backend-api/wham/usage",
+					{
+						Authorization: "Bearer $TOKEN$",
+						"User-Agent":
+							"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+						"Chatgpt-Account-Id": accountId,
+					},
+				);
+
+				const statusCode = result?.status_code || result?.statusCode;
+				if (statusCode >= 200 && statusCode < 300) {
+					const parseJsonSafe = (value) => {
+						if (typeof value !== "string") return value;
+						try {
+							return JSON.parse(value);
+						} catch {
+							return null;
+						}
+					};
+
+					const parsedBody = parseJsonSafe(result.body);
+					const quotaData = parsedBody?.body || parsedBody;
+
+					if (quotaData) {
+						const primaryWindow = quotaData.rate_limit?.primary_window;
+						const codeReviewWindow =
+							quotaData.code_review_rate_limit?.primary_window;
+
+						if (primaryWindow) {
+							quota.weekly = primaryWindow.used_percent || 0;
+						}
+
+						if (codeReviewWindow) {
+							quota.code_review = codeReviewWindow.used_percent || 0;
+						}
+					}
+				}
+			} catch (error) {
+				logger.warn("获取 Codex 配额失败", {
+					name: account.name,
+					error: error.message,
+				});
 			}
 		}
 
@@ -340,11 +383,63 @@ export class CLIProxyThresholdChecker {
 	}
 
 	async checkCodexRecovery(account, config) {
-		const quota = account.quota || {};
+		const quota = {};
 		const hysteresis = 0.05;
 
+		const authIndex = account.auth_index || account.authIndex;
+		const accountId = account.id_token?.chatgpt_account_id;
+
+		if (authIndex && accountId) {
+			try {
+				const result = await this.cliproxyClient.apiCall(
+					authIndex,
+					"GET",
+					"https://chatgpt.com/backend-api/wham/usage",
+					{
+						Authorization: "Bearer $TOKEN$",
+						"User-Agent":
+							"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+						"Chatgpt-Account-Id": accountId,
+					},
+				);
+
+				const statusCode = result?.status_code || result?.statusCode;
+				if (statusCode >= 200 && statusCode < 300) {
+					const parseJsonSafe = (value) => {
+						if (typeof value !== "string") return value;
+						try {
+							return JSON.parse(value);
+						} catch {
+							return null;
+						}
+					};
+
+					const parsedBody = parseJsonSafe(result.body);
+					const quotaData = parsedBody?.body || parsedBody;
+
+					if (quotaData) {
+						const primaryWindow = quotaData.rate_limit?.primary_window;
+						const codeReviewWindow =
+							quotaData.code_review_rate_limit?.primary_window;
+
+						if (primaryWindow) {
+							quota.weekly = primaryWindow.used_percent || 0;
+						}
+
+						if (codeReviewWindow) {
+							quota.code_review = codeReviewWindow.used_percent || 0;
+						}
+					}
+				}
+			} catch (error) {
+				logger.warn("获取 Codex 配额失败（恢复检查）", {
+					name: account.name,
+					error: error.message,
+				});
+			}
+		}
+
 		const checks = [
-			{ name: "5小时", value: quota.five_hour, threshold: config.five_hour },
 			{ name: "周限额", value: quota.weekly, threshold: config.weekly },
 			{
 				name: "代码审查",
