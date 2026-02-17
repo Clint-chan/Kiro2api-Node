@@ -28,8 +28,12 @@ function cleanupExpiredEntries() {
 setInterval(cleanupExpiredEntries, 60 * 1000);
 
 export function adminRateLimiter(req, res, next) {
-	// Skip rate limiting for CLIProxy api-call endpoint (used for quota fetching)
-	if (req.path === "/api-call" || req.url.includes("/api-call")) {
+	// Skip rate limiting for CLIProxy endpoints (used for quota fetching and threshold checking)
+	const skipPaths = ["/api-call", "/threshold-config", "/threshold-status"];
+
+	if (
+		skipPaths.some((path) => req.path.includes(path) || req.url.includes(path))
+	) {
 		return next();
 	}
 
