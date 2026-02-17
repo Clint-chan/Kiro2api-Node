@@ -1,5 +1,14 @@
 import { logger } from "./logger.js";
 
+const MODEL_KEY_ALIAS = {
+	"claude-opus-4.6": "claude-opus-4-6-20251220",
+	"claude-opus-4-6": "claude-opus-4-6-20251220",
+	"claude-opus-4.5": "claude-opus-4-5-20251101",
+	"claude-opus-4-5": "claude-opus-4-5-20251101",
+	"claude-sonnet-4.5": "claude-sonnet-4-5-20250929",
+	"claude-haiku-4.5": "claude-haiku-4-5-20251001",
+};
+
 /**
  * 通用模型冷却管理器
  * 支持多模型配置，可通过数据库动态配置冷却策略
@@ -9,6 +18,12 @@ class ModelCooldownManager {
 		this.db = db;
 		this.cooldowns = new Map(); // key: "channel:model", value: cooldownUntil timestamp
 		this.failureCounts = new Map(); // key: "channel:model", value: failure count
+	}
+
+	resolveModelKey(model) {
+		const modelKey = String(model || "").trim();
+		if (!modelKey) return modelKey;
+		return MODEL_KEY_ALIAS[modelKey] || modelKey;
 	}
 
 	/**
@@ -33,26 +48,27 @@ class ModelCooldownManager {
 		// 只对 kiro 渠道启用冷却
 		if (channel !== "kiro") return;
 
+		const modelKey = this.resolveModelKey(model);
 		const config = this.getConfig();
-		const modelConfig = config[model];
+		const modelConfig = config[modelKey];
 
 		// 如果模型未配置或未启用冷却，则跳过
 		if (!modelConfig || !modelConfig.enabled) return;
 
-		const key = `${channel}:${model}`;
+		const key = `${channel}:${modelKey}`;
 		const currentCount = (this.failureCounts.get(key) || 0) + 1;
 		this.failureCounts.set(key, currentCount);
 
 		logger.debug("Model failure recorded", {
 			channel,
-			model,
+			model: modelKey,
 			count: currentCount,
 			threshold: modelConfig.threshold,
 		});
 
 		// 达到阈值，触发冷却
 		if (currentCount >= modelConfig.threshold) {
-			this.markCooldown(channel, model, modelConfig.duration);
+			this.markCooldown(channel, modelKey, modelConfig.duration);
 			this.failureCounts.delete(key);
 		}
 	}
@@ -83,7 +99,8 @@ class ModelCooldownManager {
 	 * @returns {boolean} 是否在冷却期
 	 */
 	isInCooldown(channel, model) {
-		const key = `${channel}:${model}`;
+		const modelKey = this.resolveModelKey(model);
+		const key = `${channel}:${modelKey}`;
 		const cooldownUntil = this.cooldowns.get(key);
 
 		if (!cooldownUntil) return false;
@@ -96,7 +113,7 @@ class ModelCooldownManager {
 		// 冷却期已过，清理状态
 		this.cooldowns.delete(key);
 		this.failureCounts.delete(key);
-		logger.info("Model cooldown expired", { channel, model });
+		logger.info("Model cooldown expired", { channel, model: modelKey });
 		return false;
 	}
 
@@ -107,7 +124,8 @@ class ModelCooldownManager {
 	 * @returns {number} 剩余秒数
 	 */
 	getRemainingCooldown(channel, model) {
-		const key = `${channel}:${model}`;
+		const modelKey = this.resolveModelKey(model);
+		const key = `${channel}:${modelKey}`;
 		const cooldownUntil = this.cooldowns.get(key);
 
 		if (!cooldownUntil || Date.now() >= cooldownUntil) return 0;
@@ -120,10 +138,14 @@ class ModelCooldownManager {
 	 * @param {string} model - 模型名称
 	 */
 	clearCooldown(channel, model) {
-		const key = `${channel}:${model}`;
+		const modelKey = this.resolveModelKey(model);
+		const key = `${channel}:${modelKey}`;
 		this.cooldowns.delete(key);
 		this.failureCounts.delete(key);
-		logger.info("Model cooldown cleared manually", { channel, model });
+		logger.info("Model cooldown cleared manually", {
+			channel,
+			model: modelKey,
+		});
 	}
 
 	/**

@@ -6,6 +6,7 @@ import {
 	ANTIGRAVITY_STATIC_MODELS,
 	fetchAntigravityModels,
 	isAntigravityModel,
+	resolveAntigravityUpstreamModel,
 } from "../antigravity.js";
 import { CODEX_STATIC_MODELS, isCodexModel } from "../codex.js";
 import { EventStreamDecoder, parseKiroEvent } from "../event-parser.js";
@@ -677,7 +678,10 @@ export function createApiRouter(state) {
 				route.channel === "codex" ||
 				route.channel === "claudecode"
 			) {
-				req.body.model = route.model;
+				req.body.model =
+					route.channel === "antigravity"
+						? resolveAntigravityUpstreamModel(route.model)
+						: route.model;
 				return await handleAntigravityClaudeRequest(req, res);
 			}
 
@@ -704,7 +708,7 @@ export function createApiRouter(state) {
 				user,
 				inputTokens,
 				DEFAULT_MAX_OUTPUT_TOKENS,
-				model,
+				route.model,
 			);
 
 			if (!balanceCheck.sufficient) {

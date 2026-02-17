@@ -23,18 +23,16 @@ const KIRO_TO_ANTIGRAVITY_FALLBACK = {
 	"claude-opus-4-5": "claude-opus-4-6-thinking",
 	"claude-opus-4-5-20251101": "claude-opus-4-6-thinking",
 	"claude-opus-4-6": "claude-opus-4-6-thinking",
+	"claude-opus-4.6": "claude-opus-4-6-thinking",
 };
 
-/**
- * 检查用户是否有 Antigravity 权限
- */
-function hasAntigravityPermission(user) {
+function parseAllowedChannels(user) {
 	if (!user || !user.allowed_channels) {
 		logger.debug("hasAntigravityPermission check", {
 			hasUser: !!user,
 			allowedChannels: user?.allowed_channels,
 		});
-		return false;
+		return [];
 	}
 
 	let channels;
@@ -50,11 +48,22 @@ function hasAntigravityPermission(user) {
 				.map((c) => c.trim());
 		}
 	} else {
-		return false;
+		return [];
 	}
 
-	const hasPermission = channels.includes("antigravity");
-	logger.debug("hasAntigravityPermission result", { channels, hasPermission });
+	return channels;
+}
+
+function hasChannelPermission(user, channel) {
+	const channels = parseAllowedChannels(user);
+	if (channels.length === 0) return false;
+
+	const hasPermission = channels.includes(channel);
+	logger.debug("hasChannelPermission result", {
+		channel,
+		channels,
+		hasPermission,
+	});
 	return hasPermission;
 }
 
@@ -202,11 +211,12 @@ export function routeModel(model, accountPool, user = null) {
 		}
 	}
 
-	const hasPermission = hasAntigravityPermission(user);
+	const hasAntigravityPermission = hasChannelPermission(user, "antigravity");
+	const hasClaudeCodePermission = hasChannelPermission(user, "claudecode");
 	const antigravityModel =
 		KIRO_TO_ANTIGRAVITY_FALLBACK[model] || `${model}-thinking`;
 
-	if (hasPermission && accountPool.db) {
+	if (hasAntigravityPermission && accountPool.db) {
 		const hasHighQuota = hasAntigravityHighQuota(
 			accountPool.db,
 			antigravityModel,
@@ -223,12 +233,22 @@ export function routeModel(model, accountPool, user = null) {
 		}
 	}
 
-	if (hasPermission) {
+	if (hasClaudeCodePermission) {
 		return {
 			channel: "claudecode",
 			model: "claude-opus-4-6-20251220",
 			reason: kiroInCooldown
 				? "kiro_cooldown_claudecode_fallback"
+				: "antigravity_low_quota_fallback",
+		};
+	}
+
+	if (hasAntigravityPermission) {
+		return {
+			channel: "antigravity",
+			model: antigravityModel,
+			reason: kiroInCooldown
+				? "kiro_cooldown_antigravity_fallback"
 				: "antigravity_low_quota_fallback",
 		};
 	}
