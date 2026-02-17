@@ -31,6 +31,13 @@ import {
 const DEFAULT_TOKEN_ESTIMATE = 1000;
 const DEFAULT_MAX_OUTPUT_TOKENS = 32000;
 
+// 设置 SSE 响应头
+function setSSEHeaders(res) {
+	res.setHeader("Content-Type", "text/event-stream");
+	res.setHeader("Cache-Control", "no-cache");
+	res.setHeader("Connection", "keep-alive");
+}
+
 // 获取模型上下文长度
 function getModelContextLength(model, config) {
 	const configured = Number(config?.modelContextLength);
@@ -209,9 +216,7 @@ export function createApiRouter(state) {
 			}
 
 			if (req.body.stream) {
-				res.setHeader("Content-Type", "text/event-stream");
-				res.setHeader("Cache-Control", "no-cache");
-				res.setHeader("Connection", "keep-alive");
+				setSSEHeaders(res);
 
 				let outputTokens = 0;
 				let actualInputTokens = inputTokens;
@@ -440,9 +445,7 @@ export function createApiRouter(state) {
 			const contentType = response.headers.get("content-type") || "";
 
 			if (contentType.includes("text/event-stream") || req.body.stream) {
-				res.setHeader("Content-Type", "text/event-stream");
-				res.setHeader("Cache-Control", "no-cache");
-				res.setHeader("Connection", "keep-alive");
+				setSSEHeaders(res);
 
 				const reader = response.body.getReader();
 				const decoder = new TextDecoder();
@@ -972,9 +975,7 @@ async function handleStreamResponseWithBilling(
 	user,
 	estimatedInputTokens,
 ) {
-	res.setHeader("Content-Type", "text/event-stream");
-	res.setHeader("Cache-Control", "no-cache");
-	res.setHeader("Connection", "keep-alive");
+	setSSEHeaders(res);
 
 	const messageId = `msg_${uuidv4().replace(/-/g, "")}`;
 	const decoder = new EventStreamDecoder();
