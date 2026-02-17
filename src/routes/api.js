@@ -652,9 +652,10 @@ export function createApiRouter(state) {
 		const startTime = Date.now();
 		let selected = null;
 		let inputTokens = 0;
+		let route = null;
 
 		try {
-			const route = routeModel(req.body.model, state.accountPool, req.user);
+			route = routeModel(req.body.model, state.accountPool, req.user);
 			logger.info("Model router decision", {
 				requestedModel: req.body.model,
 				channel: route.channel,
@@ -826,7 +827,7 @@ export function createApiRouter(state) {
 						error.message?.includes("limit") ||
 						error.message?.includes("high traffic");
 
-					if (isRateLimit && route.channel === "kiro") {
+					if (isRateLimit && route && route.channel === "kiro") {
 						try {
 							const cooldown = getModelCooldown();
 							cooldown.recordFailure("kiro", req.body.model);
