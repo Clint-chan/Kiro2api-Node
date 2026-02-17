@@ -1,6 +1,6 @@
 /**
  * API 指标记录辅助函数
- * 从 api-new.js 中提取，避免重复代码
+ * 从 api.js 中提取，避免重复代码
  */
 
 import { logger } from "../logger.js";

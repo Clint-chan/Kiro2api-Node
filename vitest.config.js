@@ -12,7 +12,7 @@ export default defineConfig({
 				"tests/**",
 				"**/*.config.js",
 				"**/migrate*.js",
-				"src/index-new.js",
+				"src/index.js",
 			],
 		},
 	},

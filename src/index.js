@@ -22,7 +22,7 @@ import { initModelCooldown } from "./model-cooldown.js";
 import { AccountPool } from "./pool.js";
 import { createAdminRouter } from "./routes/admin/index.js";
 import { createAntigravityNativeRouter } from "./routes/antigravity-native.js";
-import { createApiRouter } from "./routes/api-new.js";
+import { createApiRouter } from "./routes/api.js";
 import {
 	createCLIProxyAdminRouter,
 	createCLIProxyThresholdRouter,

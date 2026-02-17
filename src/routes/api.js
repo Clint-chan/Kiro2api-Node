@@ -25,7 +25,7 @@ import {
 	recordApiFailure,
 	recordApiStart,
 	recordApiSuccess,
-} from "./api-new-metrics.js";
+} from "./api-metrics.js";
 
 // 获取模型上下文长度
 function getModelContextLength(model, config) {

@@ -100,7 +100,8 @@ case $choice in
         
         echo ""
         echo "✓ 准备完成，启动服务..."
-        node src/index-new.js
+        
+        node src/index.js
         ;;
     *)
         echo "❌ 无效选项"
