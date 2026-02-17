@@ -383,13 +383,19 @@ export function createApiRouter(state) {
 		}
 
 		try {
+			const requestBody = { ...req.body };
+
+			if (req.body.stream && !requestBody.stream_options) {
+				requestBody.stream_options = { include_usage: true };
+			}
+
 			const response = await fetch(`${cliproxyUrl}/v1/chat/completions`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
 					Authorization: `Bearer ${cliproxyApiKey}`,
 				},
-				body: JSON.stringify(req.body),
+				body: JSON.stringify(requestBody),
 			});
 
 			if (!response.ok) {
