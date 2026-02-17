@@ -466,9 +466,15 @@ export class CLIProxyThresholdChecker {
 	async checkAntigravityThreshold(account, config) {
 		const quota = {};
 
+		const authIndex = account.auth_index || account.authIndex;
+		if (!authIndex) {
+			logger.warn("Antigravity 账号缺少 authIndex", { name: account.name });
+			return { disableGroups: {} };
+		}
+
 		try {
 			const result = await this.cliproxyClient.apiCall(
-				account.auth_index,
+				authIndex,
 				"POST",
 				"https://daily-cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels",
 				{
@@ -510,6 +516,12 @@ export class CLIProxyThresholdChecker {
 			}
 
 			const models = body.models;
+
+			logger.info("Antigravity 配额检查", {
+				name: account.name,
+				modelCount: Object.keys(models).length,
+				authIndex: authIndex ? "存在" : "缺失",
+			});
 
 			for (const [modelId, modelInfo] of Object.entries(models)) {
 				if (modelInfo?.quotaInfo) {
@@ -581,6 +593,13 @@ export class CLIProxyThresholdChecker {
 					if (remaining < groupConfig.threshold) {
 						shouldDisable = true;
 						triggerModel = { modelId, remaining };
+						logger.info("Antigravity 阈值触发", {
+							name: account.name,
+							group: groupName,
+							modelId,
+							remaining: `${(remaining * 100).toFixed(1)}%`,
+							threshold: `${(groupConfig.threshold * 100).toFixed(1)}%`,
+						});
 						break;
 					}
 				}
