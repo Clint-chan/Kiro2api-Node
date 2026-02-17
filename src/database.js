@@ -38,7 +38,9 @@ export class DatabaseManager {
 			this.migrateRequestLogsForeignKey();
 			this.ensureUserPermissionColumns();
 			this.ensureAntigravityAccountsTable();
-			this.ensureCliproxyAccount();
+			// DISABLED: ensureCliproxyAccount() creates a dummy "CLIProxy System" account in kiro_accounts table
+			// which appears incorrectly in Kiro tab. CLIProxy accounts are managed separately via cliproxy_auth_files.
+			// this.ensureCliproxyAccount();
 
 			// Prepare commonly used statements
 			this.prepareStatements();
