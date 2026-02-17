@@ -1,5 +1,8 @@
 import { getModelPricing } from "./model-pricing.js";
 
+// Constants
+const DEFAULT_MAX_OUTPUT_TOKENS = 32000;
+
 /**
  * BillingManager - Handles billing calculations and balance management
  */
@@ -56,7 +59,7 @@ export class BillingManager {
 	checkBalance(
 		user,
 		estimatedInputTokens,
-		maxOutputTokens = 32000,
+		maxOutputTokens = DEFAULT_MAX_OUTPUT_TOKENS,
 		model = null,
 	) {
 		// Calculate maximum possible cost

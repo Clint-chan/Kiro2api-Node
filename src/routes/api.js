@@ -27,6 +27,10 @@ import {
 	recordApiSuccess,
 } from "./api-metrics.js";
 
+// Constants
+const DEFAULT_TOKEN_ESTIMATE = 1000;
+const DEFAULT_MAX_OUTPUT_TOKENS = 32000;
+
 // 获取模型上下文长度
 function getModelContextLength(model, config) {
 	const configured = Number(config?.modelContextLength);
@@ -88,7 +92,7 @@ export function createApiRouter(state) {
 				owned_by: "anthropic",
 				display_name: "Claude Sonnet 4.5",
 				model_type: "chat",
-				max_tokens: 32000,
+				max_tokens: DEFAULT_MAX_OUTPUT_TOKENS,
 			},
 			{
 				id: "claude-opus-4-6-20251220",
@@ -97,7 +101,7 @@ export function createApiRouter(state) {
 				owned_by: "anthropic",
 				display_name: "Claude Opus 4.6",
 				model_type: "chat",
-				max_tokens: 32000,
+				max_tokens: DEFAULT_MAX_OUTPUT_TOKENS,
 			},
 		];
 
@@ -365,10 +369,10 @@ export function createApiRouter(state) {
 			if (req.body.messages && Array.isArray(req.body.messages)) {
 				inputTokens = countMessagesTokens(req.body.messages, model);
 			}
-			if (inputTokens === 0) inputTokens = 1000;
+			if (inputTokens === 0) inputTokens = DEFAULT_TOKEN_ESTIMATE;
 		} catch (e) {
 			logger.warn("Failed to estimate input tokens", { error: e });
-			inputTokens = 1000;
+			inputTokens = DEFAULT_TOKEN_ESTIMATE;
 		}
 
 		// Check balance before making request
@@ -707,7 +711,7 @@ export function createApiRouter(state) {
 				inputTokens = countMessagesTokens(req.body.messages || []);
 			} catch (e) {
 				logger.warn("Failed to estimate input tokens", { error: e });
-				inputTokens = 1000; // Fallback estimate
+				inputTokens = DEFAULT_TOKEN_ESTIMATE;
 			}
 
 			// Check balance before making request
