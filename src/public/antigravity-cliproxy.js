@@ -248,7 +248,7 @@ function renderCliProxyAccounts() {
 
 	// 视图切换按钮
 	const viewSwitcherHtml = `
-		<div class="flex items-center justify-end mb-4">
+		<div class="flex items-center justify-end mb-2">
 			<div class="inline-flex rounded-lg bg-gray-100 p-0.5 border border-gray-200/80">
 				<button onclick="switchCliProxyView('list')" 
 					class="${_cliproxyViewMode === "list" ? "bg-white shadow-sm text-gray-900 ring-1 ring-gray-200/50" : "text-gray-500 hover:text-gray-700"} px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 flex items-center gap-1.5"
@@ -408,15 +408,16 @@ function renderCardView(allAccounts) {
 }
 
 function renderListView(allAccounts) {
+	// NOTE: "CLIProxy System" in Kiro tab is a data issue — needs DB cleanup, not UI fix
 	return `
     <div class="overflow-hidden border border-gray-200/80 rounded-2xl shadow-sm bg-white">
         <table class="w-full text-sm">
             <thead class="bg-gray-50/80 text-gray-500 uppercase tracking-wider text-[11px] font-medium border-b border-gray-200/80">
                 <tr>
-                    <th class="px-6 py-3 text-left w-[30%]">账号信息</th>
-                    <th class="px-6 py-3 text-left w-[35%]">额度使用</th>
-                    <th class="px-6 py-3 text-left w-[15%]">状态</th>
-                    <th class="px-6 py-3 text-right w-[20%]">操作</th>
+                    <th class="px-6 py-3 text-left w-[28%]">账号信息</th>
+                    <th class="px-6 py-3 text-left w-[42%]">额度使用</th>
+                    <th class="px-6 py-3 text-center w-[12%]">状态</th>
+                    <th class="px-6 py-3 text-center w-[18%]">操作</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100 bg-white">
@@ -457,7 +458,7 @@ function renderListView(allAccounts) {
 
 										return `
                     <tr class="hover:bg-gray-50/50 transition-colors group">
-                        <td class="px-6 py-4 align-top">
+                        <td class="px-6 py-4 align-middle">
                             <div class="flex flex-col gap-1.5">
                                 <div class="font-medium text-gray-900 truncate" title="${email}">
                                     ${displayEmail}
@@ -479,7 +480,7 @@ function renderListView(allAccounts) {
                                 </div>
                             </div>
                         </td>
-                        <td class="px-6 py-4 align-top">
+                        <td class="px-6 py-4 align-middle">
                             <div class="${
 															a.disabled ? "opacity-60 grayscale" : ""
 														} text-xs scale-95 origin-left w-full">
@@ -492,13 +493,13 @@ function renderListView(allAccounts) {
 																}
                             </div>
                         </td>
-                        <td class="px-6 py-4 align-top">
-                            <div class="scale-90 origin-left">
+                        <td class="px-6 py-4 align-middle text-center">
+                            <div class="inline-block">
                                 ${formatCliProxyStatus(a)}
                             </div>
                         </td>
-                        <td class="px-6 py-4 align-top text-right">
-                            <div class="flex items-center justify-end gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
+                        <td class="px-6 py-4 align-middle text-center">
+                            <div class="flex items-center justify-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
                                 <button onclick="refreshSingleQuota(${accountJson})" 
                                     class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" 
                                     title="刷新额度">
@@ -585,12 +586,12 @@ function _renderProgressBarItem(label, percent, resetTime, options = {}) {
 
 	return `
     <div class="flex flex-col gap-1.5 w-full ${containerClass}">
-        <div class="flex justify-between items-end leading-none">
+        <div class="flex justify-between items-end leading-none gap-2">
             <div class="flex items-center">
-                <span class="text-xs font-medium ${labelClass} truncate max-w-[120px]" title="${label}">${label}</span>
+                <span class="text-xs font-medium ${labelClass} truncate max-w-[140px]" title="${label}">${label}</span>
                 ${statusIcon}
             </div>
-            <div class="flex items-center gap-1.5">
+            <div class="flex items-center gap-2">
                 ${resetTime ? `<span class="text-[10px] text-gray-400 font-mono hidden sm:inline-block">${resetTime}</span>` : ""}
                 <span class="text-xs font-bold ${textClass} tabular-nums">${percent}%</span>
             </div>
@@ -1221,8 +1222,10 @@ async function _showThresholdConfig(account) {
 				<label for="${id}" class="block text-sm font-medium text-gray-700 mb-1.5 transition-colors group-focus-within:${accentClass}">${label}</label>
 				<div class="relative rounded-lg shadow-sm">
 					<input type="number" id="${id}" min="0" max="100" value="${value}" 
-						class="block w-full rounded-lg border-gray-300 pr-10 ${ringClass} focus:border-${accentColor}-500 sm:text-sm transition-all py-2.5 hover:border-gray-400 placeholder:text-gray-300 shadow-sm" 
-						placeholder="留空或0">
+						class="block w-full rounded-lg border border-gray-300 pl-3 pr-10 ${ringClass} focus:border-${accentColor}-500 sm:text-sm transition-all py-2.5 hover:border-gray-400 placeholder:text-gray-300 shadow-sm" 
+						placeholder="留空或0"
+                        onfocus="this.placeholder=''"
+                        onblur="this.placeholder='留空或0'">
 					<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
 						<span class="text-gray-400 sm:text-sm font-medium">%</span>
 					</div>
