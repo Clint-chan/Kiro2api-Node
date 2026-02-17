@@ -6,6 +6,28 @@ const cliproxyThresholdStatusCache = {};
 let isLoadingQuota = false;
 let _lastCacheUpdate = null;
 let _cliproxyViewMode = localStorage.getItem("cliproxy_view_mode") || "card";
+
+document.addEventListener("DOMContentLoaded", () => {
+	setTimeout(() => {
+		const listBtn = document.getElementById("view-switch-list");
+		const cardBtn = document.getElementById("view-switch-card");
+
+		if (listBtn && cardBtn) {
+			const activeClass =
+				"bg-white shadow-sm text-gray-900 ring-1 ring-gray-200/50";
+			const inactiveClass = "text-gray-500 hover:text-gray-700";
+
+			if (_cliproxyViewMode === "list") {
+				listBtn.className = `${activeClass} px-2.5 py-1 rounded-md text-[11px] font-medium transition-all duration-200 flex items-center gap-1.5`;
+				cardBtn.className = `${inactiveClass} px-2.5 py-1 rounded-md text-[11px] font-medium transition-all duration-200 flex items-center gap-1.5`;
+			} else {
+				listBtn.className = `${inactiveClass} px-2.5 py-1 rounded-md text-[11px] font-medium transition-all duration-200 flex items-center gap-1.5`;
+				cardBtn.className = `${activeClass} px-2.5 py-1 rounded-md text-[11px] font-medium transition-all duration-200 flex items-center gap-1.5`;
+			}
+		}
+	}, 100);
+});
+
 const _thresholdConfigCache = {};
 const THRESHOLD_CACHE_TTL = 30000;
 
@@ -246,40 +268,37 @@ function renderCliProxyAccounts() {
 
 	const allAccounts = cliproxyAntigravityAccounts;
 
-	// 视图切换按钮
-	const viewSwitcherHtml = `
-		<div class="flex items-center justify-end mb-1.5">
-			<div class="inline-flex rounded-md bg-gray-50 p-0.5 border border-gray-200/60 scale-90 origin-right">
-				<button onclick="switchCliProxyView('list')" 
-					class="${_cliproxyViewMode === "list" ? "bg-white shadow-sm text-gray-900 ring-1 ring-gray-200/50" : "text-gray-500 hover:text-gray-700"} px-2.5 py-1 rounded-md text-[11px] font-medium transition-all duration-200 flex items-center gap-1.5"
-					title="列表视图">
-					<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
-					</svg>
-					列表
-				</button>
-				<button onclick="switchCliProxyView('card')" 
-					class="${_cliproxyViewMode === "card" ? "bg-white shadow-sm text-gray-900 ring-1 ring-gray-200/50" : "text-gray-500 hover:text-gray-700"} px-2.5 py-1 rounded-md text-[11px] font-medium transition-all duration-200 flex items-center gap-1.5"
-					title="卡片视图">
-					<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/>
-					</svg>
-					卡片
-				</button>
-			</div>
-		</div>
-	`;
+	updateViewSwitcherState();
 
 	const contentHtml =
 		_cliproxyViewMode === "card"
 			? renderCardView(allAccounts)
 			: renderListView(allAccounts);
 
-	container.innerHTML = viewSwitcherHtml + contentHtml;
+	container.innerHTML = contentHtml;
 
 	allAccounts.forEach((account) => {
 		loadThresholdBadge(account.name);
 	});
+}
+
+function updateViewSwitcherState() {
+	const listBtn = document.getElementById("view-switch-list");
+	const cardBtn = document.getElementById("view-switch-card");
+
+	if (!listBtn || !cardBtn) return;
+
+	const activeClass =
+		"bg-white shadow-sm text-gray-900 ring-1 ring-gray-200/50";
+	const inactiveClass = "text-gray-500 hover:text-gray-700";
+
+	if (_cliproxyViewMode === "list") {
+		listBtn.className = `${activeClass} px-2.5 py-1 rounded-md text-[11px] font-medium transition-all duration-200 flex items-center gap-1.5`;
+		cardBtn.className = `${inactiveClass} px-2.5 py-1 rounded-md text-[11px] font-medium transition-all duration-200 flex items-center gap-1.5`;
+	} else {
+		listBtn.className = `${inactiveClass} px-2.5 py-1 rounded-md text-[11px] font-medium transition-all duration-200 flex items-center gap-1.5`;
+		cardBtn.className = `${activeClass} px-2.5 py-1 rounded-md text-[11px] font-medium transition-all duration-200 flex items-center gap-1.5`;
+	}
 }
 
 function renderCardView(allAccounts) {
