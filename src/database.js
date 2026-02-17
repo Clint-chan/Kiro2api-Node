@@ -1071,6 +1071,16 @@ export class DatabaseManager {
 	}
 
 	/**
+	 * Update period_used for subscription users
+	 */
+	updatePeriodUsed(userId, amount) {
+		const now = new Date().toISOString();
+		return this.db
+			.prepare("UPDATE users SET period_used = ?, updated_at = ? WHERE id = ?")
+			.run(amount, now, userId);
+	}
+
+	/**
 	 * Execute transaction
 	 */
 	transaction(fn) {

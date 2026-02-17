@@ -126,11 +126,7 @@ export class BillingManager {
 			// Update period_used for subscription users
 			if (user.subscription_type && user.subscription_type !== "none") {
 				const newPeriodUsed = (user.period_used || 0) + cost.totalCost;
-				this.db.db
-					.prepare(`
-          UPDATE users SET period_used = ? WHERE id = ?
-        `)
-					.run(newPeriodUsed, user.id);
+				this.db.updatePeriodUsed(user.id, newPeriodUsed);
 			}
 
 			// Insert request log
@@ -185,9 +181,8 @@ export class BillingManager {
 			throw new Error("Adjustment would make balance negative");
 		}
 
-		// Manual transaction
-		this.db.db.prepare("BEGIN").run();
-		try {
+		// Use transaction
+		return this.db.transaction(() => {
 			// Update balance
 			this.db.updateUserBalance(userId, balanceAfter);
 
@@ -201,18 +196,13 @@ export class BillingManager {
 				notes,
 			});
 
-			this.db.db.prepare("COMMIT").run();
-
 			return {
 				success: true,
 				amount: numericAmount,
 				balanceBefore,
 				balanceAfter,
 			};
-		} catch (error) {
-			this.db.db.prepare("ROLLBACK").run();
-			throw error;
-		}
+		});
 	}
 
 	/**
