@@ -16,8 +16,8 @@ describe("model-pricing", () => {
 
 		it("应该返回 Opus 4.5 的定价", () => {
 			const pricing = getModelPricing("claude-opus-4-5-20251101");
-			expect(pricing.input).toBe(15.0);
-			expect(pricing.output).toBe(75.0);
+			expect(pricing.input).toBe(5.0);
+			expect(pricing.output).toBe(15.0);
 		});
 
 		it("应该返回 Haiku 4.5 的定价", () => {
@@ -32,8 +32,8 @@ describe("model-pricing", () => {
 				output: 15.0,
 			});
 			expect(getModelPricing("claude-opus-4.5")).toEqual({
-				input: 15.0,
-				output: 75.0,
+				input: 5.0,
+				output: 15.0,
 			});
 			expect(getModelPricing("claude-haiku-4.5")).toEqual({
 				input: 1.0,
@@ -55,8 +55,8 @@ describe("model-pricing", () => {
 
 		it("应该支持部分匹配 - opus", () => {
 			const pricing = getModelPricing("some-opus-model");
-			expect(pricing.input).toBe(15.0);
-			expect(pricing.output).toBe(75.0);
+			expect(pricing.input).toBe(5.0);
+			expect(pricing.output).toBe(15.0);
 		});
 
 		it("应该支持部分匹配 - sonnet", () => {

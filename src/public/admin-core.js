@@ -2130,7 +2130,7 @@ async function _showModelCooldownConfig() {
 		document.body.appendChild(modal);
 		updateCooldownConfigPreview();
 	} catch (e) {
-		showToast(`加载模型配置失败: ${e.message}`, "error");
+		console.warn("Failed to load model cooldown config:", e);
 	}
 }
 

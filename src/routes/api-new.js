@@ -146,10 +146,9 @@ export function createApiRouter(state) {
 		const startTime = Date.now();
 		const model = req.body.model || "claude-3-5-sonnet-20241022";
 
-		// Estimate input tokens
 		let inputTokens = 0;
 		try {
-			inputTokens = countMessagesTokens(req.body.messages || []);
+			inputTokens = countMessagesTokens(req.body.messages || [], model);
 		} catch (e) {
 			logger.warn("Failed to estimate input tokens", { error: e });
 			inputTokens = 1000;
@@ -337,15 +336,10 @@ export function createApiRouter(state) {
 		const startTime = Date.now();
 		const model = req.body.model || "gpt-4";
 
-		// Estimate input tokens from messages
 		let inputTokens = 0;
 		try {
 			if (req.body.messages && Array.isArray(req.body.messages)) {
-				for (const msg of req.body.messages) {
-					if (msg.content) {
-						inputTokens += countTokens(msg.content);
-					}
-				}
+				inputTokens = countMessagesTokens(req.body.messages, model);
 			}
 			if (inputTokens === 0) inputTokens = 1000;
 		} catch (e) {

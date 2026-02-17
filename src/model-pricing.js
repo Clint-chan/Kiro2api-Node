@@ -16,12 +16,12 @@ export const MODEL_PRICING = {
 
 	// Claude Opus 4.5
 	"claude-opus-4-5-20251101": {
-		input: 15.0, // $15 per MTok
-		output: 75.0, // $75 per MTok
+		input: 5.0, // $5 per MTok
+		output: 15.0, // $15 per MTok
 	},
 	"claude-opus-4.5": {
-		input: 15.0,
-		output: 75.0,
+		input: 5.0,
+		output: 15.0,
 	},
 
 	// Claude Haiku 4.5

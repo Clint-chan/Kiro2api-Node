@@ -20,7 +20,6 @@ class ModelCooldownManager {
 			const configJson = this.db.getSetting("model_cooldown_config") || "{}";
 			return JSON.parse(configJson);
 		} catch (error) {
-			logger.error("Failed to load model cooldown config", { error });
 			return {};
 		}
 	}
