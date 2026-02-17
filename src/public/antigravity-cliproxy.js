@@ -776,6 +776,10 @@ async function loadThresholdBadge(accountName) {
 			code_review: "代码审查",
 			claude_gpt: "Claude/GPT",
 			gemini: "Gemini",
+			gemini_3_pro: "Gemini-3-Pro",
+			gemini_3_pro_high: "Gemini-3-Pro-High",
+			gemini_3_flash: "Gemini-3-Flash",
+			gemini_3_pro_image: "Gemini-3-Pro-Image",
 		};
 
 		const activeThresholds = Object.entries(config)
@@ -789,7 +793,7 @@ async function loadThresholdBadge(accountName) {
 		if (activeThresholds.length === 0) {
 			badge.innerHTML = "未设置";
 			badge.className =
-				"px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-gray-100 text-gray-600";
+				"px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-gray-50 text-gray-400 border border-gray-200 border-dashed hover:border-gray-300 hover:text-gray-500 transition-colors";
 			badge.title = "点击设置阈值";
 		} else {
 			const thresholds = activeThresholds.map((t) => ({
@@ -802,9 +806,11 @@ async function loadThresholdBadge(accountName) {
 				.map((t) => `${t.label}: ${t.value}%`)
 				.join("\n");
 
-			badge.innerHTML = `阈值 ${minThreshold}%`;
+			badge.innerHTML = `
+				<span class="mr-1">⚡</span>${minThreshold}%
+			`;
 			badge.className =
-				"px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-green-100 text-green-700 cursor-help";
+				"px-2.5 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap bg-emerald-50 text-emerald-600 border border-emerald-100 cursor-help hover:bg-emerald-100 hover:border-emerald-200 transition-all shadow-sm";
 			badge.title = tooltipLines;
 		}
 	} catch (e) {
@@ -812,7 +818,7 @@ async function loadThresholdBadge(accountName) {
 		if (badge) {
 			badge.innerHTML = "加载失败";
 			badge.className =
-				"px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-red-100 text-red-600";
+				"px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-red-50 text-red-500 border border-red-100 hover:bg-red-100 transition-colors";
 			badge.title = e.message;
 		}
 	}
@@ -983,97 +989,92 @@ async function _showThresholdConfig(account) {
 		const modal = document.createElement("div");
 		modal.id = "thresholdModal";
 		modal.className =
-			"fixed inset-0 bg-black/50 flex items-center justify-center z-50";
+			"fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity duration-300";
+
+		// Determine theme color and style based on provider
+		let accentColor = "blue";
+		let accentClass = "text-blue-600";
+		let borderClass = "border-blue-500";
+		let ringClass = "focus:ring-blue-500";
+		let btnClass = "bg-blue-600 hover:bg-blue-700";
+		let bgSoftClass = "bg-blue-50";
+
+		if (account.provider === "claude") {
+			accentColor = "indigo";
+			accentClass = "text-indigo-600";
+			borderClass = "border-indigo-500";
+			ringClass = "focus:ring-indigo-500";
+			btnClass = "bg-indigo-600 hover:bg-indigo-700";
+			bgSoftClass = "bg-indigo-50";
+		} else if (account.provider === "codex") {
+			accentColor = "emerald";
+			accentClass = "text-emerald-600";
+			borderClass = "border-emerald-500";
+			ringClass = "focus:ring-emerald-500";
+			btnClass = "bg-emerald-600 hover:bg-emerald-700";
+			bgSoftClass = "bg-emerald-50";
+		} else if (account.provider === "antigravity") {
+			accentColor = "violet";
+			accentClass = "text-violet-600";
+			borderClass = "border-violet-500";
+			ringClass = "focus:ring-violet-500";
+			btnClass = "bg-violet-600 hover:bg-violet-700";
+			bgSoftClass = "bg-violet-50";
+		}
+
+		// Helper to render input fields with clean Apple-like design
+		const renderInput = (id, label, value) => `
+			<div class="group">
+				<label for="${id}" class="block text-sm font-medium text-gray-700 mb-1.5 transition-colors group-focus-within:${accentClass}">${label}</label>
+				<div class="relative rounded-lg shadow-sm">
+					<input type="number" id="${id}" min="0" max="100" value="${value}" 
+						class="block w-full rounded-lg border-gray-300 pr-10 ${ringClass} focus:border-${accentColor}-500 sm:text-sm transition-all py-2.5 hover:border-gray-400 placeholder:text-gray-300 shadow-sm" 
+						placeholder="留空或0">
+					<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+						<span class="text-gray-400 sm:text-sm font-medium">%</span>
+					</div>
+				</div>
+			</div>
+		`;
 
 		let configHtml = "";
 
 		if (account.provider === "claude") {
 			configHtml = `
-				<div class="space-y-4">
-					<div class="text-sm text-gray-600 mb-4">当任一限额低于设定阈值时，自动禁用该账号</div>
-					<div>
-						<label class="block text-sm font-medium text-gray-700 mb-2">5 小时限额阈值 (%)</label>
-						<input type="number" id="threshold-five-hour" min="0" max="100" value="${toInputPercent(config.five_hour)}"
-							placeholder="留空或0表示不限制"
-							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-					</div>
-					<div>
-						<label class="block text-sm font-medium text-gray-700 mb-2">7 天限额阈值 (%)</label>
-						<input type="number" id="threshold-seven-day" min="0" max="100" value="${toInputPercent(config.seven_day)}"
-							placeholder="留空或0表示不限制"
-							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-					</div>
-					<div>
-						<label class="block text-sm font-medium text-gray-700 mb-2">7 天 Sonnet 限额阈值 (%)</label>
-						<input type="number" id="threshold-seven-day-sonnet" min="0" max="100" value="${toInputPercent(config.seven_day_sonnet)}"
-							placeholder="留空或0表示不限制"
-							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-					</div>
+				<div class="space-y-5">
+					${renderInput("threshold-five-hour", "5 小时限额阈值", toInputPercent(config.five_hour))}
+					${renderInput("threshold-seven-day", "7 天限额阈值", toInputPercent(config.seven_day))}
+					${renderInput("threshold-seven-day-sonnet", "7 天 Sonnet 限额阈值", toInputPercent(config.seven_day_sonnet))}
 				</div>
 			`;
 		} else if (account.provider === "codex") {
 			configHtml = `
-				<div class="space-y-4">
-					<div class="text-sm text-gray-600 mb-4">当任一限额低于设定阈值时，自动禁用该账号</div>
-					<div>
-						<label class="block text-sm font-medium text-gray-700 mb-2">5 小时限额阈值 (%)</label>
-						<input type="number" id="threshold-five-hour" min="0" max="100" value="${toInputPercent(config.five_hour)}"
-							placeholder="留空或0表示不限制"
-							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-					</div>
-					<div>
-						<label class="block text-sm font-medium text-gray-700 mb-2">周限额阈值 (%)</label>
-						<input type="number" id="threshold-weekly" min="0" max="100" value="${toInputPercent(config.weekly)}"
-							placeholder="留空或0表示不限制"
-							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-					</div>
-					<div>
-						<label class="block text-sm font-medium text-gray-700 mb-2">代码审查周限额阈值 (%)</label>
-						<input type="number" id="threshold-code-review" min="0" max="100" value="${toInputPercent(config.code_review)}"
-							placeholder="留空或0表示不限制"
-							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-					</div>
+				<div class="space-y-5">
+					${renderInput("threshold-five-hour", "5 小时限额阈值", toInputPercent(config.five_hour))}
+					${renderInput("threshold-weekly", "周限额阈值", toInputPercent(config.weekly))}
+					${renderInput("threshold-code-review", "代码审查周限额阈值", toInputPercent(config.code_review))}
 				</div>
 			`;
 		} else {
 			configHtml = `
-				<div class="space-y-4">
-					<div class="text-sm text-gray-600 mb-4">Antigravity 渠道：Claude/GPT 统一计费，Gemini 各模型独立限额</div>
-					<div class="border border-gray-200 rounded-lg p-4">
-						<h4 class="font-medium text-gray-900 mb-3">Claude/GPT 模型组</h4>
-						<label class="block text-sm font-medium text-gray-700 mb-2">最低阈值 (%)</label>
-						<input type="number" id="threshold-claude-gpt" min="0" max="100" value="${toInputPercent(config.claude_gpt)}"
-							placeholder="留空或0表示不限制"
-							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-						<div class="text-xs text-gray-500 mt-2">包含: claude-sonnet-4-5, claude-opus-4-6, gpt-4 等（统一计费）</div>
+				<div class="space-y-6">
+					<!-- Claude/GPT Section -->
+					<div class="relative rounded-xl border border-gray-200 bg-gray-50/50 p-5">
+						<div class="absolute -top-3 left-3 bg-white px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Claude / GPT</div>
+						<div class="space-y-4 pt-1">
+							${renderInput("threshold-claude-gpt", "最低阈值 (Claude/GPT 统一)", toInputPercent(config.claude_gpt))}
+							<p class="text-xs text-gray-400">包含: claude-sonnet, gpt-4, gpt-4-turbo 等</p>
+						</div>
 					</div>
-					<div class="border border-gray-200 rounded-lg p-4">
-						<h4 class="font-medium text-gray-900 mb-3">Gemini 模型（独立限额）</h4>
-						<div class="space-y-3">
-							<div>
-								<label class="block text-sm font-medium text-gray-700 mb-2">gemini-3-pro 阈值 (%)</label>
-								<input type="number" id="threshold-gemini-3-pro" min="0" max="100" value="${toInputPercent(config.gemini_3_pro)}"
-									placeholder="留空或0表示不限制"
-									class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-							</div>
-							<div>
-								<label class="block text-sm font-medium text-gray-700 mb-2">gemini-3-pro-high 阈值 (%)</label>
-								<input type="number" id="threshold-gemini-3-pro-high" min="0" max="100" value="${toInputPercent(config.gemini_3_pro_high)}"
-									placeholder="留空或0表示不限制"
-									class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-							</div>
-							<div>
-								<label class="block text-sm font-medium text-gray-700 mb-2">gemini-3-flash 阈值 (%)</label>
-								<input type="number" id="threshold-gemini-3-flash" min="0" max="100" value="${toInputPercent(config.gemini_3_flash)}"
-									placeholder="留空或0表示不限制"
-									class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-							</div>
-							<div>
-								<label class="block text-sm font-medium text-gray-700 mb-2">gemini-3-pro-image 阈值 (%)</label>
-								<input type="number" id="threshold-gemini-3-pro-image" min="0" max="100" value="${toInputPercent(config.gemini_3_pro_image)}"
-									placeholder="留空或0表示不限制"
-									class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-							</div>
+
+					<!-- Gemini Section -->
+					<div class="relative rounded-xl border border-gray-200 bg-gray-50/50 p-5">
+						<div class="absolute -top-3 left-3 bg-white px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Gemini</div>
+						<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+							${renderInput("threshold-gemini-3-pro", "Gemini 3 Pro", toInputPercent(config.gemini_3_pro))}
+							${renderInput("threshold-gemini-3-pro-high", "Gemini 3 Pro High", toInputPercent(config.gemini_3_pro_high))}
+							${renderInput("threshold-gemini-3-flash", "Gemini 3 Flash", toInputPercent(config.gemini_3_flash))}
+							${renderInput("threshold-gemini-3-pro-image", "Gemini 3 Pro Image", toInputPercent(config.gemini_3_pro_image))}
 						</div>
 					</div>
 				</div>
@@ -1081,27 +1082,47 @@ async function _showThresholdConfig(account) {
 		}
 
 		modal.innerHTML = `
-			<div class="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 animate-scaleIn">
-				<div class="flex items-center justify-between p-6 border-b border-gray-100">
-					<h3 class="text-lg font-semibold text-gray-900">设置阈值 - ${account.email || account.name}</h3>
-					<button onclick="document.getElementById('thresholdModal').remove()" 
-						class="text-gray-400 hover:text-gray-600">
-						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-						</svg>
-					</button>
+			<div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 animate-scaleIn flex flex-col overflow-hidden ring-1 ring-black/5">
+				<!-- Header -->
+				<div class="relative px-6 py-5 border-b border-gray-100 ${account.provider === "antigravity" ? "bg-gradient-to-r from-violet-50 to-white" : ""}">
+					<div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-${accentColor}-500 to-transparent opacity-50"></div>
+					<div class="flex items-center justify-between">
+						<div>
+							<h3 class="text-lg font-bold text-gray-900 tracking-tight">自动停用阈值</h3>
+							<p class="text-sm text-gray-500 mt-0.5 font-medium">${account.email || account.name}</p>
+						</div>
+						<button onclick="document.getElementById('thresholdModal').remove()" 
+							class="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100 transition-colors">
+							<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+							</svg>
+						</button>
+					</div>
 				</div>
-				<div class="p-6">
+
+				<!-- Content -->
+				<div class="px-6 py-6 overflow-y-auto max-h-[60vh]">
+					<div class="flex items-start gap-3 p-3 mb-6 rounded-lg ${bgSoftClass} border border-${accentColor}-100">
+						<svg class="w-5 h-5 ${accentClass} shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+						</svg>
+						<p class="text-sm text-gray-600 leading-relaxed">
+							当任一限额的使用量 <span class="font-medium text-gray-900">低于</span> 设定百分比时，系统将自动禁用该账号以保护额度。
+						</p>
+					</div>
+					
 					${configHtml}
 				</div>
-				<div class="flex justify-end gap-3 p-6 border-t border-gray-100">
+
+				<!-- Footer -->
+				<div class="px-6 py-5 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
 					<button onclick="document.getElementById('thresholdModal').remove()" 
-						class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition">
+						class="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-200 transition-all shadow-sm">
 						取消
 					</button>
 					<button onclick="saveThresholdConfig('${account.name}', '${account.provider}')" 
-						class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition">
-						保存
+						class="px-5 py-2.5 text-sm font-medium text-white ${btnClass} rounded-xl shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 ${ringClass} transition-all transform hover:-translate-y-0.5">
+						保存配置
 					</button>
 				</div>
 			</div>
