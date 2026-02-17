@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import Database from "better-sqlite3";
 import { v4 as uuidv4 } from "uuid";
+import { getModelPricing } from "./model-pricing.js";
 
 /**
  * Data Migration Script
@@ -363,9 +364,10 @@ class DataMigration {
 						continue;
 					}
 
-					// Calculate costs (assuming default prices)
-					const inputCost = (log.inputTokens / 1000000) * 3.0;
-					const outputCost = (log.outputTokens / 1000000) * 15.0;
+					// Calculate costs using model-specific pricing
+					const pricing = getModelPricing(log.model);
+					const inputCost = (log.inputTokens / 1000000) * pricing.input;
+					const outputCost = (log.outputTokens / 1000000) * pricing.output;
 					const totalCost = inputCost + outputCost;
 
 					insertStmt.run(
