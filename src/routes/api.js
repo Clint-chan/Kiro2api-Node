@@ -38,6 +38,26 @@ function setSSEHeaders(res) {
 	res.setHeader("Connection", "keep-alive");
 }
 
+// 返回余额不足错误响应
+function sendInsufficientBalanceError(
+	res,
+	balanceCheck,
+	useTypeWrapper = false,
+) {
+	const errorBody = {
+		type: "insufficient_balance_error",
+		message: `Insufficient balance. Current: $${balanceCheck.currentBalance.toFixed(4)}, Estimated cost: $${balanceCheck.estimatedMaxCost.toFixed(4)}. Please recharge your account.`,
+	};
+
+	return res
+		.status(402)
+		.json(
+			useTypeWrapper
+				? { type: "error", error: errorBody }
+				: { error: errorBody },
+		);
+}
+
 // 获取模型上下文长度
 function getModelContextLength(model, config) {
 	const configured = Number(config?.modelContextLength);
@@ -168,13 +188,7 @@ export function createApiRouter(state) {
 		// Check balance before making request
 		const balanceCheck = state.billing.checkBalance(user, inputTokens);
 		if (!balanceCheck.sufficient) {
-			return res.status(402).json({
-				type: "error",
-				error: {
-					type: "insufficient_balance_error",
-					message: `Insufficient balance. Current: $${balanceCheck.currentBalance.toFixed(4)}, Estimated cost: $${balanceCheck.estimatedMaxCost.toFixed(4)}. Please recharge your account.`,
-				},
-			});
+			return sendInsufficientBalanceError(res, balanceCheck, true);
 		}
 
 		try {
@@ -388,12 +402,7 @@ export function createApiRouter(state) {
 			req.body.model,
 		);
 		if (!balanceCheck.sufficient) {
-			return res.status(402).json({
-				error: {
-					type: "insufficient_balance_error",
-					message: `Insufficient balance. Current: $${balanceCheck.currentBalance.toFixed(4)}, Estimated cost: $${balanceCheck.estimatedMaxCost.toFixed(4)}. Please recharge your account.`,
-				},
-			});
+			return sendInsufficientBalanceError(res, balanceCheck, false);
 		}
 
 		try {
@@ -731,13 +740,7 @@ export function createApiRouter(state) {
 			);
 
 			if (!balanceCheck.sufficient) {
-				return res.status(402).json({
-					type: "error",
-					error: {
-						type: "insufficient_balance_error",
-						message: `Insufficient balance. Current: $${balanceCheck.currentBalance.toFixed(4)}, Estimated cost: $${balanceCheck.estimatedMaxCost.toFixed(4)}. Please recharge your account.`,
-					},
-				});
+				return sendInsufficientBalanceError(res, balanceCheck, true);
 			}
 
 			const isStream = req.body.stream === true;
