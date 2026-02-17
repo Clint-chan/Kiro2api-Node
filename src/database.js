@@ -38,6 +38,7 @@ export class DatabaseManager {
 			this.migrateRequestLogsForeignKey();
 			this.ensureUserPermissionColumns();
 			this.ensureAntigravityAccountsTable();
+			this.ensureCliproxyAccount();
 
 			// Prepare commonly used statements
 			this.prepareStatements();
@@ -797,6 +798,37 @@ export class DatabaseManager {
 			if (!columnNames.has(column)) {
 				this.db.exec(migration);
 			}
+		}
+	}
+
+	ensureCliproxyAccount() {
+		try {
+			const existing = this.db
+				.prepare("SELECT id FROM kiro_accounts WHERE id = ?")
+				.get("cliproxy");
+
+			if (!existing) {
+				this.db
+					.prepare(
+						`INSERT INTO kiro_accounts (
+              id, name, refresh_token, auth_method, status, 
+              request_count, error_count, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+					)
+					.run(
+						"cliproxy",
+						"CLIProxy System",
+						"system",
+						"social",
+						"active",
+						0,
+						0,
+						new Date().toISOString(),
+					);
+				logger.info("CLIProxy system account created");
+			}
+		} catch (error) {
+			logger.error("Failed to ensure CLIProxy account", { error });
 		}
 	}
 

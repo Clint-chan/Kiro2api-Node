@@ -223,9 +223,16 @@ export function createApiRouter(state) {
 					buffer = lines.pop() || "";
 
 					for (const line of lines) {
-						if (line.startsWith("data: ")) {
+						const trimmedLine = line.replace(/\r$/, "");
+						if (trimmedLine.startsWith("data:")) {
+							const dataContent = trimmedLine.slice(5).trim();
+
+							if (dataContent === "[DONE]") {
+								break;
+							}
+
 							try {
-								const data = JSON.parse(line.slice(6));
+								const data = JSON.parse(dataContent);
 								if (
 									data.type === "message_stop" ||
 									data.type === "message_delta"
@@ -250,6 +257,15 @@ export function createApiRouter(state) {
 					}
 				}
 				res.end();
+
+				if (actualInputTokens === inputTokens || outputTokens === 0) {
+					logger.warn("CLIProxy streaming usage incomplete", {
+						model,
+						stream: true,
+						hadInputTokens: actualInputTokens !== inputTokens,
+						hadOutputTokens: outputTokens > 0,
+					});
+				}
 
 				try {
 					state.billing.recordRequestAndCharge({
@@ -437,9 +453,16 @@ export function createApiRouter(state) {
 						buffer = lines.pop() || "";
 
 						for (const line of lines) {
-							if (line.startsWith("data: ")) {
+							const trimmedLine = line.replace(/\r$/, "");
+							if (trimmedLine.startsWith("data:")) {
+								const dataContent = trimmedLine.slice(5).trim();
+
+								if (dataContent === "[DONE]") {
+									break;
+								}
+
 								try {
-									const data = JSON.parse(line.slice(6));
+									const data = JSON.parse(dataContent);
 									if (data.usage?.completion_tokens) {
 										outputTokens = data.usage.completion_tokens;
 									}
@@ -458,6 +481,15 @@ export function createApiRouter(state) {
 					});
 				} finally {
 					res.end();
+				}
+
+				if (actualInputTokens === inputTokens || outputTokens === 0) {
+					logger.warn("CLIProxy streaming usage incomplete", {
+						model,
+						stream: true,
+						hadInputTokens: actualInputTokens !== inputTokens,
+						hadOutputTokens: outputTokens > 0,
+					});
 				}
 
 				try {
