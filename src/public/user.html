@@ -234,7 +234,7 @@ client = anthropic.Anthropic(
 )
 
 response = client.messages.create(
-    model=<span class="text-green-300">"claude-sonnet-4-5-20250929"</span>,
+    model=<span class="text-green-300">"claude-sonnet-4-6"</span>,
     max_tokens=<span class="text-blue-300">1024</span>,
     messages=[{<span class="text-green-300">"role"</span>: <span class="text-green-300">"user"</span>, <span class="text-green-300">"content"</span>: <span class="text-green-300">"Hello!"</span>}]
 )
@@ -258,7 +258,7 @@ response = client.messages.create(
   -H <span class="text-green-300">"Content-Type: application/json"</span> \
   -H <span class="text-green-300">"x-api-key: <span id="curlApiKey"></span>"</span> \
   -d <span class="text-green-300">'{
-    "model": "claude-sonnet-4-5-20250929",
+    "model": "claude-sonnet-4-6",
     "max_tokens": 1024,
     "messages": [{"role": "user", "content": "Hello!"}]
   }'</span></code></pre>
@@ -284,7 +284,7 @@ client = OpenAI(
 )
 
 response = client.chat.completions.create(
-    model=<span class="text-green-300">"<span id="openaiPythonModel">claude-sonnet-4-5-20250929</span>"</span>,
+    model=<span class="text-green-300">"<span id="openaiPythonModel">claude-sonnet-4-6</span>"</span>,
     max_tokens=<span class="text-blue-300">1024</span>,
     messages=[{<span class="text-green-300">"role"</span>: <span class="text-green-300">"user"</span>, <span class="text-green-300">"content"</span>: <span class="text-green-300">"Hello!"</span>}]
 )
@@ -308,7 +308,7 @@ response = client.chat.completions.create(
   -H <span class="text-green-300">"Content-Type: application/json"</span> \
   -H <span class="text-green-300">"Authorization: Bearer <span id="openaiCurlApiKey"></span>"</span> \
   -d <span class="text-green-300">'{
-    "model": "<span id="openaiCurlModel">claude-sonnet-4-5-20250929</span>",
+    "model": "<span id="openaiCurlModel">claude-sonnet-4-6</span>",
     "max_tokens": 1024,
     "messages": [{"role": "user", "content": "Hello!"}]
   }'</span></code></pre>
@@ -427,22 +427,22 @@ response = client.chat.completions.create(
             window.location.href = '/login.html';
         }
 
-        function _toggleApiKey() {
+        function toggleApiKey() {
             apiKeyVisible = !apiKeyVisible;
             const input = document.getElementById('apiKeyDisplay');
             input.type = apiKeyVisible ? 'text' : 'password';
         }
 
-        function _copyApiKey() {
+        function copyApiKey() {
             copyToClipboard(user.api_key || token, 'API Key 已复制');
         }
 
-        function _copyBaseUrl() {
+        function copyBaseUrl() {
             const baseUrl = document.getElementById('baseUrl').value;
             copyToClipboard(baseUrl, 'Base URL 已复制');
         }
 
-        function _switchTab(tab) {
+        function switchTab(tab) {
             document.querySelectorAll('.tab-btn').forEach(btn => {
                 btn.classList.remove('border-blue-500', 'text-blue-600');
                 btn.classList.add('border-transparent', 'text-gray-500');
@@ -522,7 +522,7 @@ response = client.chat.completions.create(
             }
         }
 
-        function _switchGuideTab(tab) {
+        function switchGuideTab(tab) {
             // 更新标签按钮样式
             document.querySelectorAll('.guide-tab').forEach(btn => {
                 btn.classList.remove('border-blue-500', 'text-blue-600');
@@ -558,7 +558,7 @@ response = client.chat.completions.create(
             showToast('复制失败，请手动复制', 'error');
         }
 
-        function _copyClaudeConfig() {
+        function copyClaudeConfig() {
             const config = `{
   "env": {
     "ANTHROPIC_BASE_URL": "${window.location.origin}",
@@ -568,7 +568,7 @@ response = client.chat.completions.create(
             copyToClipboard(config, 'Claude Code 配置已复制');
         }
 
-        function _copyPythonCode() {
+        function copyPythonCode() {
             const code = `import anthropic
 
 client = anthropic.Anthropic(
@@ -577,7 +577,7 @@ client = anthropic.Anthropic(
 )
 
 response = client.messages.create(
-    model="claude-sonnet-4-5-20250929",
+    model="claude-sonnet-4-6",
     max_tokens=1024,
     messages=[{"role": "user", "content": "Hello!"}]
 )
@@ -586,20 +586,20 @@ print(response.content[0].text)`;
             copyToClipboard(code, 'Python 代码已复制');
         }
 
-        function _copyCurlCode() {
+        function copyCurlCode() {
             const code = `curl -X POST ${window.location.origin}/v1/messages \\
   -H "Content-Type: application/json" \\
   -H "x-api-key: ${user.api_key || token}" \\
   -d '{
-    "model": "claude-sonnet-4-5-20250929",
+    "model": "claude-sonnet-4-6",
     "max_tokens": 1024,
     "messages": [{"role": "user", "content": "Hello!"}]
   }'`;
             copyToClipboard(code, 'cURL 命令已复制');
         }
 
-        function _copyOpenAIPythonCode() {
-            const selectedModel = document.getElementById('modelSelector')?.value || 'claude-sonnet-4-5-20250929';
+        function copyOpenAIPythonCode() {
+            const selectedModel = document.getElementById('modelSelector')?.value || 'claude-sonnet-4-6';
             const code = `from openai import OpenAI
 
 client = OpenAI(
@@ -617,8 +617,8 @@ print(response.choices[0].message.content)`;
             copyToClipboard(code, 'OpenAI Python 代码已复制');
         }
 
-        function _copyOpenAICurlCode() {
-            const selectedModel = document.getElementById('modelSelector')?.value || 'claude-sonnet-4-5-20250929';
+        function copyOpenAICurlCode() {
+            const selectedModel = document.getElementById('modelSelector')?.value || 'claude-sonnet-4-6';
             const code = `curl -X POST ${window.location.origin}/v1/chat/completions \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer ${user.api_key || token}" \\
@@ -757,9 +757,15 @@ print(response.choices[0].message.content)`;
                 modelSelector.appendChild(option);
             });
 
-            const defaultModel = filteredModels.find(m => m.id === 'claude-sonnet-4-5-20250929');
+            const defaultModel = filteredModels.find(m => m.id === 'claude-sonnet-4-6');
             if (defaultModel) {
                 modelSelector.value = defaultModel.id;
+            } else {
+                // Fallback to 4.5 if 4.6 not available
+                const fallbackModel = filteredModels.find(m => m.id === 'claude-sonnet-4-5-20250929');
+                if (fallbackModel) {
+                    modelSelector.value = fallbackModel.id;
+                }
             }
 
             document.getElementById('modelCount').textContent = `${filteredModels.length} 个可用模型`;
