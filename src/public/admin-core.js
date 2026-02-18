@@ -1456,6 +1456,8 @@ function resetImportResultView(clearInput) {
 	const inputSection = document.getElementById("import-input-section");
 	const resultSection = document.getElementById("import-result-section");
 	const submitBtn = document.getElementById("import-submit-btn");
+	const submitText = document.getElementById("import-submit-text");
+	const cancelBtn = document.getElementById("import-cancel-btn");
 	const resetBtn = document.getElementById("import-reset-btn");
 	const failedBlock = document.getElementById("import-failed-block");
 
@@ -1464,9 +1466,11 @@ function resetImportResultView(clearInput) {
 	if (failedBlock) failedBlock.classList.add("hidden");
 	if (submitBtn) {
 		submitBtn.disabled = false;
+		submitBtn.onclick = () => _importAccounts();
 		submitBtn.innerHTML =
-			'<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>开始导入';
+			'<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg><span id="import-submit-text">开始导入</span>';
 	}
+	if (cancelBtn) cancelBtn.classList.remove("hidden");
 	if (resetBtn) resetBtn.classList.add("hidden");
 
 	if (clearInput) {
@@ -1546,6 +1550,14 @@ function renderImportResult(result) {
 	document.getElementById("import-result-section").classList.remove("hidden");
 	document.getElementById("import-result-section").classList.remove("hidden");
 	document.getElementById("import-reset-btn").classList.remove("hidden");
+
+	const cancelBtn = document.getElementById("import-cancel-btn");
+	const submitBtn = document.getElementById("import-submit-btn");
+	const submitText = document.getElementById("import-submit-text");
+
+	cancelBtn.classList.add("hidden");
+	submitBtn.onclick = () => hideModal("importModal");
+	submitText.textContent = "确认";
 }
 
 // ---------------------------------------------------------------------
@@ -1749,15 +1761,46 @@ async function _importAccounts() {
 		showToast("请选择文件或粘贴 JSON 内容", "warning");
 		return;
 	}
+
+	let parsed;
 	try {
-		JSON.parse(jsonContent);
+		parsed = JSON.parse(jsonContent);
 	} catch {
 		showToast("JSON 格式错误", "error");
 		return;
 	}
 
+	let accountsToCheck = [];
+	if (parsed.accounts && Array.isArray(parsed.accounts)) {
+		accountsToCheck = parsed.accounts;
+	} else if (Array.isArray(parsed)) {
+		accountsToCheck = parsed;
+	} else {
+		accountsToCheck = [parsed];
+	}
+
+	const emailsToImport = accountsToCheck
+		.map((acc) => acc.email)
+		.filter((email) => email);
+	const existingEmails = allAccounts
+		.map((acc) => acc.email)
+		.filter((email) => email);
+
+	const duplicates = emailsToImport.filter((email) =>
+		existingEmails.includes(email),
+	);
+
+	if (duplicates.length > 0) {
+		showToast(
+			`检测到重复邮箱：${duplicates.join(", ")}。请移除重复账号后再导入。`,
+			"error",
+		);
+		return;
+	}
+
 	const submitBtn = document.getElementById("import-submit-btn");
 	submitBtn.disabled = true;
+	const originalHTML = submitBtn.innerHTML;
 	submitBtn.innerHTML =
 		'<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>导入中...';
 
@@ -1775,10 +1818,8 @@ async function _importAccounts() {
 		);
 	} catch (e) {
 		showToast(`导入失败: ${e.message}`, "error");
-	} finally {
 		submitBtn.disabled = false;
-		submitBtn.innerHTML =
-			'<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>开始导入';
+		submitBtn.innerHTML = originalHTML;
 	}
 }
 
@@ -2272,6 +2313,10 @@ window.showMainPanel = _showMainPanel;
 window.loadWeeklyChart = _loadWeeklyChart;
 window.loadAntigravityTemplate = _loadAntigravityTemplate;
 window.importAntigravityAccounts = _importAntigravityAccounts;
+window.loadTemplate = _loadTemplate;
+window.importAccounts = _importAccounts;
+window.handleFileSelect = _handleFileSelect;
+window.resetImportResultView = resetImportResultView;
 window.changePage = _changePage;
 window.goToPage = _goToPage;
 window.toggleSelect = _toggleSelect;
