@@ -1,5 +1,6 @@
 import { isAntigravityModel } from "./antigravity.js";
 import { isCodexModel } from "./codex.js";
+import { isKiroDirectModel, resolveKiroDirectModel } from "./kiro-direct.js";
 import { logger } from "./logger.js";
 import { getModelCooldown } from "./model-cooldown.js";
 
@@ -155,6 +156,16 @@ function hasAntigravityHighQuota(db, modelId) {
  * @returns {object} { channel: 'kiro'|'antigravity'|'codex'|'claudecode', model: string, reason: string }
  */
 export function routeModel(model, accountPool, user = null) {
+	// 0. Kiro Direct models (kiro- prefix) - force Kiro channel
+	if (isKiroDirectModel(model)) {
+		const upstreamModel = resolveKiroDirectModel(model);
+		return {
+			channel: "kiro",
+			model: upstreamModel,
+			reason: "kiro_direct",
+		};
+	}
+
 	// 1. 如果已经是 Antigravity 专属模型，直接使用 Antigravity
 	if (isAntigravityModel(model)) {
 		return {

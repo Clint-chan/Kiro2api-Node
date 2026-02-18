@@ -12,6 +12,11 @@ import { CODEX_STATIC_MODELS, isCodexModel } from "../codex.js";
 import { EventStreamDecoder, parseKiroEvent } from "../event-parser.js";
 import { createFailoverHandler } from "../failover-handler.js";
 import { KiroApiError, KiroClient } from "../kiro-client.js";
+import {
+	isKiroDirectModel,
+	KIRO_STATIC_MODELS,
+	resolveKiroDirectModel,
+} from "../kiro-direct.js";
 import { logger } from "../logger.js";
 import { userAuthMiddleware } from "../middleware/auth.js";
 import { getModelCooldown } from "../model-cooldown.js";
@@ -142,9 +147,20 @@ export function createApiRouter(state) {
 			max_tokens: 64000,
 		}));
 
+		const kiroModels = KIRO_STATIC_MODELS.map((model) => ({
+			id: model.id,
+			object: "model",
+			created: 1737158400,
+			owned_by: model.owned_by,
+			display_name: model.display_name,
+			model_type: "chat",
+			max_tokens: 32000,
+		}));
+
 		const allModels = [
 			...antigravityModels,
 			...codexModels,
+			...kiroModels,
 			{
 				id: "claude-sonnet-4-5-20250929",
 				object: "model",
