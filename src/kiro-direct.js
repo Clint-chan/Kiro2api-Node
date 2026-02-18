@@ -22,31 +22,31 @@ export const KIRO_STATIC_MODELS = [
 		id: "kiro-claude-sonnet-4-6",
 		upstream: "claude-sonnet-4-6",
 		owned_by: "anthropic",
-		display_name: "Claude Sonnet 4.6 (Kiro Direct)",
+		display_name: "Claude Sonnet 4.6",
 	},
 	{
 		id: "kiro-claude-opus-4-6-20251220",
 		upstream: "claude-opus-4-6-20251220",
 		owned_by: "anthropic",
-		display_name: "Claude Opus 4.6 (Kiro Direct)",
+		display_name: "Claude Opus 4.6",
 	},
 	{
 		id: "kiro-claude-opus-4-5",
 		upstream: "claude-opus-4-5",
 		owned_by: "anthropic",
-		display_name: "Claude Opus 4.5 (Kiro Direct)",
+		display_name: "Claude Opus 4.5",
 	},
 	{
 		id: "kiro-claude-sonnet-4-5-20250929",
 		upstream: "claude-sonnet-4-5-20250929",
 		owned_by: "anthropic",
-		display_name: "Claude Sonnet 4.5 (Kiro Direct)",
+		display_name: "Claude Sonnet 4.5",
 	},
 	{
 		id: "kiro-claude-haiku-4-5-20251001",
 		upstream: "claude-haiku-4-5-20251001",
 		owned_by: "anthropic",
-		display_name: "Claude Haiku 4.5 (Kiro Direct)",
+		display_name: "Claude Haiku 4.5",
 	},
 ];
 

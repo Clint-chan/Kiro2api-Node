@@ -434,7 +434,7 @@ response = client.chat.completions.create(
         }
 
         function copyApiKey() {
-            copyToClipboard(user.api_key || token, 'API Key 已复制');
+            copyToClipboard(window.fullApiKey || token, 'API Key 已复制');
         }
 
         function copyBaseUrl() {
@@ -472,30 +472,30 @@ response = client.chat.completions.create(
                 document.getElementById('stat-input-tokens').textContent = formatTokens(user.total_input_tokens || 0);
                 document.getElementById('stat-output-tokens').textContent = formatTokens(user.total_output_tokens || 0);
 
-                const apiKey = user.api_key || token;
-                const baseUrl = `${window.location.origin}/v1`;
+                const apiKeyData = await fetchApi('/api/user/apikey');
+                const apiKey = apiKeyData.data.api_key || token;
+                const baseUrl = window.location.origin;
+                const baseUrlWithV1 = `${baseUrl}/v1`;
 
                 document.getElementById('apiKeyDisplay').value = apiKey;
                 document.getElementById('baseUrl').value = baseUrl;
 
-                // 更新代码示例中的值
-                document.getElementById('copyBaseUrlCode').textContent = window.location.origin;
+                document.getElementById('copyBaseUrlCode').textContent = baseUrl;
                 document.getElementById('copyApiKeyCode').textContent = apiKey;
                 document.getElementById('pythonApiKey').textContent = apiKey;
-                document.getElementById('pythonBaseUrl').textContent = baseUrl;
+                document.getElementById('pythonBaseUrl').textContent = baseUrlWithV1;
                 document.getElementById('curlApiKey').textContent = apiKey;
-                document.getElementById('curlBaseUrl').textContent = window.location.origin;
+                document.getElementById('curlBaseUrl').textContent = baseUrl;
 
-                // 更新 OpenAI 代码示例中的值
                 document.getElementById('openaiPythonApiKey').textContent = apiKey;
-                document.getElementById('openaiPythonBaseUrl').textContent = baseUrl;
+                document.getElementById('openaiPythonBaseUrl').textContent = baseUrlWithV1;
                 document.getElementById('openaiCurlApiKey').textContent = apiKey;
-                document.getElementById('openaiCurlBaseUrl').textContent = window.location.origin;
+                document.getElementById('openaiCurlBaseUrl').textContent = baseUrl;
 
-                // 加载可用模型列表
+                window.fullApiKey = apiKey;
+
                 loadModels();
 
-                // 加载订阅信息
                 loadSubscriptionInfo();
             } catch (error) {
                 console.error('Load profile error:', error);
@@ -553,26 +553,65 @@ response = client.chat.completions.create(
             }
         }
 
-        function fallbackCopy(text, _successMessage) {
-            window.prompt('复制失败，请手动复制:', String(text ?? ''));
-            showToast('复制失败，请手动复制', 'error');
+        function fallbackCopy(text, successMessage) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                const successful = document.execCommand('copy');
+                document.body.removeChild(textarea);
+                if (successful) {
+                    showToast(successMessage, 'success');
+                } else {
+                    throw new Error('execCommand failed');
+                }
+            } catch (err) {
+                document.body.removeChild(textarea);
+                const input = document.createElement('input');
+                input.value = text;
+                input.style.position = 'fixed';
+                input.style.top = '50%';
+                input.style.left = '50%';
+                input.style.transform = 'translate(-50%, -50%)';
+                input.style.width = '80%';
+                input.style.padding = '12px';
+                input.style.fontSize = '14px';
+                input.style.border = '2px solid #3b82f6';
+                input.style.borderRadius = '8px';
+                input.style.zIndex = '10000';
+                input.readOnly = true;
+                document.body.appendChild(input);
+                input.select();
+                input.setSelectionRange(0, 99999);
+                setTimeout(() => {
+                    if (document.body.contains(input)) {
+                        document.body.removeChild(input);
+                    }
+                }, 5000);
+                showToast('请手动复制选中的内容', 'warning');
+            }
         }
 
         function copyClaudeConfig() {
+            const apiKey = window.fullApiKey || token;
             const config = `{
   "env": {
     "ANTHROPIC_BASE_URL": "${window.location.origin}",
-    "ANTHROPIC_AUTH_TOKEN": "${user.api_key || token}"
+    "ANTHROPIC_AUTH_TOKEN": "${apiKey}"
   }
 }`;
             copyToClipboard(config, 'Claude Code 配置已复制');
         }
 
         function copyPythonCode() {
+            const apiKey = window.fullApiKey || token;
             const code = `import anthropic
 
 client = anthropic.Anthropic(
-    api_key="${user.api_key || token}",
+    api_key="${apiKey}",
     base_url="${window.location.origin}/v1"
 )
 
@@ -587,9 +626,10 @@ print(response.content[0].text)`;
         }
 
         function copyCurlCode() {
+            const apiKey = window.fullApiKey || token;
             const code = `curl -X POST ${window.location.origin}/v1/messages \\
   -H "Content-Type: application/json" \\
-  -H "x-api-key: ${user.api_key || token}" \\
+  -H "x-api-key: ${apiKey}" \\
   -d '{
     "model": "claude-sonnet-4-6",
     "max_tokens": 1024,
@@ -599,11 +639,12 @@ print(response.content[0].text)`;
         }
 
         function copyOpenAIPythonCode() {
+            const apiKey = window.fullApiKey || token;
             const selectedModel = document.getElementById('modelSelector')?.value || 'claude-sonnet-4-6';
             const code = `from openai import OpenAI
 
 client = OpenAI(
-    api_key="${user.api_key || token}",
+    api_key="${apiKey}",
     base_url="${window.location.origin}/v1"
 )
 
@@ -618,10 +659,11 @@ print(response.choices[0].message.content)`;
         }
 
         function copyOpenAICurlCode() {
+            const apiKey = window.fullApiKey || token;
             const selectedModel = document.getElementById('modelSelector')?.value || 'claude-sonnet-4-6';
             const code = `curl -X POST ${window.location.origin}/v1/chat/completions \\
   -H "Content-Type: application/json" \\
-  -H "Authorization: Bearer ${user.api_key || token}" \\
+  -H "Authorization: Bearer ${apiKey}" \\
   -d '{
     "model": "${selectedModel}",
     "max_tokens": 1024,
@@ -674,9 +716,14 @@ print(response.choices[0].message.content)`;
 
                 const channelLabels = {
                     'anthropic': 'Claude',
-                    'antigravity': 'Antigravity',
-                    'codex': 'Codex (GPT)',
-                    'openai': 'OpenAI'
+                    'extended': 'Extended',
+                    'openai': 'GPT'
+                };
+
+                const channelToInternal = {
+                    'anthropic': 'kiro',
+                    'extended': 'antigravity',
+                    'openai': 'codex'
                 };
 
                 const groupedModels = {};
@@ -691,7 +738,8 @@ print(response.choices[0].message.content)`;
 
                 const availableChannels = Object.keys(groupedModels).filter(ch => {
                     if (allowedChannels.length === 0) return true;
-                    return allowedChannels.includes(ch === 'anthropic' ? 'kiro' : ch);
+                    const internalName = channelToInternal[ch] || ch;
+                    return allowedChannels.includes(internalName);
                 });
 
                 if (availableChannels.length === 0) {
@@ -750,25 +798,39 @@ print(response.choices[0].message.content)`;
                 return;
             }
 
+            const uniqueModels = new Map();
             filteredModels.forEach(m => {
+                const displayName = m.display_name || m.id;
+                if (!uniqueModels.has(displayName)) {
+                    uniqueModels.set(displayName, m);
+                } else {
+                    const existing = uniqueModels.get(displayName);
+                    if (!m.id.startsWith('kiro-') && existing.id.startsWith('kiro-')) {
+                        uniqueModels.set(displayName, m);
+                    }
+                }
+            });
+
+            const dedupedModels = Array.from(uniqueModels.values());
+
+            dedupedModels.forEach(m => {
                 const option = document.createElement('option');
                 option.value = m.id;
                 option.textContent = m.display_name || m.id;
                 modelSelector.appendChild(option);
             });
 
-            const defaultModel = filteredModels.find(m => m.id === 'claude-sonnet-4-6');
+            const defaultModel = dedupedModels.find(m => m.id === 'claude-sonnet-4-6' || m.id.startsWith('claude-sonnet-4-6-'));
             if (defaultModel) {
                 modelSelector.value = defaultModel.id;
             } else {
-                // Fallback to 4.5 if 4.6 not available
-                const fallbackModel = filteredModels.find(m => m.id === 'claude-sonnet-4-5-20250929');
+                const fallbackModel = dedupedModels.find(m => m.id === 'claude-sonnet-4-5-20250929' || m.id.startsWith('claude-sonnet-4-5-'));
                 if (fallbackModel) {
                     modelSelector.value = fallbackModel.id;
                 }
             }
 
-            document.getElementById('modelCount').textContent = `${filteredModels.length} 个可用模型`;
+            document.getElementById('modelCount').textContent = `${dedupedModels.length} 个可用模型`;
             updateModelInExamples();
         }
 

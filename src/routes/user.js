@@ -57,6 +57,31 @@ export function createUserRouter(db, billing, subscription) {
 	});
 
 	/**
+	 * GET /api/user/apikey
+	 * Get full API key (unmasked)
+	 */
+	router.get("/apikey", (req, res) => {
+		try {
+			const user = req.user;
+
+			res.json({
+				success: true,
+				data: {
+					api_key: user.api_key,
+				},
+			});
+		} catch (error) {
+			logger.error("Get API key error", { error });
+			res.status(500).json({
+				error: {
+					type: "internal_error",
+					message: "Failed to retrieve API key.",
+				},
+			});
+		}
+	});
+
+	/**
 	 * GET /api/user/balance
 	 * Get user balance information
 	 */

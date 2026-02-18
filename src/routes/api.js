@@ -127,11 +127,16 @@ export function createApiRouter(state) {
 
 	// GET /v1/models - 不需要认证，公开访问
 	router.get("/models", (_req, res) => {
+		const channelDisplayName = {
+			antigravity: "extended",
+			codex: "openai",
+		};
+
 		const antigravityModels = ANTIGRAVITY_STATIC_MODELS.map((model) => ({
 			id: model.id,
 			object: "model",
 			created: 1737158400,
-			owned_by: model.owned_by,
+			owned_by: channelDisplayName[model.owned_by] || model.owned_by,
 			display_name: model.display_name,
 			model_type: "chat",
 			max_tokens: 64000,
@@ -141,7 +146,7 @@ export function createApiRouter(state) {
 			id: model.id,
 			object: "model",
 			created: 1737158400,
-			owned_by: model.owned_by,
+			owned_by: channelDisplayName[model.owned_by] || model.owned_by,
 			display_name: model.display_name,
 			model_type: "chat",
 			max_tokens: 64000,
