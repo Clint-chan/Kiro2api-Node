@@ -1240,11 +1240,8 @@ async function _showThresholdConfig(account) {
 			<div class="group">
 				<label for="${id}" class="block text-sm font-medium text-gray-700 mb-1.5 transition-colors group-focus-within:${accentClass}">${label}</label>
 				<div class="relative rounded-lg shadow-sm">
-					<input type="number" id="${id}" min="0" max="100" value="${value}" 
-						class="block w-full rounded-lg border border-gray-300 pl-3 pr-10 ${ringClass} focus:border-${accentColor}-500 sm:text-sm transition-all py-2.5 hover:border-gray-400 placeholder:text-gray-300 shadow-sm" 
-						placeholder="留空或0"
-                        onfocus="this.placeholder=''"
-                        onblur="this.placeholder='留空或0'">
+				<input type="number" id="${id}" min="0" max="100" value="${value}" 
+					class="block w-full rounded-lg border border-gray-300 pl-3 pr-10 ${ringClass} focus:border-${accentColor}-500 sm:text-sm transition-all py-2.5 hover:border-gray-400 placeholder:text-gray-300 shadow-sm">
 					<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
 						<span class="text-gray-400 sm:text-sm font-medium">%</span>
 					</div>
