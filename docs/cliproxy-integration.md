@@ -1,156 +1,95 @@
-# CLIProxy 集成架构文档
+# CLIProxy 集成文档
+
+> **文档目的**: 记录 CLIProxy 在本项目中的完整集成细节，便于后续 CLIProxyAPI 更新时参考合并
 
 ## 目录
 
-1. [CLIProxy 架构分析](#cliproxy-架构分析)
-2. [当前集成状态](#当前集成状态)
-3. [模型组级别禁用方案](#模型组级别禁用方案)
-4. [数据流设计](#数据流设计)
-5. [API 接口规范](#api-接口规范)
-6. [性能优化](#性能优化)
-7. [测试验证](#测试验证)
+1. [集成概览](#集成概览)
+2. [账号管理集成](#账号管理集成)
+3. [配额管理集成](#配额管理集成)
+4. [阈值监控集成](#阈值监控集成)
+5. [负载均衡集成](#负载均衡集成)
+6. [账号状态细分](#账号状态细分)
+7. [前端管理页面集成](#前端管理页面集成)
+8. [与 CLIProxyAPI 原项目的差异](#与-cliproxyapi-原项目的差异)
+9. [更新 CLIProxyAPI 时的合并指南](#更新-cliproxyapi-时的合并指南)
+10. [环境配置](#环境配置)
+11. [故障排查](#故障排查)
 
 ---
 
-## CLIProxy 架构分析
+## 集成概览
 
-### 核心组件
+### 架构模式
 
-#### 1. Management API
+本项目采用 **混合模式** 集成 CLIProxy：
 
-CLIProxy 提供 Management API 用于管理认证文件和配置：
+- **账号管理**: 使用 CLIProxy Management API（`/v0/management/auth-files`）
+- **配额查询**: 使用 CLIProxy Management API（`/v0/management/auth-files`）
+- **请求转发**: 使用 CLIProxy 代理端点（`/v1/messages`, `/v1/chat/completions`）
 
-**基础端点：** `http://localhost:8317/v0/management`
+**关键区别**:
+- **Antigravity Native 路由** (`src/routes/antigravity-native.js`): 直接调用上游 Google Antigravity API
+- **通用 CLIProxy 路由** (`src/routes/api.js`): 通过 CLIProxy 代理端点转发请求
 
-**主要接口：**
+**为什么采用混合模式？**
 
-| 端点 | 方法 | 功能 | 响应格式 |
-|------|------|------|----------|
-| `/auth-files` | GET | 获取所有认证文件列表 | `{ files: [...] }` |
-| `/auth-files` | POST | 上传新的认证文件 | `{ status: "ok" }` |
-| `/auth-files` | DELETE | 删除认证文件 | `{ status: "ok" }` |
-| `/auth-files/status` | PATCH | 启用/禁用账号 | `{ status: "ok", disabled: bool }` |
-| `/auth-files/models` | GET | 获取账号支持的模型 | `{ models: [...] }` |
+1. **灵活性**: Antigravity 支持模型组级别禁用（直接调用上游 API）
+2. **统一性**: Codex/Claude 通过 CLIProxy 代理端点统一处理
+3. **可控性**: 自定义负载均衡策略（Antigravity）
+4. **兼容性**: 保持现有路由架构不变
 
-#### 2. Auth 数据结构
+### 请求路由流程
 
-```typescript
-interface Auth {
-  id: string;                    // 唯一标识
-  auth_index: string;            // 运行时索引（用于 API 调用）
-  name: string;                  // 文件名
-  provider: string;              // 提供商：antigravity, codex, claude
-  email?: string;                // 账号邮箱
-  disabled: boolean;             // 是否禁用
-  unavailable: boolean;          // 是否不可用（临时）
-  status: string;                // 状态：active, disabled
-  status_message?: string;       // 状态消息
-  
-  // Antigravity 特有字段
-  plan_tier?: string;            // 订阅等级
-  paid_tier?: string;            // 付费等级
-  next_reset?: string;           // 下次重置时间
-  
-  // 配额信息（JSON 字符串）
-  model_quotas?: string;         // 模型配额详情
-  
-  // 时间戳
-  created_at?: string;
-  updated_at?: string;
-  last_refresh?: string;
-}
+```
+用户请求 → routeModel() 判断渠道
+  ↓
+  ├─ Antigravity 模型 → antigravity-native.js → 直接调 Google API
+  │                      (executeWithFailover + LoadBalancer)
+  │
+  ├─ Codex 模型 → handleCLIProxyOpenAIRequest() → CLIProxy /v1/chat/completions
+  │
+  └─ Claude 模型 → handleCLIProxyClaudeRequest() → CLIProxy /v1/messages
 ```
 
-#### 3. Model Quotas 结构
+### CLIProxy Management API
 
-```typescript
-interface ModelQuotas {
-  [modelId: string]: {
-    remaining_fraction: number;  // 剩余比例 (0-1)
-    total?: number;              // 总额度
-    used?: number;               // 已使用
-    reset_at?: string;           // 重置时间
-  }
-}
-```
+**基础端点**: `http://localhost:8317/v0/management`
 
-**示例：**
-```json
-{
-  "claude-sonnet-4-20250514": {
-    "remaining_fraction": 0.75,
-    "total": 1000,
-    "used": 250
-  },
-  "gpt-4o": {
-    "remaining_fraction": 0.20,
-    "total": 500,
-    "used": 400
-  },
-  "gemini-3-pro": {
-    "remaining_fraction": 0.85,
-    "total": 2000,
-    "used": 300
-  }
-}
-```
+**主要接口**:
 
-#### 4. 账号选择逻辑（CLIProxy 内部）
+| 端点 | 方法 | 功能 |
+|------|------|------|
+| `/auth-files` | GET | 获取所有认证文件列表 |
+| `/auth-files` | POST | 上传新的认证文件 |
+| `/auth-files` | DELETE | 删除认证文件 |
+| `/auth-files/status` | PATCH | 启用/禁用账号 |
 
-CLIProxy 使用 `Selector` 模式选择账号：
+### CLIProxy 代理端点
 
-```go
-// selector.go
-func isAuthBlockedForModel(auth *Auth, model string, now time.Time) (bool, blockReason, time.Time) {
-    // 1. 检查账号级别禁用
-    if auth.Disabled || auth.Status == StatusDisabled {
-        return true, blockReasonDisabled, time.Time{}
-    }
-    
-    // 2. 检查模型级别状态（ModelStates）
-    if model != "" && len(auth.ModelStates) > 0 {
-        if state, ok := auth.ModelStates[model]; ok && state != nil {
-            if state.Status == StatusDisabled {
-                return true, blockReasonDisabled, time.Time{}
-            }
-            if state.Unavailable && state.NextRetryAfter.After(now) {
-                if state.Quota.Exceeded {
-                    return true, blockReasonCooldown, next
-                }
-            }
-        }
-    }
-    
-    // 3. 检查账号级别配额
-    if auth.Unavailable && auth.NextRetryAfter.After(now) {
-        if auth.Quota.Exceeded {
-            return true, blockReasonCooldown, next
-        }
-    }
-    
-    return false, blockReasonNone, time.Time{}
-}
-```
+**基础端点**: `http://localhost:19865` (CLIPROXY_URL)
 
-**关键发现：**
-- CLIProxy 支持 `ModelStates` 按模型粒度管理状态
-- 但 Management API **不提供**更新 `ModelStates` 的接口
-- 只能通过 `PATCH /auth-files/status` 禁用整个账号
+**主要接口**:
+
+| 端点 | 方法 | 功能 | 使用场景 |
+|------|------|------|---------|
+| `/v1/messages` | POST | Anthropic 格式请求 | Codex/Claude 渠道 |
+| `/v1/chat/completions` | POST | OpenAI 格式请求 | Codex 渠道 |
 
 ---
 
-## 当前集成状态
+## 账号管理集成
 
-### 1. CLIProxyClient 实现
+### CLIProxyClient 实现
 
-**文件：** `src/cliproxy-client.js`
+**文件**: `src/cliproxy-client.js`
 
-**核心功能：**
+**核心功能**:
 - 封装 CLIProxy Management API 调用
-- 实现 5 分钟内存缓存（`authFilesCache`）
+- 实现 5 分钟内存缓存
 - 提供账号列表、配额查询、状态管理
 
-**缓存机制：**
+**缓存机制**:
 ```javascript
 class CLIProxyClient {
     constructor(managementUrl, managementKey) {
@@ -164,7 +103,7 @@ class CLIProxyClient {
         const cacheExpired = now - this.authFilesCacheTime > this.authFilesCacheTTL;
         
         if (!forceRefresh && this.authFilesCache && !cacheExpired) {
-            return this.authFilesCache; // 返回缓存
+            return this.authFilesCache;
         }
         
         const result = await this.listAuthFiles();
@@ -175,135 +114,184 @@ class CLIProxyClient {
 }
 ```
 
-### 2. Antigravity 路由实现
+### Auth 数据结构
 
-**文件：** `src/routes/antigravity-native.js`
-
-**当前问题：**
-```javascript
-function getEligibleAntigravityAccounts(modelId, excludedIds = new Set()) {
-    // ❌ 问题：查询数据库，而不是使用 CLIProxy 缓存
-    const accounts = state.db.getAllAntigravityAccounts("active") || [];
-    
-    const upstreamModel = resolveAntigravityUpstreamModel(modelId);
-    
-    const filtered = accounts.filter((account) => {
-        if (excludedIds.has(account.id)) return false;
-        if (!upstreamModel) return true;
-        return hasQuotaForModel(account, upstreamModel);
-    });
-    
-    // 排序逻辑...
-    return filtered;
+```typescript
+interface Auth {
+  id: string;
+  name: string;
+  provider: string;              // antigravity, codex, claude
+  email?: string;
+  disabled: boolean;
+  status: string;
+  model_quotas?: string;         // JSON 字符串
+  plan_tier?: string;            // Antigravity 特有
+  next_reset?: string;
 }
-```
-
-**hasQuotaForModel 当前实现：**
-```javascript
-function hasQuotaForModel(account, modelId) {
-    const quotas = parseJsonSafe(account?.model_quotas);
-    if (!quotas || typeof quotas !== "object") return true;
-    const info = quotas[modelId];
-    if (!info || typeof info !== "object") return true;
-    const remaining = Number(info.remaining_fraction);
-    if (!Number.isFinite(remaining)) return true;
-    return remaining > 0; // ❌ 只检查配额，不检查模型组禁用状态
-}
-```
-
-### 3. 阈值检查器
-
-**文件：** `src/cliproxy-threshold-checker.js`
-
-**工作流程：**
-1. 每 15 分钟运行一次
-2. 调用 `cliproxyClient.getCachedAuthFiles(true)` 强制刷新
-3. 检查每个账号的配额
-4. 如果低于阈值，写入 `system_settings` 表
-
-**当前实现（已完成）：**
-```javascript
-async checkAntigravityThreshold(account, config) {
-    const quota = account.quota || {};
-    const disableGroups = {};
-    
-    // 按模型组检查
-    const modelGroups = {
-        claude_gpt: {
-            patterns: [/^claude-/, /^gpt-/, /^o\d/],
-            threshold: config.claude_gpt,
-        },
-        gemini_3_pro: {
-            models: ["gemini-3-pro"],
-            threshold: config.gemini_3_pro,
-        },
-        // ... 其他组
-    };
-    
-    for (const [groupName, groupConfig] of Object.entries(modelGroups)) {
-        if (groupConfig.threshold === undefined) continue;
-        
-        for (const [modelId, modelQuota] of Object.entries(quota)) {
-            if (!modelQuota || modelQuota.remaining_fraction === undefined) continue;
-            
-            let matches = false;
-            if (groupConfig.patterns) {
-                matches = groupConfig.patterns.some((pattern) => pattern.test(modelId));
-            } else if (groupConfig.models) {
-                matches = groupConfig.models.includes(modelId);
-            }
-            
-            if (matches && modelQuota.remaining_fraction < groupConfig.threshold) {
-                disableGroups[groupName] = {
-                    mode: "auto",
-                    disabled_at: Date.now(),
-                    reason: `${modelId} remaining ${(modelQuota.remaining_fraction * 100).toFixed(1)}% < ${(groupConfig.threshold * 100).toFixed(1)}%`,
-                    threshold: groupConfig.threshold,
-                    observed: {
-                        model_id: modelId,
-                        remaining_fraction: modelQuota.remaining_fraction,
-                    },
-                };
-                break;
-            }
-        }
-    }
-    
-    return { disableGroups };
-}
-```
-
-**持久化：**
-```javascript
-// 写入数据库
-const groupsData = { version: 1, groups: disableGroups };
-this.db.setSetting(
-    `cliproxy_auto_disabled_groups_${account.name}`,
-    JSON.stringify(groupsData)
-);
 ```
 
 ---
 
-## 模型组级别禁用方案
+## 配额管理集成
 
-### 设计目标
+### 配额数据格式
 
-1. ✅ 当某个模型组低于阈值时，只禁用该模型组
-2. ✅ 不影响其他模型组的使用
-3. ✅ 前端清晰显示禁用状态
-4. ✅ 自动恢复机制
-5. ✅ 高性能，不增加显著查询负担
+**Codex 配额** (来自 Codex Management API):
+```json
+{
+  "rate_limit": {
+    "primary_window": {
+      "used_percent": 7,              // 整数（0-100），5小时限额已用 7%
+      "limit_window_seconds": 18000   // 5小时窗口
+    },
+    "secondary_window": {
+      "used_percent": 2,              // 整数（0-100），周限额已用 2%
+      "limit_window_seconds": 604800  // 周窗口
+    }
+  },
+  "code_review_rate_limit": {
+    "primary_window": {
+      "used_percent": 0,              // 整数（0-100），代码审查周限额已用 0%
+      "limit_window_seconds": 604800  // 周窗口
+    }
+  }
+}
+```
 
-### 架构设计
+**Claude 配额**:
+```json
+{
+  "utilization": 0.75             // 已使用 75%（小数格式）
+}
+```
 
-#### 数据存储
+**Antigravity 配额**:
+```json
+{
+  "model_quotas": {
+    "claude-sonnet-4": {
+      "remaining_fraction": 0.25  // 剩余 25%（小数格式）
+    },
+    "gemini-3-pro": {
+      "remaining_fraction": 0.80
+    }
+  }
+}
+```
 
-**表：** `system_settings`
+### Bug 修复记录：Codex 配额显示错误
 
-**键格式：** `cliproxy_auto_disabled_groups_{accountName}`
+#### Bug #1: 5小时限额显示错误（已修复）
 
-**值格式：**
+**问题**: 账号 945036663 显示 99% 剩余，实际应该是 1%
+
+**根因**: 误以为 CLIProxy API 返回的 `used_percent` 是小数（0-1），实际是整数（0-100）
+
+**错误计算**:
+```javascript
+// ❌ 第一次错误（最初版本）
+const remainingPercent = Math.max(0, 100 - usedPercent);
+// 当 API 返回 0.99 时，计算结果 = 100 - 0.99 = 99.01%
+```
+
+**第一次修复（仍然错误）**:
+```javascript
+// ❌ 第二次错误（2026-02-18 第一次修复）
+const remainingPercent = Math.max(0, (1 - usedPercent) * 100);
+// 当 API 返回 7（整数）时，计算结果 = (1 - 7) * 100 = -600，被 Math.max 限制为 0
+```
+
+**最终修复（正确）**:
+```javascript
+// ✅ 正确计算（2026-02-18 第二次修复）
+const remainingPercent = Math.max(0, 100 - usedPercent);
+// 当 API 返回 7（整数）时，计算结果 = 100 - 7 = 93%
+```
+
+**关键发现**: Codex API 返回的 `used_percent` 是**整数（0-100）**，不是小数（0-1）
+
+**修复文件**: `src/public/antigravity-cliproxy.js`
+
+**修复位置**: 3 处（第 736、749、761 行）
+
+**影响范围**:
+- 5 小时限额显示
+- 周限额显示
+- 代码审查限额显示
+
+**API 返回示例** (参考 `docs/codex-apicall.md`):
+```json
+{
+  "rate_limit": {
+    "primary_window": {
+      "used_percent": 7    // 整数 7，表示已使用 7%
+    },
+    "secondary_window": {
+      "used_percent": 2    // 整数 2，表示已使用 2%
+    }
+  },
+  "code_review_rate_limit": {
+    "primary_window": {
+      "used_percent": 0    // 整数 0，表示已使用 0%
+    }
+  }
+}
+```
+
+---
+
+## 阈值监控集成
+
+### 配额粒度差异
+
+**关键设计决策**: 只有 Gemini (Antigravity) 限额精细到模型组，其他渠道（Codex/Claude）精细到账号级别
+
+| 渠道 | 配额粒度 | 阈值检查粒度 |
+|------|---------|-------------|
+| Antigravity | 模型组级别 | 模型组级别 |
+| Codex | 账号级别 | 账号级别 |
+| Claude | 账号级别 | 账号级别 |
+
+### Antigravity 模型组定义
+
+**文件**: `src/cliproxy-threshold-checker.js`
+
+```javascript
+const MODEL_GROUPS = {
+    claude_gpt: {
+        patterns: [/^claude-/, /^gpt-/, /^o\d/],
+        description: "Claude/GPT 统一计费组"
+    },
+    gemini_3_pro: {
+        models: ["gemini-3-pro"]
+    },
+    gemini_3_pro_high: {
+        models: ["gemini-3-pro-high"]
+    },
+    gemini_3_flash: {
+        models: ["gemini-3-flash"]
+    },
+    gemini_3_pro_image: {
+        models: ["gemini-3-pro-image"]
+    }
+};
+```
+
+### 阈值检查逻辑
+
+**运行频率**: 每 15 分钟
+
+**检查流程**:
+1. 强制刷新 CLIProxy 缓存
+2. 遍历每个账号的 model_quotas
+3. 按模型组匹配，检查是否低于阈值
+4. 写入 `system_settings` 表
+
+**数据存储**:
+
+**键**: `cliproxy_auto_disabled_groups_{accountName}`
+
+**值**:
 ```json
 {
   "version": 1,
@@ -317,121 +305,32 @@ this.db.setSetting(
         "model_id": "gpt-4o",
         "remaining_fraction": 0.18
       }
-    },
-    "gemini_3_flash": {
-      "mode": "auto",
-      "disabled_at": 1708123456789,
-      "reason": "gemini-3-flash remaining 12.5% < 15.0%",
-      "threshold": 0.15,
-      "observed": {
-        "model_id": "gemini-3-flash",
-        "remaining_fraction": 0.125
-      }
     }
   }
 }
 ```
 
-#### 模型组定义
+### 路由集成
 
+**文件**: `src/routes/antigravity-native.js`
+
+**hasQuotaForModel 函数**:
 ```javascript
-const MODEL_GROUPS = {
-    claude_gpt: {
-        patterns: [/^claude-/, /^gpt-/, /^o\d/],
-        description: "Claude/GPT 统一计费组"
-    },
-    gemini_3_pro: {
-        models: ["gemini-3-pro"],
-        description: "Gemini 3 Pro"
-    },
-    gemini_3_pro_high: {
-        models: ["gemini-3-pro-high"],
-        description: "Gemini 3 Pro High"
-    },
-    gemini_3_flash: {
-        models: ["gemini-3-flash"],
-        description: "Gemini 3 Flash"
-    },
-    gemini_3_pro_image: {
-        models: ["gemini-3-pro-image"],
-        description: "Gemini 3 Pro Image"
-    }
-};
-```
-
-#### 核心逻辑修改
-
-**修改文件：** `src/routes/antigravity-native.js`
-
-**修改点 1：使用 CLIProxy 缓存**
-```javascript
-function getEligibleAntigravityAccounts(modelId, excludedIds = new Set()) {
-    // ✅ 修改：使用 CLIProxy 缓存
-    const authFiles = state.cliproxyClient.authFilesCache;
-    if (!authFiles || !authFiles.files) {
-        return []; // 缓存未初始化
-    }
-    
-    const accounts = authFiles.files.filter(
-        f => f.provider === "antigravity" && !f.disabled
-    );
-    
-    const upstreamModel = resolveAntigravityUpstreamModel(modelId);
-    
-    const filtered = accounts.filter((account) => {
-        if (excludedIds.has(account.id)) return false;
-        if (!upstreamModel) return true;
-        return hasQuotaForModel(account, upstreamModel);
-    });
-    
-    filtered.sort((a, b) => {
-        const scoreA = (a.error_count || 0) * 5 + (a.request_count || 0);
-        const scoreB = (b.error_count || 0) * 5 + (b.request_count || 0);
-        return scoreA - scoreB;
-    });
-    
-    return filtered;
-}
-```
-
-**修改点 2：增强 hasQuotaForModel**
-```javascript
-function getModelGroupName(modelId) {
-    // Claude/GPT 组
-    if (/^claude-/.test(modelId) || /^gpt-/.test(modelId) || /^o\d/.test(modelId)) {
-        return "claude_gpt";
-    }
-    
-    // Gemini 组
-    if (modelId === "gemini-3-pro") return "gemini_3_pro";
-    if (modelId === "gemini-3-pro-high") return "gemini_3_pro_high";
-    if (modelId === "gemini-3-flash") return "gemini_3_flash";
-    if (modelId === "gemini-3-pro-image") return "gemini_3_pro_image";
-    
-    return null;
-}
-
 function hasQuotaForModel(account, modelId) {
-    // 1. 检查配额（现有逻辑）
+    // 1. 检查配额
     const quotas = parseJsonSafe(account?.model_quotas);
-    if (!quotas || typeof quotas !== "object") return true;
+    if (!quotas) return true;
     const info = quotas[modelId];
-    if (!info || typeof info !== "object") return true;
+    if (!info) return true;
     const remaining = Number(info.remaining_fraction);
-    if (!Number.isFinite(remaining)) return true;
     if (remaining <= 0) return false;
     
-    // 2. 检查模型组禁用状态（新增）
-    const groupsJson = state.db.getSetting(`cliproxy_auto_disabled_groups_${account.name}`) || "{}";
-    let disabledGroups = {};
-    try {
-        const parsed = JSON.parse(groupsJson);
-        disabledGroups = parsed.groups || {};
-    } catch {
-        return true;
-    }
-    
-    if (Object.keys(disabledGroups).length === 0) return true;
+    // 2. 检查模型组禁用状态
+    const groupsJson = state.db.getSetting(
+        `cliproxy_auto_disabled_groups_${account.name}`
+    ) || "{}";
+    const parsed = JSON.parse(groupsJson);
+    const disabledGroups = parsed.groups || {};
     
     // 3. 判断模型属于哪个组
     const groupName = getModelGroupName(modelId);
@@ -442,9 +341,340 @@ function hasQuotaForModel(account, modelId) {
 }
 ```
 
+**验证结果**: 禁用 `claude_gpt` 组后，`claude-sonnet-4-5` 不可用，但 `gemini-3-pro` 仍可用 ✅
+
 ---
 
-## 数据流设计
+## 负载均衡集成
+
+### 设计原则
+
+参考 Kiro 账号池的负载均衡设计，抽取公共逻辑，避免代码冗余。
+
+### LoadBalancer 通用类
+
+**文件**: `src/load-balancer.js`
+
+**设计目标**:
+- 可复用于所有 CLIProxy 渠道（Antigravity/Codex/Claude）
+- 支持 4 种策略
+- 无状态依赖，纯函数设计
+
+**实现**:
+```javascript
+export class LoadBalancer {
+    constructor(strategy = "round-robin") {
+        this.strategy = strategy;
+        this.roundRobinIndex = 0;
+    }
+    
+    selectAccount(accounts) {
+        if (!accounts || accounts.length === 0) return null;
+        
+        let selected;
+        switch (this.strategy) {
+            case "random":
+                selected = accounts[Math.floor(Math.random() * accounts.length)];
+                break;
+            case "least-used":
+                selected = accounts.reduce((a, b) =>
+                    (a.request_count || 0) < (b.request_count || 0) ? a : b
+                );
+                break;
+            case "least-error":
+                selected = accounts.reduce((a, b) =>
+                    (a.error_count || 0) < (b.error_count || 0) ? a : b
+                );
+                break;
+            default: // round-robin
+                selected = accounts[this.roundRobinIndex % accounts.length];
+                this.roundRobinIndex++;
+        }
+        
+        return selected;
+    }
+}
+```
+
+### Antigravity 路由集成
+
+**文件**: `src/routes/antigravity-native.js`
+
+**修改前**:
+```javascript
+// ❌ 按错误数排序，总是选第一个
+filtered.sort((a, b) => {
+    const scoreA = (a.error_count || 0) * 5 + (a.request_count || 0);
+    const scoreB = (b.error_count || 0) * 5 + (b.request_count || 0);
+    return scoreA - scoreB;
+});
+return filtered[0]; // 总是第一个
+```
+
+**修改后**:
+```javascript
+// ✅ 使用负载均衡器
+import { LoadBalancer } from "../load-balancer.js";
+
+const loadBalancer = new LoadBalancer("round-robin");
+
+function executeWithFailover(modelId, executor) {
+    const accounts = getEligibleAntigravityAccounts(modelId, excluded);
+    const account = loadBalancer.selectAccount(accounts);
+    // ...
+}
+```
+
+### 负载均衡与禁用逻辑的完美结合
+
+**核心设计**: 禁用逻辑在前，负载均衡在后
+
+**完整流程**:
+```javascript
+// 1. 过滤合格账号（禁用逻辑）
+function getEligibleAntigravityAccounts(modelId, excludedIds) {
+    const accounts = state.db.getAllAntigravityAccounts("active");
+    
+    return accounts.filter((account) => {
+        // ✅ 检查 1: 不在排除列表中
+        if (excludedIds.has(account.id)) return false;
+        
+        // ✅ 检查 2: 配额充足 + 模型组未禁用
+        return hasQuotaForModel(account, modelId);
+    });
+}
+
+// 2. 从合格账号中选择（负载均衡）
+const account = loadBalancer.selectAccount(accounts);
+
+// 3. 执行请求，失败则故障转移
+async function executeWithFailover(modelId, executor) {
+    const excluded = new Set();
+    
+    while (true) {
+        const accounts = getEligibleAntigravityAccounts(modelId, excluded);
+        if (accounts.length === 0) break;
+        
+        const account = loadBalancer.selectAccount(accounts);
+        
+        try {
+            return await executor(account);  // 成功返回
+        } catch (error) {
+            if (isAntigravityRateLimit(error)) {
+                excluded.add(account.id);  // 429 限流，排除后重试
+                continue;
+            }
+            throw error;  // 其他错误直接抛出
+        }
+    }
+}
+```
+
+**关键点**:
+1. **账号状态过滤**: 只选择 `status = "active"` 的账号
+2. **配额检查**: `remaining_fraction > 0`
+3. **模型组禁用检查**: 查询 `system_settings` 表，判断模型所属组是否被禁用
+4. **负载均衡**: 从通过所有检查的账号中，按策略选择
+5. **故障转移**: 429 错误时排除当前账号，重试其他账号
+
+**单账号情况**:
+- 如果只有 1 个账号，遇到 429 错误后，`excluded` 包含该账号
+- 下次循环 `accounts.length === 0`，退出并抛出错误
+- **不会无限重试同一个账号** ✅
+
+### 与 Kiro 账号池的差异
+
+**Kiro AccountPool** (`src/pool.js`):
+- 有状态管理（余额、并发数、inflight）
+- 集成 TokenManager
+- 返回释放函数
+- 支持 `least-inflight` 策略
+
+**LoadBalancer** (`src/load-balancer.js`):
+- 无状态，纯函数
+- 只负责选择逻辑
+- 不管理账号生命周期
+- 支持 `least-error` 策略
+
+**为什么不直接使用 AccountPool？**
+- CLIProxy 账号没有 TokenManager
+- CLIProxy 账号没有余额概念
+- 避免引入不必要的依赖
+
+**验证**: LoadBalancer 不影响 Kiro 账号池，两者独立运行 ✅
+
+---
+
+## 账号状态细分
+
+### 状态映射规则
+
+**用户需求**: `codex返回402说明封禁了 claudecode 401说明失效了 antigravity 403也是被封了 不要状态值都是error`
+
+**实现文件**: `src/pool.js`, `src/public/admin-core.js`, `src/routes/admin/stats.js`
+
+### 新增状态
+
+| 状态 | 含义 | 触发条件 |
+|------|------|---------|
+| `banned` | 账号被封禁 | Codex 402, Antigravity 403 |
+| `expired` | 账号失效 | Claude 401 |
+| `error` | 其他错误 | 其他错误码 |
+
+### 数据库迁移
+
+**文件**: `src/database.js`, `schema.sql`
+
+```sql
+-- 扩展 status 约束
+ALTER TABLE kiro_accounts 
+CHECK (status IN ('active', 'disabled', 'error', 'banned', 'expired'));
+```
+
+### 前端显示
+
+**文件**: `src/public/admin-core.js`
+
+```javascript
+function getStatusBadge(status) {
+    const badges = {
+        active: '<span class="badge bg-success">Active</span>',
+        disabled: '<span class="badge bg-secondary">Disabled</span>',
+        banned: '<span class="badge bg-danger">Banned</span>',
+        expired: '<span class="badge bg-warning">Expired</span>',
+        error: '<span class="badge bg-dark">Error</span>'
+    };
+    return badges[status] || badges.error;
+}
+```
+
+### Prometheus 指标
+
+**文件**: `src/routes/observability.js`
+
+```javascript
+kiro_accounts_by_status{status="banned"} 2
+kiro_accounts_by_status{status="expired"} 1
+kiro_accounts_by_status{status="error"} 0
+```
+
+### 通用请求处理函数
+
+**文件**: `src/routes/api.js`
+
+**函数命名**: 
+- `handleCLIProxyClaudeRequest()` - 处理 Anthropic 格式请求
+- `handleCLIProxyOpenAIRequest()` - 处理 OpenAI 格式请求
+
+**适用渠道**: Antigravity / Codex / Claude 三个渠道共用
+
+**调用逻辑**:
+```javascript
+// OpenAI 格式 (/v1/chat/completions)
+if (route.channel === "antigravity" || 
+    route.channel === "codex" || 
+    route.channel === "claudecode") {
+    return await handleCLIProxyOpenAIRequest(req, res);
+}
+
+// Anthropic 格式 (/v1/messages)
+if (route.channel === "antigravity" || 
+    route.channel === "codex" || 
+    route.channel === "claudecode") {
+    return await handleCLIProxyClaudeRequest(req, res);
+}
+```
+
+**为什么命名为 CLIProxy 而非 Antigravity？**
+- 这两个函数实际上是通用的 CLIProxy 请求处理函数
+- 它们通过 CLIProxy 代理端点调用上游 API
+- 支持所有 CLIProxy 管理的渠道（不仅仅是 Antigravity）
+
+---
+
+## 前端管理页面集成
+
+### Codex 配额显示修复
+
+**文件**: `src/public/antigravity-cliproxy.js`
+
+**修复位置**: 第 736、749、761 行
+
+**修复内容**: 见 [配额管理集成](#配额管理集成) 章节
+
+### 账号状态增强
+
+**文件**: `src/public/admin-core.js`
+
+**新增功能**:
+- 状态徽章显示（banned/expired/error）
+- Toast 通知文案细分
+- 状态筛选功能
+
+---
+
+## 与 CLIProxyAPI 原项目的差异
+
+### 架构差异
+
+| 维度 | CLIProxyAPI 原项目 | 本项目 |
+|------|-------------------|--------|
+| 请求代理 | 使用 `/v1/messages` 代理端点 | Codex/Claude 通过代理端点，Antigravity Native 直连 |
+| 账号选择 | CLIProxy 内部 Selector | 自定义负载均衡器 |
+| 配额粒度 | 账号级别 | Antigravity 支持模型组级别 |
+| 状态管理 | ModelStates（内部） | system_settings 表 |
+
+### 代码差异
+
+**CLIProxyAPI 原项目** (`reference_project/CLIProxyAPI/`):
+- Go 语言实现
+- 内置 Selector 模式
+- 支持 ModelStates 按模型粒度管理
+
+**本项目**:
+- Node.js 实现
+- 混合模式集成
+- 自定义模型组禁用逻辑
+
+---
+
+## 更新 CLIProxyAPI 时的合并指南
+
+### 更新流程
+
+1. **检查 CLIProxyAPI 更新日志**
+   - 查看 Management API 是否有变更
+   - 查看数据结构是否有变更
+
+2. **评估影响范围**
+   - 如果只是内部 Selector 逻辑变更 → 无需合并
+   - 如果 Management API 变更 → 需要更新 `src/cliproxy-client.js`
+   - 如果数据结构变更 → 需要更新解析逻辑
+
+3. **合并步骤**
+   - 更新 `src/cliproxy-client.js` 的 API 调用
+   - 更新 Auth 数据结构解析
+   - 更新前端显示逻辑
+   - 运行测试验证
+
+4. **不需要合并的部分**
+   - CLIProxy 内部 Selector 逻辑（我们不使用）
+   - CLIProxy 代理端点逻辑（我们不使用）
+   - Go 语言相关代码
+
+### 关键文件映射
+
+| CLIProxyAPI 原项目 | 本项目 | 说明 |
+|-------------------|--------|------|
+| `management.go` | `src/cliproxy-client.js` | Management API 客户端 |
+| `selector.go` | `src/load-balancer.js` | 账号选择逻辑（自定义） |
+| `auth.go` | - | 数据结构定义（参考） |
+
+---
+
+## 环境配置
+
+## 环境配置
 
 ### 完整数据流
 
@@ -657,109 +887,105 @@ class DisabledGroupsCache {
 
 ---
 
-## 测试验证
+## 环境配置
 
-### 测试脚本
-
-详见 `tests/cliproxy-integration.test.js`
-
-### 测试场景
-
-1. **CLIProxy 连接测试**
-   - 验证 Management API 可访问
-   - 验证认证密钥有效
-
-2. **账号列表测试**
-   - 获取账号列表
-   - 验证数据结构
-   - 验证 model_quotas 字段
-
-3. **配额检查测试**
-   - 模拟低配额场景
-   - 验证阈值检查逻辑
-   - 验证禁用状态写入
-
-4. **路由过滤测试**
-   - 模拟请求路由
-   - 验证模型组过滤
-   - 验证账号选择逻辑
-
-5. **恢复机制测试**
-   - 模拟配额恢复
-   - 验证自动恢复逻辑
-   - 验证状态清除
-
-### 性能测试
+### 必需环境变量
 
 ```bash
-# 压力测试
-npm run test:performance
+# CLIProxy Management API
+CLIPROXY_MANAGEMENT_URL=http://localhost:8317
+CLIPROXY_MANAGEMENT_KEY=your-management-key
 
-# 预期结果：
-# - QPS: > 500
-# - P99 延迟: < 50ms
-# - 内存增长: < 10MB/hour
+# 阈值检查器
+CLIPROXY_THRESHOLD_CHECK_INTERVAL=900000  # 15 分钟（毫秒）
+```
+
+### 可选环境变量
+
+```bash
+# 负载均衡策略
+CLIPROXY_LOAD_BALANCE_STRATEGY=round-robin  # round-robin, random, least-used, least-error
+```
+
+### 启动 CLIProxy
+
+```bash
+# 使用 Docker
+docker run -d \
+  -p 8317:8317 \
+  -v /path/to/auth-files:/app/auth-files \
+  -e MANAGEMENT_KEY=your-management-key \
+  cliproxy/cliproxy:latest
+
+# 或使用二进制
+./cliproxy --management-port 8317 --management-key your-management-key
 ```
 
 ---
 
-## 附录
+## 故障排查
 
-### A. 数据库 Schema
+### 问题 1: 配额显示错误
 
-```sql
--- system_settings 表
-CREATE TABLE IF NOT EXISTS system_settings (
-    key TEXT PRIMARY KEY,
-    value TEXT NOT NULL,
-    updated_at TEXT NOT NULL
-);
+**症状**: Codex 账号显示 99% 剩余，实际应该是 1%
 
--- 示例数据
-INSERT INTO system_settings (key, value, updated_at) VALUES (
-    'cliproxy_auto_disabled_groups_account1',
-    '{"version":1,"groups":{"claude_gpt":{"mode":"auto","disabled_at":1708123456789,"reason":"gpt-4o remaining 18.0% < 20.0%","threshold":0.2,"observed":{"model_id":"gpt-4o","remaining_fraction":0.18}}}}',
-    '2024-02-17T10:30:00.000Z'
-);
-```
+**原因**: 前端计算公式错误（`100 - usedPercent` 而非 `(1 - usedPercent) * 100`）
 
-### B. 环境变量
+**解决**: 已修复，见 [配额管理集成](#配额管理集成)
 
-```bash
-# CLIProxy 配置
-CLIPROXY_MANAGEMENT_URL=http://localhost:8317
-CLIPROXY_MANAGEMENT_KEY=your-management-key
+### 问题 2: 模型组未正确禁用
 
-# 阈值检查器配置
-CLIPROXY_THRESHOLD_CHECK_INTERVAL=900000  # 15 分钟
-```
+**症状**: 设置阈值后，模型仍然可用
 
-### C. 日志格式
+**排查步骤**:
+1. 检查 `system_settings` 表是否有对应记录
+   ```sql
+   SELECT * FROM system_settings WHERE key LIKE 'cliproxy_auto_disabled_groups_%';
+   ```
+2. 检查阈值检查器日志
+   ```bash
+   grep "模型组额度低于阈值" logs/app.log
+   ```
+3. 检查 `hasQuotaForModel` 函数是否正确调用
 
-```javascript
-// 阈值检查日志
-logger.warn("模型组额度低于阈值，已记录禁用状态", {
-    name: "account1",
-    provider: "antigravity",
-    groups: "claude_gpt, gemini_3_flash"
-});
+### 问题 3: CLIProxy 缓存未刷新
 
-// 恢复日志
-logger.info("Antigravity 模型组恢复", {
-    name: "account1",
-    reason: "模型组 claude_gpt 已恢复"
-});
-```
+**症状**: 前端显示的配额数据过期
+
+**排查步骤**:
+1. 检查缓存 TTL（默认 5 分钟）
+2. 手动触发刷新（前端刷新按钮）
+3. 检查阈值检查器是否正常运行（每 15 分钟）
+
+### 问题 4: 负载均衡不生效
+
+**症状**: 总是使用同一个账号
+
+**排查步骤**:
+1. 检查 `LoadBalancer` 是否正确初始化
+2. 检查 `roundRobinIndex` 是否递增
+3. 检查可用账号列表是否为空
+
+### 问题 5: 账号状态显示为 error
+
+**症状**: 所有错误都显示为 `error` 状态
+
+**原因**: 未正确映射错误码到状态
+
+**解决**: 已修复，见 [账号状态细分](#账号状态细分)
 
 ---
 
 ## 更新日志
 
-- **2024-02-17:** 初始版本
-- **2024-02-17:** 添加模型组级别禁用方案
-- **2024-02-17:** 完善性能优化建议
+- **2026-02-18**: 完整重写文档，添加所有集成细节
+- **2026-02-18**: 添加 Codex 配额显示 Bug 修复记录
+- **2026-02-18**: 添加负载均衡集成章节
+- **2026-02-18**: 添加账号状态细分章节
+- **2026-02-18**: 添加与原项目差异对比
+- **2026-02-18**: 添加合并指南和故障排查
 
 ---
 
-**文档维护者：** Kiro Development Team  
-**最后更新：** 2024-02-17
+**文档维护者**: Kiro Development Team  
+**最后更新**: 2026-02-18

@@ -338,12 +338,12 @@ export class CLIProxyThresholdChecker {
 					const quotaData = parsedBody?.body || parsedBody;
 
 					if (quotaData) {
-						const primaryWindow = quotaData.rate_limit?.primary_window;
+						const secondaryWindow = quotaData.rate_limit?.secondary_window;
 						const codeReviewWindow =
 							quotaData.code_review_rate_limit?.primary_window;
 
-						if (primaryWindow) {
-							quota.weekly = primaryWindow.used_percent || 0;
+						if (secondaryWindow) {
+							quota.weekly = secondaryWindow.used_percent || 0;
 						}
 
 						if (codeReviewWindow) {
@@ -360,7 +360,8 @@ export class CLIProxyThresholdChecker {
 		}
 
 		if (config.weekly !== undefined && quota.weekly !== undefined) {
-			const remaining = 1 - quota.weekly;
+			// Codex API 返回的 used_percent 是整数（0-100），需要转换为小数（0-1）
+			const remaining = 1 - quota.weekly / 100;
 			if (remaining < config.weekly) {
 				return {
 					shouldDisable: true,
@@ -370,7 +371,8 @@ export class CLIProxyThresholdChecker {
 		}
 
 		if (config.code_review !== undefined && quota.code_review !== undefined) {
-			const remaining = 1 - quota.code_review;
+			// Codex API 返回的 used_percent 是整数（0-100），需要转换为小数（0-1）
+			const remaining = 1 - quota.code_review / 100;
 			if (remaining < config.code_review) {
 				return {
 					shouldDisable: true,
@@ -418,12 +420,12 @@ export class CLIProxyThresholdChecker {
 					const quotaData = parsedBody?.body || parsedBody;
 
 					if (quotaData) {
-						const primaryWindow = quotaData.rate_limit?.primary_window;
+						const secondaryWindow = quotaData.rate_limit?.secondary_window;
 						const codeReviewWindow =
 							quotaData.code_review_rate_limit?.primary_window;
 
-						if (primaryWindow) {
-							quota.weekly = primaryWindow.used_percent || 0;
+						if (secondaryWindow) {
+							quota.weekly = secondaryWindow.used_percent || 0;
 						}
 
 						if (codeReviewWindow) {
@@ -450,7 +452,7 @@ export class CLIProxyThresholdChecker {
 
 		for (const check of checks) {
 			if (check.threshold !== undefined && check.value !== undefined) {
-				const remaining = 1 - check.value;
+				const remaining = 1 - check.value / 100;
 				if (remaining < check.threshold + hysteresis) {
 					return { shouldEnable: false, reason: "" };
 				}

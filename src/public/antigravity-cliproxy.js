@@ -31,6 +31,67 @@ document.addEventListener("DOMContentLoaded", () => {
 const _thresholdConfigCache = {};
 const THRESHOLD_CACHE_TTL = 30000;
 
+function extractHttpStatusFromError(error) {
+	if (!error) return null;
+
+	if (Number.isFinite(error.httpStatus)) {
+		return Number(error.httpStatus);
+	}
+
+	const message = String(error.message || error);
+	const match = message.match(/HTTP\s+(\d{3})/i);
+	return match ? Number(match[1]) : null;
+}
+
+function mapCliProxyQuotaStatus(provider, httpStatus) {
+	if (provider === "codex" && httpStatus === 402) {
+		return "banned";
+	}
+	if (provider === "claude" && httpStatus === 401) {
+		return "expired";
+	}
+	if (provider === "antigravity" && httpStatus === 403) {
+		return "banned";
+	}
+	return "error";
+}
+
+function buildCliProxyQuotaError(provider, error) {
+	const httpStatus = extractHttpStatusFromError(error);
+	return {
+		status: mapCliProxyQuotaStatus(provider, httpStatus),
+		error: error?.message || String(error),
+		httpStatus,
+	};
+}
+
+function formatQuotaErrorCard(cache) {
+	if (cache.status === "banned") {
+		return `<div class="bg-orange-50 text-orange-700 text-xs px-3 py-2 rounded-lg border border-orange-100 flex items-start gap-2">
+            <svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636A9 9 0 105.636 18.364M4 4l16 16"/></svg>
+            <span class="break-all" title="${cache.error || "账号已封禁"}">账号已封禁</span>
+        </div>`;
+	}
+
+	if (cache.status === "expired") {
+		return `<div class="bg-amber-50 text-amber-700 text-xs px-3 py-2 rounded-lg border border-amber-100 flex items-start gap-2">
+            <svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span class="break-all" title="${cache.error || "凭证已失效"}">凭证已失效</span>
+        </div>`;
+	}
+
+	return `<div class="bg-red-50 text-red-600 text-xs px-3 py-2 rounded-lg border border-red-100 flex items-start gap-2">
+        <svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span class="break-all" title="${cache.error || "加载失败"}">加载失败</span>
+    </div>`;
+}
+
+function createHttpStatusError(statusCode) {
+	const error = new Error(`HTTP ${statusCode}`);
+	error.httpStatus = Number(statusCode);
+	return error;
+}
+
 function escapeInlineJsString(value) {
 	return String(value ?? "")
 		.replace(/\\/g, "\\\\")
@@ -127,6 +188,7 @@ async function refreshAllQuotas() {
 				provider: "antigravity",
 				status: "error",
 				error: "缺少 auth_index",
+				httpStatus: null,
 			};
 
 		const projectId = "bamboo-precept-lgxtn";
@@ -139,11 +201,13 @@ async function refreshAllQuotas() {
 				data: quota,
 			};
 		} catch (e) {
+			const failed = buildCliProxyQuotaError("antigravity", e);
 			return {
 				name: account.name,
 				provider: "antigravity",
-				status: "error",
-				error: e.message,
+				status: failed.status,
+				error: failed.error,
+				httpStatus: failed.httpStatus,
 			};
 		}
 	});
@@ -156,6 +220,7 @@ async function refreshAllQuotas() {
 				provider: "codex",
 				status: "error",
 				error: "缺少 auth_index",
+				httpStatus: null,
 			};
 
 		const accountId = account.id_token?.chatgpt_account_id;
@@ -165,6 +230,7 @@ async function refreshAllQuotas() {
 				provider: "codex",
 				status: "error",
 				error: "缺少 chatgpt_account_id",
+				httpStatus: null,
 			};
 
 		try {
@@ -176,11 +242,13 @@ async function refreshAllQuotas() {
 				data: quota,
 			};
 		} catch (e) {
+			const failed = buildCliProxyQuotaError("codex", e);
 			return {
 				name: account.name,
 				provider: "codex",
-				status: "error",
-				error: e.message,
+				status: failed.status,
+				error: failed.error,
+				httpStatus: failed.httpStatus,
 			};
 		}
 	});
@@ -193,6 +261,7 @@ async function refreshAllQuotas() {
 				provider: "claude",
 				status: "error",
 				error: "缺少 auth_index",
+				httpStatus: null,
 			};
 
 		try {
@@ -204,11 +273,13 @@ async function refreshAllQuotas() {
 				data: quota,
 			};
 		} catch (e) {
+			const failed = buildCliProxyQuotaError("claude", e);
 			return {
 				name: account.name,
 				provider: "claude",
-				status: "error",
-				error: e.message,
+				status: failed.status,
+				error: failed.error,
+				httpStatus: failed.httpStatus,
 			};
 		}
 	});
@@ -233,14 +304,16 @@ async function refreshAllQuotas() {
 				`[${result.provider === "antigravity" ? "Antigravity" : result.provider === "codex" ? "Codex" : "ClaudeCode"} Quota] Cache update (batch)`,
 				{
 					account: result.name,
-					status: "error",
+					status: result.status,
 					error: result.error,
+					httpStatus: result.httpStatus,
 				},
 			);
 			cliproxyQuotaCache[result.name] = {
-				status: "error",
+				status: result.status,
 				error: result.error,
 				provider: result.provider,
+				httpStatus: result.httpStatus,
 			};
 		}
 	});
@@ -637,11 +710,8 @@ function formatCodexQuota(account) {
         </div>`;
 	}
 
-	if (cache.status === "error") {
-		return `<div class="bg-red-50 text-red-600 text-xs px-3 py-2 rounded-lg border border-red-100 flex items-start gap-2">
-            <svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            <span class="break-all" title="${cache.error || "加载失败"}">加载失败</span>
-        </div>`;
+	if (cache.status === "error" || cache.status === "banned") {
+		return formatQuotaErrorCard(cache);
 	}
 
 	const data = cache.data;
@@ -663,6 +733,7 @@ function formatCodexQuota(account) {
 
 	if (data.rate_limit?.primary_window) {
 		const usedPercent = data.rate_limit.primary_window.used_percent || 0;
+		// Codex API 返回的 used_percent 是整数（0-100），不是小数（0-1）
 		const remainingPercent = Math.max(0, 100 - usedPercent);
 		const resetTime = formatResetTime(data.rate_limit.primary_window.reset_at);
 		items.push(
@@ -676,6 +747,7 @@ function formatCodexQuota(account) {
 
 	if (data.rate_limit?.secondary_window) {
 		const usedPercent = data.rate_limit.secondary_window.used_percent || 0;
+		// Codex API 返回的 used_percent 是整数（0-100），不是小数（0-1）
 		const remainingPercent = Math.max(0, 100 - usedPercent);
 		const resetTime = formatResetTime(
 			data.rate_limit.secondary_window.reset_at,
@@ -688,6 +760,7 @@ function formatCodexQuota(account) {
 	if (data.code_review_rate_limit?.primary_window) {
 		const usedPercent =
 			data.code_review_rate_limit.primary_window.used_percent || 0;
+		// Codex API 返回的 used_percent 是整数（0-100），不是小数（0-1）
 		const remainingPercent = Math.max(0, 100 - usedPercent);
 		const resetTime = formatResetTime(
 			data.code_review_rate_limit.primary_window.reset_at,
@@ -722,11 +795,8 @@ function formatClaudeQuota(account) {
         </div>`;
 	}
 
-	if (cache.status === "error") {
-		return `<div class="bg-red-50 text-red-600 text-xs px-3 py-2 rounded-lg border border-red-100 flex items-start gap-2">
-            <svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            <span class="break-all" title="${cache.error || "加载失败"}">加载失败</span>
-        </div>`;
+	if (cache.status === "error" || cache.status === "expired") {
+		return formatQuotaErrorCard(cache);
 	}
 
 	const data = cache.data;
@@ -807,11 +877,8 @@ function formatAgtQuota(account) {
         </div>`;
 	}
 
-	if (cache.status === "error") {
-		return `<div class="bg-red-50 text-red-600 text-xs px-3 py-2 rounded-lg border border-red-100 flex items-start gap-2">
-            <svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            <span class="break-all" title="${cache.error || "加载失败"}">加载失败</span>
-        </div>`;
+	if (cache.status === "error" || cache.status === "banned") {
+		return formatQuotaErrorCard(cache);
 	}
 
 	const models = Object.entries(cache.data || {});
@@ -1126,6 +1193,12 @@ function formatCliProxyStatus(account) {
 		if (cache.status === "success") {
 			return '<span class="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">正常</span>';
 		}
+		if (cache.status === "banned") {
+			return '<span class="px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700">封禁</span>';
+		}
+		if (cache.status === "expired") {
+			return '<span class="px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">失效</span>';
+		}
 		if (cache.status === "error") {
 			return '<span class="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">错误</span>';
 		}
@@ -1136,6 +1209,12 @@ function formatCliProxyStatus(account) {
 	}
 	if (account.status === "error") {
 		return '<span class="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">待检测</span>';
+	}
+	if (account.status === "banned") {
+		return '<span class="px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700">封禁</span>';
+	}
+	if (account.status === "expired") {
+		return '<span class="px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">失效</span>';
 	}
 	return '<span class="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">未知</span>';
 }
@@ -1490,18 +1569,21 @@ async function refreshSingleQuota(account) {
 			};
 		}
 	} catch (e) {
+		const failed = buildCliProxyQuotaError(account.provider, e);
 		console.log(
 			`[${account.provider === "codex" ? "Codex" : account.provider === "claude" ? "ClaudeCode" : "Antigravity"} Quota] Cache update (single)`,
 			{
 				account: account.name,
-				status: "error",
-				error: e.message,
+				status: failed.status,
+				error: failed.error,
+				httpStatus: failed.httpStatus,
 			},
 		);
 		cliproxyQuotaCache[account.name] = {
-			status: "error",
-			error: e.message,
+			status: failed.status,
+			error: failed.error,
 			provider: account.provider,
+			httpStatus: failed.httpStatus,
 		};
 	}
 	renderCliProxyAccounts();
@@ -1618,7 +1700,7 @@ async function fetchAgtQuota(authIndex, projectId) {
 		statusCode: result?.status_code || result?.statusCode,
 		body: result?.body,
 	});
-	throw new Error(`HTTP ${result.status_code || result.statusCode}`);
+	throw createHttpStatusError(result.status_code || result.statusCode);
 }
 
 async function fetchCodexQuota(authIndex, accountId) {
@@ -1686,7 +1768,7 @@ async function fetchCodexQuota(authIndex, accountId) {
 		statusCode: result?.status_code || result?.statusCode,
 		body: result?.body,
 	});
-	throw new Error(`HTTP ${result.status_code || result.statusCode}`);
+	throw createHttpStatusError(result.status_code || result.statusCode);
 }
 
 async function fetchClaudeQuota(authIndex) {
@@ -1746,7 +1828,7 @@ async function fetchClaudeQuota(authIndex) {
 		statusCode: result?.status_code || result?.statusCode,
 		body: result?.body,
 	});
-	throw new Error(`HTTP ${result.status_code || result.statusCode}`);
+	throw createHttpStatusError(result.status_code || result.statusCode);
 }
 
 // 导出到全局作用域

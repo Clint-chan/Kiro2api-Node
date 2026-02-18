@@ -222,7 +222,7 @@ export function createApiRouter(state) {
 		return remaining > 0;
 	}
 
-	async function handleAntigravityClaudeRequest(req, res) {
+	async function handleCLIProxyClaudeRequest(req, res) {
 		const cliproxyUrl = process.env.CLIPROXY_URL || "http://localhost:19865";
 		const cliproxyApiKey = process.env.CLIPROXY_API_KEY;
 
@@ -372,7 +372,7 @@ export function createApiRouter(state) {
 				return res.json(data);
 			}
 		} catch (error) {
-			logger.error("Antigravity Claude request failed", { error });
+			logger.error("CLIProxy Claude request failed", { error });
 
 			// Record failed request
 			recordBilling(state, {
@@ -390,13 +390,13 @@ export function createApiRouter(state) {
 				type: "error",
 				error: {
 					type: "api_error",
-					message: `Antigravity request failed: ${error.message}`,
+					message: `CLIProxy request failed: ${error.message}`,
 				},
 			});
 		}
 	}
 
-	async function handleAntigravityOpenAIRequest(req, res) {
+	async function handleCLIProxyOpenAIRequest(req, res) {
 		const cliproxyUrl = process.env.CLIPROXY_URL || "http://localhost:19865";
 		const cliproxyApiKey = process.env.CLIPROXY_API_KEY;
 
@@ -570,7 +570,7 @@ export function createApiRouter(state) {
 
 			return res.json(data);
 		} catch (error) {
-			logger.error("Antigravity OpenAI request failed", { error });
+			logger.error("CLIProxy OpenAI request failed", { error });
 
 			// Record failed request
 			recordBilling(state, {
@@ -587,7 +587,7 @@ export function createApiRouter(state) {
 			return res.status(500).json({
 				error: {
 					type: "api_error",
-					message: `Antigravity request failed: ${error.message}`,
+					message: `CLIProxy request failed: ${error.message}`,
 				},
 			});
 		}
@@ -656,7 +656,7 @@ export function createApiRouter(state) {
 				req.body.model = route.model;
 			}
 
-			return await handleAntigravityOpenAIRequest(req, res);
+			return await handleCLIProxyOpenAIRequest(req, res);
 		} catch (error) {
 			return res.status(500).json({
 				error: {
@@ -712,7 +712,7 @@ export function createApiRouter(state) {
 					route.channel === "antigravity"
 						? resolveAntigravityUpstreamModel(route.model)
 						: route.model;
-				return await handleAntigravityClaudeRequest(req, res);
+				return await handleCLIProxyClaudeRequest(req, res);
 			}
 
 			const user = req.user;
