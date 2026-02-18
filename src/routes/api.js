@@ -821,18 +821,24 @@ export function createApiRouter(state) {
 					error: error.message,
 				});
 
-				const isMonthlyLimit =
-					error.status === 402 &&
-					(error.message?.includes("MONTHLY_REQUEST_COUNT") ||
-						error.message?.includes("reached the limit") ||
-						error.message?.includes("insufficient_balance"));
+				const status = inferHttpStatus(error);
+				const channel = route?.channel || "unknown";
 
-				if (isMonthlyLimit) {
-					logger.warn("账号已达月度请求上限或余额不足，标记为不可用", {
-						accountName: selected.name,
-						accountId: selected.id,
-					});
-					await state.accountPool.markInvalid(selected.id);
+				if (status === 402) {
+					const isCodexBanned = channel === "codex";
+					if (isCodexBanned) {
+						logger.warn("Codex账号返回402，标记为banned", {
+							accountName: selected.name,
+							accountId: selected.id,
+						});
+						await state.accountPool.markBanned(selected.id);
+					} else {
+						logger.warn("账号已达月度请求上限或余额不足，标记为不可用", {
+							accountName: selected.name,
+							accountId: selected.id,
+						});
+						await state.accountPool.markInvalid(selected.id);
+					}
 
 					state.accountPool.refreshAccountUsage(selected.id).catch((err) => {
 						logger.error("刷新账号余额失败", {
@@ -840,8 +846,29 @@ export function createApiRouter(state) {
 							error: err.message,
 						});
 					});
+				} else if (status === 401) {
+					const isClaudeCode = channel === "kiro";
+					if (isClaudeCode) {
+						logger.warn("Claude Code账号返回401，标记为expired", {
+							accountName: selected.name,
+							accountId: selected.id,
+						});
+						await state.accountPool.markExpired(selected.id);
+					} else {
+						await state.accountPool.markInvalid(selected.id);
+					}
+				} else if (status === 403) {
+					const isAntigravity = channel === "antigravity";
+					if (isAntigravity) {
+						logger.warn("Antigravity账号返回403，标记为banned", {
+							accountName: selected.name,
+							accountId: selected.id,
+						});
+						await state.accountPool.markBanned(selected.id);
+					} else {
+						await state.accountPool.markInvalid(selected.id);
+					}
 				} else {
-					const status = inferHttpStatus(error);
 					const isRateLimit =
 						status === 429 ||
 						status === 423 ||
@@ -849,7 +876,7 @@ export function createApiRouter(state) {
 						error.message?.includes("limit") ||
 						error.message?.includes("high traffic");
 
-					if (isRateLimit && route && route.channel === "kiro") {
+					if (isRateLimit && channel === "kiro") {
 						try {
 							const cooldown = getModelCooldown();
 							cooldown.recordFailure("kiro", req.body.model);

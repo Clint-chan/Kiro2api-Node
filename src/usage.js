@@ -34,18 +34,19 @@ export async function checkUsageLimits(accessToken, config = {}) {
 	if (!response.ok) {
 		const text = await response.text();
 
-		// 尝试解析错误响应
 		try {
 			const errorJson = JSON.parse(text);
 
-			// 检查是否被封禁
 			if (errorJson.reason) {
 				throw new Error(`BANNED:${errorJson.reason}`);
 			}
 
-			// 检查是否token无效 (403/401)
-			if (response.status === 403 || response.status === 401) {
-				throw new Error(`TOKEN_INVALID:${errorJson.message || "Token无效"}`);
+			if (response.status === 401) {
+				throw new Error(`TOKEN_INVALID:${errorJson.message || "Token已失效"}`);
+			}
+
+			if (response.status === 403) {
+				throw new Error(`BANNED:${errorJson.message || "账号被封禁"}`);
 			}
 		} catch (e) {
 			if (

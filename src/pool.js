@@ -325,27 +325,16 @@ export class AccountPool {
 		} catch (e) {
 			logger.error("刷新账号额度失败", { accountId: id, error: e.message });
 
-			// 检查是否被封禁
 			if (e.message.startsWith("BANNED:")) {
-				account.status = "error";
-				await this.save();
-				if (this.db) {
-					this.db.updateKiroAccountStatus(id, "error");
-				}
+				await this.markBanned(id);
 				return { error: `账号已被封禁: ${e.message.substring(7)}` };
 			}
 
-			// 检查是否 token 无效
 			if (e.message.startsWith("TOKEN_INVALID:")) {
-				account.status = "error";
-				await this.save();
-				if (this.db) {
-					this.db.updateKiroAccountStatus(id, "error");
-				}
+				await this.markExpired(id);
 				return { error: `Token已失效: ${e.message.substring(14)}` };
 			}
 
-			// 检查其他token过期情况
 			if (
 				e.message.includes("401") ||
 				e.message.includes("403") ||
@@ -353,11 +342,7 @@ export class AccountPool {
 				e.message.includes("无效") ||
 				e.message.includes("刷新失败")
 			) {
-				account.status = "error";
-				await this.save();
-				if (this.db) {
-					this.db.updateKiroAccountStatus(id, "error");
-				}
+				await this.markExpired(id);
 				return { error: "Token已过期或无效" };
 			}
 
@@ -530,6 +515,62 @@ export class AccountPool {
 			accountName: account.name,
 			accountId: id,
 		});
+	}
+
+	/**
+	 * 标记账号为 BANNED（被封禁）
+	 */
+	async markBanned(id) {
+		const account = this.accounts.get(id);
+		if (!account) {
+			logger.error("账号不存在于accountPool", { accountId: id });
+			if (this.db) {
+				this.db.updateKiroAccountStatus(id, "banned");
+				logger.info("已在数据库中标记账号为banned", { accountId: id });
+				return true;
+			}
+			return false;
+		}
+
+		account.status = "banned";
+		await this.save();
+
+		if (this.db) {
+			this.db.updateKiroAccountStatus(id, "banned");
+		}
+		logger.warn("已标记账号为BANNED", {
+			accountName: account.name,
+			accountId: id,
+		});
+		return true;
+	}
+
+	/**
+	 * 标记账号为 EXPIRED（失效）
+	 */
+	async markExpired(id) {
+		const account = this.accounts.get(id);
+		if (!account) {
+			logger.error("账号不存在于accountPool", { accountId: id });
+			if (this.db) {
+				this.db.updateKiroAccountStatus(id, "expired");
+				logger.info("已在数据库中标记账号为expired", { accountId: id });
+				return true;
+			}
+			return false;
+		}
+
+		account.status = "expired";
+		await this.save();
+
+		if (this.db) {
+			this.db.updateKiroAccountStatus(id, "expired");
+		}
+		logger.warn("已标记账号为EXPIRED", {
+			accountName: account.name,
+			accountId: id,
+		});
+		return true;
 	}
 
 	/**
