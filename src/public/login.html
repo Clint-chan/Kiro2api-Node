@@ -104,13 +104,13 @@
             }
         });
 
-        function _clearInput() {
+        function clearInput() {
             credentialInput.value = '';
             clearBtn.classList.add('hidden');
             credentialInput.focus();
         }
 
-        function _togglePasswordVisibility() {
+        function togglePasswordVisibility() {
             const input = document.getElementById('credentialInput');
             const eyeIcon = document.getElementById('eyeIcon');
             const eyeOffIcon = document.getElementById('eyeOffIcon');
@@ -158,7 +158,7 @@
             return '/admin.html';
         }
 
-        async function _login(event) {
+        async function login(event) {
             event.preventDefault();
 
             const credential = document.getElementById('credentialInput').value.trim();
