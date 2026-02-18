@@ -162,6 +162,15 @@ export function createApiRouter(state) {
 			...codexModels,
 			...kiroModels,
 			{
+				id: "claude-sonnet-4-6-20260124",
+				object: "model",
+				created: 1737676800,
+				owned_by: "anthropic",
+				display_name: "Claude Sonnet 4.6",
+				model_type: "chat",
+				max_tokens: DEFAULT_MAX_OUTPUT_TOKENS,
+			},
+			{
 				id: "claude-sonnet-4-5-20250929",
 				object: "model",
 				created: 1727568000,

@@ -1,12 +1,15 @@
 import { logger } from "./logger.js";
 
 const MODEL_KEY_ALIAS = {
+	"claude-sonnet-4.6": "claude-sonnet-4-6",
 	"claude-opus-4.6": "claude-opus-4-6-20251220",
-	"claude-opus-4-6": "claude-opus-4-6-20251220",
+	"claude-opus-4-6-20251220": "claude-opus-4-6-20251220",
 	"claude-opus-4.5": "claude-opus-4-5-20251101",
-	"claude-opus-4-5": "claude-opus-4-5-20251101",
+	"claude-opus-4-5-20251101": "claude-opus-4-5-20251101",
 	"claude-sonnet-4.5": "claude-sonnet-4-5-20250929",
+	"claude-sonnet-4-5-20250929": "claude-sonnet-4-5-20250929",
 	"claude-haiku-4.5": "claude-haiku-4-5-20251001",
+	"claude-haiku-4-5-20251001": "claude-haiku-4-5-20251001",
 };
 
 /**

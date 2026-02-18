@@ -9,6 +9,7 @@ const KIRO_MODEL_ALIAS = {
 	"kiro-claude-opus-4-6-20251220": "claude-opus-4-6-20251220",
 	"kiro-claude-opus-4-5": "claude-opus-4-5",
 	"kiro-claude-opus-4-5-20251101": "claude-opus-4-5-20251101",
+	"kiro-claude-sonnet-4-6": "claude-sonnet-4-6",
 	"kiro-claude-sonnet-4-5": "claude-sonnet-4-5-20250929",
 	"kiro-claude-sonnet-4-5-20250929": "claude-sonnet-4-5-20250929",
 	"kiro-claude-haiku-4-5": "claude-haiku-4-5-20251001",
@@ -17,6 +18,12 @@ const KIRO_MODEL_ALIAS = {
 
 // Static model list for /v1/models endpoint
 export const KIRO_STATIC_MODELS = [
+	{
+		id: "kiro-claude-sonnet-4-6",
+		upstream: "claude-sonnet-4-6",
+		owned_by: "anthropic",
+		display_name: "Claude Sonnet 4.6 (Kiro Direct)",
+	},
 	{
 		id: "kiro-claude-opus-4-6-20251220",
 		upstream: "claude-opus-4-6-20251220",

@@ -4,6 +4,16 @@
  */
 
 export const MODEL_PRICING = {
+	// Claude Sonnet 4.6
+	"claude-sonnet-4-6": {
+		input: 3.0, // $3 per MTok
+		output: 15.0, // $15 per MTok
+	},
+	"claude-sonnet-4.6": {
+		input: 3.0,
+		output: 15.0,
+	},
+
 	// Claude Sonnet 4.5
 	"claude-sonnet-4-5-20250929": {
 		input: 3.0, // $3 per MTok
@@ -11,6 +21,20 @@ export const MODEL_PRICING = {
 	},
 	"claude-sonnet-4.5": {
 		input: 3.0,
+		output: 15.0,
+	},
+
+	// Claude Opus 4.6
+	"claude-opus-4-6": {
+		input: 5.0, // $5 per MTok
+		output: 15.0, // $15 per MTok
+	},
+	"claude-opus-4-6-20251220": {
+		input: 5.0,
+		output: 15.0,
+	},
+	"claude-opus-4.6": {
+		input: 5.0,
 		output: 15.0,
 	},
 
@@ -87,9 +111,19 @@ export function getModelPricing(model) {
 export function getAllModelPricing() {
 	return [
 		{
+			id: "claude-sonnet-4-6",
+			name: "Claude Sonnet 4.6",
+			pricing: MODEL_PRICING["claude-sonnet-4-6"],
+		},
+		{
 			id: "claude-sonnet-4-5-20250929",
 			name: "Claude Sonnet 4.5",
 			pricing: MODEL_PRICING["claude-sonnet-4-5-20250929"],
+		},
+		{
+			id: "claude-opus-4-6-20251220",
+			name: "Claude Opus 4.6",
+			pricing: MODEL_PRICING["claude-opus-4-6-20251220"],
 		},
 		{
 			id: "claude-opus-4-5-20251101",
