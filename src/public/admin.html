@@ -1525,7 +1525,7 @@
             <div class="flex justify-end gap-3 p-6 border-t border-gray-100">
                 <button id="import-reset-btn" onclick="resetImportResultView(true)"
                     class="hidden px-4 py-2 border border-indigo-200 bg-indigo-50 text-indigo-600 rounded-lg text-sm font-medium hover:bg-indigo-100 transition">继续导入</button>
-                <button onclick="hideModal('importModal')"
+                <button id="import-cancel-btn" onclick="hideModal('importModal')"
                     class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition">取消</button>
                 <button id="import-submit-btn" onclick="importAccounts()"
                     class="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white rounded-lg text-sm font-medium transition flex items-center gap-2">
@@ -1533,7 +1533,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                     </svg>
-                    开始导入
+                    <span id="import-submit-text">开始导入</span>
                 </button>
             </div>
         </div>

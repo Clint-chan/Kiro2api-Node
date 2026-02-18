@@ -18,57 +18,76 @@ function updateUsernamePreview() {
 	}
 }
 
-function _setSubQuota(amount, evt) {
-	document.getElementById("new-subscription-quota").value = amount;
+function _selectPackage(value) {
+	const pkgOptions = document.getElementById("package-options");
+	const customRow = document.getElementById("custom-amount-row");
 
-	document.querySelectorAll(".sub-quota-btn").forEach((btn) => {
-		btn.classList.remove(
-			"border-purple-500",
-			"bg-purple-50",
-			"text-purple-600",
-		);
-		btn.classList.add("border-gray-200");
-	});
-	const target = evt?.target ? evt.target : null;
-	if (target) {
-		target.classList.remove("border-gray-200");
-		target.classList.add(
-			"border-purple-500",
-			"bg-purple-50",
-			"text-purple-600",
-		);
-	}
-}
-
-function _setSubDuration(months, evt) {
-	document.getElementById("new-subscription-duration").value = months;
-
-	document.querySelectorAll(".sub-duration-btn").forEach((btn) => {
-		btn.classList.remove(
-			"border-purple-500",
-			"bg-purple-50",
-			"text-purple-600",
-		);
-		btn.classList.add("border-gray-200");
-	});
-	const target = evt?.target ? evt.target : null;
-	if (target) {
-		target.classList.remove("border-gray-200");
-		target.classList.add(
-			"border-purple-500",
-			"bg-purple-50",
-			"text-purple-600",
-		);
-	}
-}
-
-function toggleSubscriptionOptions() {
-	const checkbox = document.getElementById("new-with-subscription");
-	const options = document.getElementById("subscription-options");
-	if (checkbox.checked) {
-		options.classList.remove("hidden");
+	if (value === "none") {
+		pkgOptions.classList.add("hidden");
 	} else {
-		options.classList.add("hidden");
+		pkgOptions.classList.remove("hidden");
+		if (value === "custom") {
+			customRow.classList.remove("hidden");
+		} else {
+			customRow.classList.add("hidden");
+		}
+		_updatePackagePreview();
+	}
+}
+
+function _setNewPackageMonths(months, evt) {
+	document.getElementById("new-package-months").value = months;
+
+	document.querySelectorAll(".new-pkg-month-btn").forEach((btn) => {
+		btn.classList.remove("border-blue-500", "bg-blue-50", "text-blue-700");
+		btn.classList.add("border-gray-200");
+	});
+	const target = evt?.target ? evt.target : null;
+	if (target) {
+		target.classList.remove("border-gray-200");
+		target.classList.add("border-blue-500", "bg-blue-50", "text-blue-700");
+	}
+	_updatePackagePreview();
+}
+
+function _updatePackagePreview() {
+	const pkgValue = document.querySelector(
+		'input[name="new-package"]:checked',
+	)?.value;
+	if (!pkgValue || pkgValue === "none") return;
+
+	let amount = 0;
+	if (pkgValue === "custom") {
+		amount =
+			parseFloat(document.getElementById("new-package-amount")?.value) || 0;
+	} else {
+		amount = parseFloat(pkgValue);
+	}
+
+	const months =
+		parseInt(document.getElementById("new-package-months").value, 10) || 1;
+
+	const amountEl = document.getElementById("preview-pkg-amount");
+	const monthsEl = document.getElementById("preview-pkg-months");
+	const expiresEl = document.getElementById("preview-pkg-expires");
+
+	if (amountEl)
+		amountEl.textContent = amount > 0 ? `$${amount.toLocaleString()}` : "-";
+	if (monthsEl) monthsEl.textContent = `${months} 个月`;
+
+	if (expiresEl) {
+		const now = new Date();
+		const expires = new Date(now);
+		expires.setMonth(expires.getMonth() + months);
+		const weekdays = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+		expiresEl.textContent =
+			expires.toLocaleDateString("zh-CN", {
+				year: "numeric",
+				month: "long",
+				day: "numeric",
+			}) +
+			" " +
+			weekdays[expires.getDay()];
 	}
 }
 
@@ -76,16 +95,18 @@ async function _createUser() {
 	const username = document.getElementById("new-username").value.trim();
 	const count = parseInt(document.getElementById("new-count").value, 10) || 1;
 	const balance = parseFloat(document.getElementById("new-balance").value) || 0;
-	const withSubscription = document.getElementById(
-		"new-with-subscription",
-	).checked;
+
+	const pkgValue = document.querySelector(
+		'input[name="new-package"]:checked',
+	)?.value;
+	const withPackage = pkgValue && pkgValue !== "none";
 
 	const allowedChannels = [];
-	if (document.getElementById("new-channel-kiro").checked)
+	if (document.getElementById("new-channel-kiro")?.checked)
 		allowedChannels.push("kiro");
-	if (document.getElementById("new-channel-antigravity").checked)
+	if (document.getElementById("new-channel-antigravity")?.checked)
 		allowedChannels.push("antigravity");
-	if (document.getElementById("new-channel-codex").checked)
+	if (document.getElementById("new-channel-codex")?.checked)
 		allowedChannels.push("codex");
 
 	if (allowedChannels.length === 0) {
@@ -93,23 +114,24 @@ async function _createUser() {
 		return;
 	}
 
-	let subType, subQuota, subDuration;
-	if (withSubscription) {
-		subType = document.querySelector('input[name="sub-type"]:checked').value;
-		subQuota = parseFloat(
-			document.getElementById("new-subscription-quota").value,
-		);
-		subDuration = parseInt(
-			document.getElementById("new-subscription-duration").value,
-			10,
-		);
+	let subQuota = 0;
+	let subDuration = 0;
+	if (withPackage) {
+		if (pkgValue === "custom") {
+			subQuota =
+				parseFloat(document.getElementById("new-package-amount")?.value) || 0;
+		} else {
+			subQuota = parseFloat(pkgValue);
+		}
+		subDuration =
+			parseInt(document.getElementById("new-package-months")?.value, 10) || 0;
 
 		if (!subQuota || subQuota <= 0) {
-			showToast("请输入有效的充值额度", "warning");
+			showToast("请输入有效的每月额度", "warning");
 			return;
 		}
 		if (!subDuration || subDuration <= 0) {
-			showToast("请输入有效的开通时长", "warning");
+			showToast("请输入有效的开通月数", "warning");
 			return;
 		}
 	}
@@ -142,13 +164,13 @@ async function _createUser() {
 
 				createdUsers.push(finalUsername);
 
-				if (withSubscription && userResult.data && userResult.data.id) {
+				if (withPackage && userResult.data && userResult.data.id) {
 					await fetchApi(
 						`/api/admin/users/${userResult.data.id}/subscription`,
 						{
 							method: "POST",
 							body: JSON.stringify({
-								type: subType,
+								type: "monthly",
 								quota: subQuota,
 								duration: subDuration,
 							}),
@@ -162,28 +184,18 @@ async function _createUser() {
 		}
 
 		hideModal("createUserModal");
-		document.getElementById("new-username").value = "";
-		document.getElementById("new-count").value = "1";
-		document.getElementById("new-balance").value = "0";
-		document.getElementById("new-channel-kiro").checked = true;
-		document.getElementById("new-channel-antigravity").checked = false;
-		document.getElementById("new-channel-codex").checked = false;
-		document.getElementById("new-with-subscription").checked = true;
-		document.getElementById("new-subscription-quota").value = "1800";
-		document.getElementById("new-subscription-duration").value = "12";
-		toggleSubscriptionOptions();
-		updateUsernamePreview();
+		_resetCreateUserForm();
 		loadUsers();
 
 		if (failedUsers.length === 0) {
 			if (count === 1) {
 				showToast(
-					`用户 ${createdUsers[0]} 创建成功${withSubscription ? "，订阅已开通" : ""}`,
+					`用户 ${createdUsers[0]} 创建成功${withPackage ? "，套餐已开通" : ""}`,
 					"success",
 				);
 			} else {
 				showToast(
-					`成功创建 ${count} 个用户${withSubscription ? "，订阅已开通" : ""}`,
+					`成功创建 ${count} 个用户${withPackage ? "，套餐已开通" : ""}`,
 					"success",
 				);
 			}
@@ -196,6 +208,27 @@ async function _createUser() {
 	} catch (e) {
 		showToast(`创建失败: ${e.message}`, "error");
 	}
+}
+
+function _resetCreateUserForm() {
+	const el = (id) => document.getElementById(id);
+	if (el("new-username")) el("new-username").value = "";
+	if (el("new-count")) el("new-count").value = "1";
+	if (el("new-balance")) el("new-balance").value = "0";
+	if (el("new-channel-kiro")) el("new-channel-kiro").checked = true;
+	if (el("new-channel-antigravity"))
+		el("new-channel-antigravity").checked = false;
+	if (el("new-channel-codex")) el("new-channel-codex").checked = false;
+	const noneRadio = document.getElementById("pkg-none");
+	if (noneRadio) noneRadio.checked = true;
+	if (el("package-options")) el("package-options").classList.add("hidden");
+	if (el("new-package-amount")) el("new-package-amount").value = "";
+	if (el("new-package-months")) el("new-package-months").value = "1";
+	document.querySelectorAll(".new-pkg-month-btn").forEach((btn) => {
+		btn.classList.remove("border-blue-500", "bg-blue-50", "text-blue-700");
+		btn.classList.add("border-gray-200");
+	});
+	updateUsernamePreview();
 }
 
 function showRechargeModal(userId, username, balance) {
@@ -672,8 +705,9 @@ async function _cancelSubscription() {
 
 // 导出到全局作用域
 window.updateUsernamePreview = updateUsernamePreview;
-window.setSubQuota = _setSubQuota;
-window.setSubDuration = _setSubDuration;
+window.selectPackage = _selectPackage;
+window.setNewPackageMonths = _setNewPackageMonths;
+window.updatePackagePreview = _updatePackagePreview;
 window.createUser = _createUser;
 window.doRecharge = _doRecharge;
 window.deleteUser = _deleteUser;
