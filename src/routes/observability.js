@@ -65,7 +65,14 @@ function updateMetrics(state) {
 	const accounts = state.accountPool.listAccounts();
 
 	// 账号状态分布
-	const statusCounts = { active: 0, depleted: 0, disabled: 0, error: 0 };
+	const statusCounts = {
+		active: 0,
+		depleted: 0,
+		disabled: 0,
+		error: 0,
+		banned: 0,
+		expired: 0,
+	};
 	let totalBalance = 0;
 	let _totalRequests = 0;
 	let totalInflight = 0;
@@ -83,6 +90,8 @@ function updateMetrics(state) {
 	metrics.setGauge("kiro_accounts_depleted", {}, statusCounts.depleted || 0);
 	metrics.setGauge("kiro_accounts_disabled", {}, statusCounts.disabled || 0);
 	metrics.setGauge("kiro_accounts_error", {}, statusCounts.error || 0);
+	metrics.setGauge("kiro_accounts_banned", {}, statusCounts.banned || 0);
+	metrics.setGauge("kiro_accounts_expired", {}, statusCounts.expired || 0);
 	metrics.setGauge("kiro_balance_total", {}, totalBalance);
 	metrics.setGauge("kiro_requests_inflight", {}, totalInflight);
 

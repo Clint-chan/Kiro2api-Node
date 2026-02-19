@@ -78,7 +78,7 @@ CREATE TABLE IF NOT EXISTS kiro_accounts (
     created_at TEXT NOT NULL,
     last_used_at TEXT,
 
-    CHECK (status IN ('active', 'inactive', 'error')),
+    CHECK (status IN ('active', 'inactive', 'error', 'cooldown', 'depleted', 'disabled', 'banned', 'expired')),
     CHECK (auth_method IN ('social', 'idc', 'builder'))
 );
 

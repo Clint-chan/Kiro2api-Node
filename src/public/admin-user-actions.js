@@ -93,6 +93,10 @@ function _updatePackagePreview() {
 
 async function _createUser() {
 	const username = document.getElementById("new-username").value.trim();
+	// Validate username and password if manually provided (though password field removed in new UI, let's check logic)
+	// New UI: Username (optional), Count, Balance, Channels, Package
+	// Removed: Password (auto-generated 123456 as per UI hint)
+
 	const count = parseInt(document.getElementById("new-count").value, 10) || 1;
 	const balance = parseFloat(document.getElementById("new-balance").value) || 0;
 
@@ -111,6 +115,12 @@ async function _createUser() {
 
 	if (allowedChannels.length === 0) {
 		showToast("请至少选择一个渠道", "warning");
+		return;
+	}
+
+	// Validate balance
+	if (balance < 0) {
+		showToast("初始余额不能为负数", "warning");
 		return;
 	}
 
@@ -136,6 +146,16 @@ async function _createUser() {
 		}
 	}
 
+	// Show loading state
+	const submitBtn = document.querySelector('button[onclick="createUser()"]');
+	if (submitBtn) {
+		submitBtn.disabled = true;
+		const spinner = submitBtn.querySelector(".button-spinner");
+		if (spinner) spinner.classList.remove("hidden");
+		const textSpan = submitBtn.querySelector("span");
+		if (textSpan) textSpan.textContent = "创建中...";
+	}
+
 	try {
 		const createdUsers = [];
 		const failedUsers = [];
@@ -159,6 +179,7 @@ async function _createUser() {
 						username: finalUsername,
 						balance,
 						allowed_channels: allowedChannels,
+						password: "password", // Default password per UI hint
 					}),
 				});
 
@@ -207,6 +228,15 @@ async function _createUser() {
 		}
 	} catch (e) {
 		showToast(`创建失败: ${e.message}`, "error");
+	} finally {
+		// Reset button state
+		if (submitBtn) {
+			submitBtn.disabled = false;
+			const spinner = submitBtn.querySelector(".button-spinner");
+			if (spinner) spinner.classList.add("hidden");
+			const textSpan = submitBtn.querySelector("span");
+			if (textSpan) textSpan.textContent = "确认创建";
+		}
 	}
 }
 
@@ -219,8 +249,15 @@ function _resetCreateUserForm() {
 	if (el("new-channel-antigravity"))
 		el("new-channel-antigravity").checked = false;
 	if (el("new-channel-codex")) el("new-channel-codex").checked = false;
-	const noneRadio = document.getElementById("pkg-none");
+
+	// Reset package selection
+	const noneRadio = document.querySelector(
+		'input[name="new-package"][value="none"]',
+	);
 	if (noneRadio) noneRadio.checked = true;
+	// Trigger package UI update
+	if (window.selectPackage) window.selectPackage("none");
+
 	if (el("package-options")) el("package-options").classList.add("hidden");
 	if (el("new-package-amount")) el("new-package-amount").value = "";
 	if (el("new-package-months")) el("new-package-months").value = "1";
@@ -228,7 +265,7 @@ function _resetCreateUserForm() {
 		btn.classList.remove("border-blue-500", "bg-blue-50", "text-blue-700");
 		btn.classList.add("border-gray-200");
 	});
-	updateUsernamePreview();
+	if (window.updateUsernamePreview) window.updateUsernamePreview();
 }
 
 function showRechargeModal(userId, username, balance) {

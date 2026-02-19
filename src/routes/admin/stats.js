@@ -6,10 +6,10 @@ export function createStatsAdminRouter(db) {
 	const router = express.Router();
 
 	/**
-	 * GET /api/admin/stats/overview
+	 * GET /api/admin/stats and /api/admin/stats/overview
 	 * Get system overview statistics
 	 */
-	router.get("/stats/overview", async (_req, res) => {
+	router.get(["/stats", "/stats/overview"], async (_req, res) => {
 		try {
 			const users = db.getAllUsers();
 			const activeUsers = users.filter((u) => u.status === "active");
@@ -114,6 +114,8 @@ export function createStatsAdminRouter(db) {
 				active: kiroAccounts.filter((a) => a.status === "active").length,
 				cooldown: kiroAccounts.filter((a) => a.status === "cooldown").length,
 				error: kiroAccounts.filter((a) => a.status === "error").length,
+				banned: kiroAccounts.filter((a) => a.status === "banned").length,
+				expired: kiroAccounts.filter((a) => a.status === "expired").length,
 				depleted: kiroAccounts.filter((a) => a.status === "depleted").length,
 				disabled: kiroAccounts.filter((a) => a.status === "disabled").length,
 				inactive: kiroAccounts.filter((a) => a.status === "inactive").length,
@@ -132,6 +134,8 @@ export function createStatsAdminRouter(db) {
 						active: accountStatusCounts.active,
 						cooldown: accountStatusCounts.cooldown,
 						error: accountStatusCounts.error,
+						banned: accountStatusCounts.banned,
+						expired: accountStatusCounts.expired,
 						depleted: accountStatusCounts.depleted,
 						disabled: accountStatusCounts.disabled,
 						inactive: accountStatusCounts.inactive,

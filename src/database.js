@@ -36,6 +36,7 @@ export class DatabaseManager {
 
 			this.migrateRechargeRecordsConstraint();
 			this.migrateRequestLogsForeignKey();
+			this.migrateKiroAccountsStatusConstraint();
 			this.ensureUserPermissionColumns();
 			this.ensureAntigravityAccountsTable();
 			// DISABLED: ensureCliproxyAccount() creates a dummy "CLIProxy System" account in kiro_accounts table
@@ -220,6 +221,106 @@ export class DatabaseManager {
 			this.db.exec("ROLLBACK");
 			this.db.pragma("foreign_keys = ON");
 			logger.error("Failed to migrate request_logs foreign key", { error });
+			throw error;
+		}
+	}
+
+	migrateKiroAccountsStatusConstraint() {
+		const tableMeta = this.db
+			.prepare(
+				"SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'kiro_accounts'",
+			)
+			.get();
+
+		if (!tableMeta || typeof tableMeta.sql !== "string") {
+			return;
+		}
+
+		const normalizedSql = tableMeta.sql.toLowerCase().replace(/\s+/g, " ");
+		const requiresMigration =
+			normalizedSql.includes(
+				"check (status in ('active', 'inactive', 'error'))",
+			) ||
+			normalizedSql.includes("check(status in ('active','inactive','error'))");
+
+		if (!requiresMigration) {
+			return;
+		}
+
+		this.db.pragma("foreign_keys = OFF");
+		this.db.exec("BEGIN");
+
+		try {
+			this.db.exec(
+				"ALTER TABLE kiro_accounts RENAME TO kiro_accounts_old_status",
+			);
+
+			this.db.exec(`
+        CREATE TABLE kiro_accounts (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          refresh_token TEXT NOT NULL,
+          auth_method TEXT NOT NULL,
+          client_id TEXT,
+          client_secret TEXT,
+          region TEXT,
+          machine_id TEXT,
+          profile_arn TEXT,
+          status TEXT NOT NULL DEFAULT 'active',
+          request_count INTEGER DEFAULT 0,
+          error_count INTEGER DEFAULT 0,
+          usage_limit REAL,
+          current_usage REAL,
+          available REAL,
+          user_email TEXT,
+          subscription_type TEXT,
+          next_reset TEXT,
+          usage_updated_at TEXT,
+          created_at TEXT NOT NULL,
+          last_used_at TEXT,
+          CHECK (status IN ('active', 'inactive', 'error', 'cooldown', 'depleted', 'disabled', 'banned', 'expired')),
+          CHECK (auth_method IN ('social', 'idc', 'builder'))
+        )
+      `);
+
+			this.db.exec(`
+        INSERT INTO kiro_accounts (
+          id, name, refresh_token, auth_method,
+          client_id, client_secret, region, machine_id, profile_arn,
+          status, request_count, error_count,
+          usage_limit, current_usage, available,
+          user_email, subscription_type, next_reset, usage_updated_at,
+          created_at, last_used_at
+        )
+        SELECT
+          id, name, refresh_token, auth_method,
+          client_id, client_secret, region, machine_id, profile_arn,
+          status, request_count, error_count,
+          usage_limit, current_usage, available,
+          user_email, subscription_type, next_reset, usage_updated_at,
+          created_at, last_used_at
+        FROM kiro_accounts_old_status
+      `);
+
+			this.db.exec("DROP TABLE kiro_accounts_old_status");
+			this.db.exec(
+				"CREATE INDEX IF NOT EXISTS idx_kiro_accounts_status ON kiro_accounts(status)",
+			);
+			this.db.exec(
+				"CREATE INDEX IF NOT EXISTS idx_kiro_accounts_user_email ON kiro_accounts(user_email)",
+			);
+
+			this.db.exec("COMMIT");
+			this.db.pragma("foreign_keys = ON");
+			logger.info(
+				"Migrated kiro_accounts status constraint to support extended status set",
+			);
+		} catch (error) {
+			this.db.exec("ROLLBACK");
+			this.db.pragma("foreign_keys = ON");
+			logger.error("Failed to migrate kiro_accounts status constraint", {
+				error,
+			});
 			throw error;
 		}
 	}

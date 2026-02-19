@@ -5,11 +5,14 @@ import {
 	resolveAntigravityUpstreamModel,
 } from "../antigravity.js";
 import { getModelGroupName } from "../antigravity-model-groups.js";
+import { LoadBalancer } from "../load-balancer.js";
 import { userAuthMiddleware } from "../middleware/auth.js";
 import { isChannelAllowed } from "../user-permissions.js";
 
 export function createAntigravityNativeRouter(state) {
 	const router = Router();
+
+	const loadBalancer = new LoadBalancer("round-robin");
 
 	router.use(
 		[
@@ -62,19 +65,11 @@ export function createAntigravityNativeRouter(state) {
 		const accounts = state.db.getAllAntigravityAccounts("active") || [];
 		const upstreamModel = resolveAntigravityUpstreamModel(modelId);
 
-		const filtered = accounts.filter((account) => {
+		return accounts.filter((account) => {
 			if (excludedIds.has(account.id)) return false;
 			if (!upstreamModel) return true;
 			return hasQuotaForModel(account, upstreamModel);
 		});
-
-		filtered.sort((a, b) => {
-			const scoreA = (a.error_count || 0) * 5 + (a.request_count || 0);
-			const scoreB = (b.error_count || 0) * 5 + (b.request_count || 0);
-			return scoreA - scoreB;
-		});
-
-		return filtered;
 	}
 
 	function isAntigravityRateLimit(error) {
@@ -95,7 +90,9 @@ export function createAntigravityNativeRouter(state) {
 			const accounts = getEligibleAntigravityAccounts(modelId, excluded);
 			if (accounts.length === 0) break;
 
-			const account = accounts[0];
+			const account = loadBalancer.selectAccount(accounts);
+			if (!account) break;
+
 			try {
 				const result = await executor(account);
 				state.db.updateAntigravityAccountStats(account.id, false);

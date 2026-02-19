@@ -275,11 +275,7 @@ export class AccountPool {
 			const available = usage.available || 0;
 
 			if (available < minBalance) {
-				if (
-					account.status === "active" ||
-					account.status === "error" ||
-					account.status === "cooldown"
-				) {
+				if (account.status === "active" || account.status === "cooldown") {
 					account.status = "depleted";
 					logger.warn("账号余额不足，标记为depleted", {
 						accountName: account.name,
@@ -308,7 +304,7 @@ export class AccountPool {
 					account.status = "active";
 					logger.info("账号状态恢复为active", {
 						accountName: account.name,
-						previousStatus: account.status,
+						previousStatus: "error_or_cooldown",
 					});
 				}
 			}
@@ -352,13 +348,16 @@ export class AccountPool {
 
 	async refreshAllUsage() {
 		const accounts = Array.from(this.accounts.entries()).filter(
-			([_id, account]) => account.status !== "error",
+			([_id, account]) =>
+				account.status !== "error" &&
+				account.status !== "banned" &&
+				account.status !== "expired" &&
+				account.status !== "disabled",
 		);
 
 		const results = [];
 
-		// 并发刷新，每次最多 10 个，使用 Promise.allSettled 避免单个失败影响整体
-		const batchSize = 10;
+		// 并发刷新，每次最多 50 个，使用 Promise.allSettled 避免单个失败影响整体\n		const batchSize = 50;
 		for (let i = 0; i < accounts.length; i += batchSize) {
 			const batch = accounts.slice(i, i + batchSize);
 			const batchPromises = batch.map(async ([id, account]) => {
@@ -666,6 +665,8 @@ export class AccountPool {
 			active: accounts.filter((a) => a.status === "active").length,
 			cooldown: accounts.filter((a) => a.status === "cooldown").length,
 			error: accounts.filter((a) => a.status === "error").length,
+			banned: accounts.filter((a) => a.status === "banned").length,
+			expired: accounts.filter((a) => a.status === "expired").length,
 			inactive: accounts.filter((a) => a.status === "inactive").length,
 			disabled: accounts.filter((a) => a.status === "disabled").length,
 			totalRequests: accounts.reduce((sum, a) => sum + a.requestCount, 0),
