@@ -1058,438 +1058,184 @@
         </div>
     </div>
 
-    <!-- 订阅管理弹窗 - 全新设计 -->
     <div id="subscriptionModal"
         class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div
-            class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl animate-scaleIn max-h-[95vh] overflow-hidden flex flex-col">
-            <!-- Header -->
-            <div class="relative bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-600 p-8 text-white">
+            class="bg-white rounded-3xl shadow-2xl w-full max-w-3xl animate-scaleIn overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="relative bg-gradient-to-br from-indigo-600 via-blue-600 to-cyan-600 p-6 text-white">
                 <button onclick="hideModal('subscriptionModal')"
-                    class="absolute top-6 right-6 text-white/80 hover:text-white transition">
+                    class="absolute top-4 right-4 text-white/80 hover:text-white transition">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M6 18L18 6M6 6l12 12" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </button>
-                <div class="flex items-center gap-4 mb-4">
-                    <div class="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
-                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                     </div>
                     <div>
-                        <div class="text-sm text-white/80 mb-1">为用户设置订阅套餐</div>
-                        <div class="text-2xl font-bold" id="sub-username">-</div>
+                        <h3 class="text-xl font-bold">订阅管理</h3>
+                        <p class="text-sm text-white/80">和创建用户界面一致的配置体验</p>
                     </div>
                 </div>
-                <div class="flex gap-2 text-sm text-white/90">
-                    <span class="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full">自动充值</span>
-                    <span class="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full">灵活配置</span>
-                    <span class="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full">实时生效</span>
+                <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-white/15 rounded-full text-sm">
+                    <span class="w-1.5 h-1.5 rounded-full bg-cyan-200"></span>
+                    当前用户：<span class="font-semibold" id="sub-username">-</span>
                 </div>
             </div>
 
-            <!-- Content -->
-            <div class="flex-1 overflow-y-auto p-8 space-y-8">
-                <!-- 快速套餐选择 -->
-                <div>
-                    <div class="flex items-center gap-2 mb-4">
-                        <div
-                            class="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-lg flex items-center justify-center">
-                            <span class="text-white font-bold text-sm">1</span>
+            <div class="flex-1 overflow-y-auto p-6">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="space-y-6">
+                        <div>
+                            <div class="flex items-center gap-2 mb-4">
+                                <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                                    <span class="text-blue-600 font-bold">1</span>
+                                </div>
+                                <h3 class="text-lg font-semibold text-gray-900">订阅类型</h3>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <label class="relative cursor-pointer">
+                                    <input type="radio" name="sub-type-radio" value="daily"
+                                        onchange="updateSubscriptionType('daily')" class="peer sr-only">
+                                    <div
+                                        class="p-4 border border-gray-200 rounded-xl bg-white hover:border-blue-300 peer-checked:border-blue-500 peer-checked:bg-blue-50 transition-all">
+                                        <div class="flex items-center justify-between mb-1.5">
+                                            <div class="text-sm font-semibold text-gray-900">每日重置</div>
+                                            <span
+                                                class="w-5 h-5 rounded-full border border-gray-300 peer-checked:border-blue-500 peer-checked:bg-blue-500 inline-flex items-center justify-center">
+                                                <svg class="w-3 h-3 text-white opacity-0 peer-checked:opacity-100" viewBox="0 0 12 12"
+                                                    fill="currentColor">
+                                                    <path d="M10 3L4.5 8.5L2 6" />
+                                                </svg>
+                                            </span>
+                                        </div>
+                                        <p class="text-xs text-gray-600">每 24 小时自动补充一次额度</p>
+                                    </div>
+                                </label>
+                                <label class="relative cursor-pointer">
+                                    <input type="radio" name="sub-type-radio" value="monthly"
+                                        onchange="updateSubscriptionType('monthly')" class="peer sr-only">
+                                    <div
+                                        class="p-4 border border-gray-200 rounded-xl bg-white hover:border-indigo-300 peer-checked:border-indigo-500 peer-checked:bg-indigo-50 transition-all">
+                                        <div class="flex items-center justify-between mb-1.5">
+                                            <div class="text-sm font-semibold text-gray-900">每月重置</div>
+                                            <span
+                                                class="w-5 h-5 rounded-full border border-gray-300 peer-checked:border-indigo-500 peer-checked:bg-indigo-500 inline-flex items-center justify-center">
+                                                <svg class="w-3 h-3 text-white opacity-0 peer-checked:opacity-100" viewBox="0 0 12 12"
+                                                    fill="currentColor">
+                                                    <path d="M10 3L4.5 8.5L2 6" />
+                                                </svg>
+                                            </span>
+                                        </div>
+                                        <p class="text-xs text-gray-600">按自然月补充额度，适合长期订阅</p>
+                                    </div>
+                                </label>
+                            </div>
+                            <input type="hidden" id="sub-type" value="">
                         </div>
-                        <h3 class="text-lg font-semibold text-gray-900">选择套餐模板</h3>
-                        <span class="text-sm text-gray-500">（可选）</span>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <!-- 每日基础版 -->
-                        <button onclick="applyTemplate('daily', 5, 1)"
-                            class="group relative p-6 border-2 border-gray-200 rounded-2xl hover:border-blue-500 hover:shadow-lg transition-all text-left overflow-hidden">
-                            <div
-                                class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-transparent rounded-bl-full transform translate-x-8 -translate-y-8">
+
+                        <div>
+                            <div class="flex items-center gap-2 mb-4">
+                                <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                                    <span class="text-green-600 font-bold">2</span>
+                                </div>
+                                <h3 class="text-lg font-semibold text-gray-900">充值额度</h3>
                             </div>
                             <div class="relative">
-                                <div class="flex items-center justify-between mb-3">
-                                    <div class="flex items-center gap-3">
-                                        <div
-                                            class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
-                                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
-                                        </div>
-                                        <div>
-                                            <div class="font-semibold text-gray-900 text-lg">每日基础版</div>
-                                            <div class="text-xs text-gray-500">适合轻度使用</div>
-                                        </div>
-                                    </div>
-                                    <div class="opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M9 5l7 7-7 7" />
-                                        </svg>
-                                    </div>
-                                </div>
-                                <div class="flex items-baseline gap-2 mb-2">
-                                    <span class="text-3xl font-bold text-gray-900">$5</span>
-                                    <span class="text-gray-500">/天</span>
-                                </div>
-                                <div class="text-sm text-gray-600">订阅时长：1个月</div>
+                                <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-semibold">$</span>
+                                <input type="number" step="0.01" id="sub-quota" placeholder="0.00" onchange="updatePreview()"
+                                    class="w-full pl-8 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all text-sm font-medium">
                             </div>
-                        </button>
+                            <p class="text-xs text-gray-500 mt-2">每次重置时自动增加到用户余额。</p>
+                        </div>
 
-                        <!-- 每日专业版 -->
-                        <button onclick="applyTemplate('daily', 10, 1)"
-                            class="group relative p-6 border-2 border-gray-200 rounded-2xl hover:border-blue-500 hover:shadow-lg transition-all text-left overflow-hidden">
-                            <div
-                                class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-transparent rounded-bl-full transform translate-x-8 -translate-y-8">
+                        <div>
+                            <div class="flex items-center gap-2 mb-4">
+                                <div class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
+                                    <span class="text-indigo-600 font-bold">3</span>
+                                </div>
+                                <h3 class="text-lg font-semibold text-gray-900">订阅时长</h3>
+                            </div>
+                            <div class="grid grid-cols-4 gap-2 mb-2">
+                                <button type="button" onclick="setDuration(1, event)"
+                                    class="duration-btn py-1.5 text-xs border border-gray-200 rounded-lg hover:border-blue-400 hover:text-blue-600 transition-colors">1个月</button>
+                                <button type="button" onclick="setDuration(3, event)"
+                                    class="duration-btn py-1.5 text-xs border border-gray-200 rounded-lg hover:border-blue-400 hover:text-blue-600 transition-colors">3个月</button>
+                                <button type="button" onclick="setDuration(6, event)"
+                                    class="duration-btn py-1.5 text-xs border border-gray-200 rounded-lg hover:border-blue-400 hover:text-blue-600 transition-colors">6个月</button>
+                                <button type="button" onclick="setDuration(12, event)"
+                                    class="duration-btn py-1.5 text-xs border border-gray-200 rounded-lg hover:border-blue-400 hover:text-blue-600 transition-colors">12个月</button>
                             </div>
                             <div class="relative">
-                                <div class="flex items-center justify-between mb-3">
-                                    <div class="flex items-center gap-3">
-                                        <div
-                                            class="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center">
-                                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                            </svg>
-                                        </div>
-                                        <div>
-                                            <div class="font-semibold text-gray-900 text-lg">每日专业版</div>
-                                            <div class="text-xs text-gray-500">适合中度使用</div>
-                                        </div>
-                                    </div>
-                                    <div class="opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M9 5l7 7-7 7" />
-                                        </svg>
-                                    </div>
-                                </div>
-                                <div class="flex items-baseline gap-2 mb-2">
-                                    <span class="text-3xl font-bold text-gray-900">$10</span>
-                                    <span class="text-gray-500">/天</span>
-                                </div>
-                                <div class="text-sm text-gray-600">订阅时长：1个月</div>
+                                <input type="number" id="sub-duration" placeholder="输入月数" onchange="updatePreview()"
+                                    class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">个月</span>
                             </div>
-                        </button>
-
-                        <!-- 每月标准版 -->
-                        <button onclick="applyTemplate('monthly', 100, 12)"
-                            class="group relative p-6 border-2 border-gray-200 rounded-2xl hover:border-purple-500 hover:shadow-lg transition-all text-left overflow-hidden">
-                            <div
-                                class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-500/10 to-transparent rounded-bl-full transform translate-x-8 -translate-y-8">
-                            </div>
-                            <div class="relative">
-                                <div class="flex items-center justify-between mb-3">
-                                    <div class="flex items-center gap-3">
-                                        <div
-                                            class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
-                                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                            </svg>
-                                        </div>
-                                        <div>
-                                            <div class="font-semibold text-gray-900 text-lg">每月标准版</div>
-                                            <div class="text-xs text-gray-500">适合团队使用</div>
-                                        </div>
-                                    </div>
-                                    <div class="opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <svg class="w-6 h-6 text-purple-500" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M9 5l7 7-7 7" />
-                                        </svg>
-                                    </div>
-                                </div>
-                                <div class="flex items-baseline gap-2 mb-2">
-                                    <span class="text-3xl font-bold text-gray-900">$100</span>
-                                    <span class="text-gray-500">/月</span>
-                                </div>
-                                <div class="text-sm text-gray-600">订阅时长：12个月（1年）</div>
-                            </div>
-                        </button>
-
-                        <!-- 每月企业版 -->
-                        <button onclick="applyTemplate('monthly', 200, 12)"
-                            class="group relative p-6 border-2 border-gray-200 rounded-2xl hover:border-purple-500 hover:shadow-lg transition-all text-left overflow-hidden">
-                            <div
-                                class="absolute top-2 right-2 px-2 py-1 bg-gradient-to-r from-yellow-400 to-orange-400 text-white text-xs font-bold rounded-full">
-                                推荐</div>
-                            <div
-                                class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-500/10 to-transparent rounded-bl-full transform translate-x-8 -translate-y-8">
-                            </div>
-                            <div class="relative">
-                                <div class="flex items-center justify-between mb-3">
-                                    <div class="flex items-center gap-3">
-                                        <div
-                                            class="w-12 h-12 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-xl flex items-center justify-center">
-                                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                                            </svg>
-                                        </div>
-                                        <div>
-                                            <div class="font-semibold text-gray-900 text-lg">每月企业版</div>
-                                            <div class="text-xs text-gray-500">适合企业使用</div>
-                                        </div>
-                                    </div>
-                                    <div class="opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <svg class="w-6 h-6 text-purple-500" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M9 5l7 7-7 7" />
-                                        </svg>
-                                    </div>
-                                </div>
-                                <div class="flex items-baseline gap-2 mb-2">
-                                    <span class="text-3xl font-bold text-gray-900">$200</span>
-                                    <span class="text-gray-500">/月</span>
-                                </div>
-                                <div class="text-sm text-gray-600">订阅时长：12个月（1年）</div>
-                            </div>
-                        </button>
+                            <p class="text-xs text-gray-500 mt-2">按自然月计算，到期日自动顺延。</p>
+                        </div>
                     </div>
-                </div>
 
-                <div class="relative">
-                    <div class="absolute inset-0 flex items-center">
-                        <div class="w-full border-t border-gray-200"></div>
-                    </div>
-                    <div class="relative flex justify-center">
-                        <span class="px-4 bg-white text-sm text-gray-500">或自定义配置</span>
-                    </div>
-                </div>
-
-                <!-- 自定义配置 -->
-                <div class="space-y-6">
-                    <!-- 订阅类型 -->
                     <div>
                         <div class="flex items-center gap-2 mb-4">
-                            <div
-                                class="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-lg flex items-center justify-center">
-                                <span class="text-white font-bold text-sm">2</span>
+                            <div class="w-8 h-8 bg-cyan-100 rounded-lg flex items-center justify-center">
+                                <span class="text-cyan-600 font-bold">4</span>
                             </div>
-                            <h3 class="text-lg font-semibold text-gray-900">选择订阅类型</h3>
-                            <span class="text-red-500">*</span>
+                            <h3 class="text-lg font-semibold text-gray-900">配置预览</h3>
                         </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <label class="relative group cursor-pointer">
-                                <input type="radio" name="sub-type-radio" value="daily"
-                                    onchange="updateSubscriptionType('daily')" class="sr-only peer">
-                                <div
-                                    class="p-6 border-2 border-gray-200 rounded-2xl peer-checked:border-blue-500 peer-checked:bg-blue-50 transition-all hover:border-blue-300">
-                                    <div class="flex items-center gap-3 mb-3">
-                                        <div
-                                            class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
-                                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
-                                        </div>
-                                        <div class="flex-1">
-                                            <div class="font-semibold text-gray-900">每日重置</div>
-                                            <div class="text-xs text-gray-500">Daily Reset</div>
-                                        </div>
-                                        <div
-                                            class="w-6 h-6 border-2 border-gray-300 rounded-full peer-checked:border-blue-500 peer-checked:bg-blue-500 flex items-center justify-center transition-all">
-                                            <svg class="w-4 h-4 text-white opacity-0 peer-checked:opacity-100"
-                                                fill="currentColor" viewBox="0 0 12 12">
-                                                <path d="M10 3L4.5 8.5L2 6" />
-                                            </svg>
-                                        </div>
-                                    </div>
-                                    <p class="text-sm text-gray-600">每24小时自动充值一次，适合需要每日稳定额度的场景</p>
-                                </div>
-                            </label>
-                            <label class="relative group cursor-pointer">
-                                <input type="radio" name="sub-type-radio" value="monthly"
-                                    onchange="updateSubscriptionType('monthly')" class="sr-only peer">
-                                <div
-                                    class="p-6 border-2 border-gray-200 rounded-2xl peer-checked:border-purple-500 peer-checked:bg-purple-50 transition-all hover:border-purple-300">
-                                    <div class="flex items-center gap-3 mb-3">
-                                        <div
-                                            class="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
-                                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                            </svg>
-                                        </div>
-                                        <div class="flex-1">
-                                            <div class="font-semibold text-gray-900">每月重置</div>
-                                            <div class="text-xs text-gray-500">Monthly Reset</div>
-                                        </div>
-                                        <div
-                                            class="w-6 h-6 border-2 border-gray-300 rounded-full peer-checked:border-purple-500 peer-checked:bg-purple-500 flex items-center justify-center transition-all">
-                                            <svg class="w-4 h-4 text-white opacity-0 peer-checked:opacity-100"
-                                                fill="currentColor" viewBox="0 0 12 12">
-                                                <path d="M10 3L4.5 8.5L2 6" />
-                                            </svg>
-                                        </div>
-                                    </div>
-                                    <p class="text-sm text-gray-600">每月自动充值一次，适合按月计费的长期订阅</p>
-                                </div>
-                            </label>
-                        </div>
-                        <input type="hidden" id="sub-type" value="">
-                    </div>
 
-                    <!-- 充值额度 -->
-                    <div>
-                        <div class="flex items-center gap-2 mb-4">
-                            <div
-                                class="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-lg flex items-center justify-center">
-                                <span class="text-white font-bold text-sm">3</span>
-                            </div>
-                            <h3 class="text-lg font-semibold text-gray-900">设置充值额度</h3>
-                            <span class="text-red-500">*</span>
-                        </div>
-                        <div class="relative">
-                            <div class="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 text-xl font-semibold">$
-                            </div>
-                            <input type="number" step="0.01" id="sub-quota" placeholder="0.00"
-                                onchange="updatePreview()"
-                                class="w-full pl-12 pr-6 py-4 border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-2xl font-semibold text-gray-900 transition-all">
-                        </div>
-                        <p class="text-sm text-gray-500 mt-2 flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            每次重置时自动充值到用户余额
-                        </p>
-                    </div>
-
-                    <!-- 订阅时长 -->
-                    <div>
-                        <div class="flex items-center gap-2 mb-4">
-                            <div
-                                class="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-lg flex items-center justify-center">
-                                <span class="text-white font-bold text-sm">4</span>
-                            </div>
-                            <h3 class="text-lg font-semibold text-gray-900">选择订阅时长</h3>
-                            <span class="text-red-500">*</span>
-                        </div>
-                        <div class="grid grid-cols-4 gap-3 mb-4">
-                            <button type="button" onclick="setDuration(1)"
-                                class="duration-btn group p-4 border-2 border-gray-200 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all">
-                                <div class="text-2xl font-bold text-gray-900 mb-1">1</div>
-                                <div class="text-xs text-gray-500 group-hover:text-purple-600">个月</div>
-                            </button>
-                            <button type="button" onclick="setDuration(3)"
-                                class="duration-btn group p-4 border-2 border-gray-200 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all">
-                                <div class="text-2xl font-bold text-gray-900 mb-1">3</div>
-                                <div class="text-xs text-gray-500 group-hover:text-purple-600">个月</div>
-                            </button>
-                            <button type="button" onclick="setDuration(6)"
-                                class="duration-btn group p-4 border-2 border-gray-200 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all">
-                                <div class="text-2xl font-bold text-gray-900 mb-1">6</div>
-                                <div class="text-xs text-gray-500 group-hover:text-purple-600">个月</div>
-                            </button>
-                            <button type="button" onclick="setDuration(12)"
-                                class="duration-btn group p-4 border-2 border-gray-200 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all">
-                                <div class="text-2xl font-bold text-gray-900 mb-1">12</div>
-                                <div class="text-xs text-gray-500 group-hover:text-purple-600">个月 · 1年</div>
-                            </button>
-                        </div>
-                        <div class="relative">
-                            <input type="number" id="sub-duration" placeholder="或输入自定义月数" onchange="updatePreview()"
-                                class="w-full px-6 py-4 border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-lg transition-all">
-                            <span class="absolute right-6 top-1/2 -translate-y-1/2 text-gray-400 font-medium">个月</span>
-                        </div>
-                        <p class="text-sm text-gray-500 mt-2 flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            按自然月计算，例如2月10日开通1个月，到期日为3月10日（2月只有28天也是3月10日）
-                        </p>
-                    </div>
-
-                    <!-- 预览信息 -->
-                    <div id="subscription-preview" class="hidden">
-                        <div
-                            class="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 border-2 border-green-200 rounded-2xl p-6 shadow-lg">
-                            <div class="flex items-start gap-4">
-                                <div
-                                    class="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center flex-shrink-0">
-                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor"
-                                        viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
+                        <div id="subscription-preview" class="hidden bg-gradient-to-br from-cyan-50 via-blue-50 to-indigo-50 border border-cyan-100 rounded-2xl p-5 space-y-3">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="bg-white rounded-lg p-3 border border-blue-100">
+                                    <div class="text-xs text-gray-500 mb-1">订阅类型</div>
+                                    <div class="text-sm font-semibold text-gray-900" id="preview-type">-</div>
                                 </div>
-                                <div class="flex-1">
-                                    <div class="text-lg font-semibold text-gray-900 mb-4">订阅预览</div>
-                                    <div class="grid grid-cols-2 gap-4">
-                                        <div class="bg-white/60 backdrop-blur-sm rounded-xl p-4">
-                                            <div class="text-xs text-gray-600 mb-1">订阅类型</div>
-                                            <div class="text-lg font-semibold text-gray-900" id="preview-type">-</div>
-                                        </div>
-                                        <div class="bg-white/60 backdrop-blur-sm rounded-xl p-4">
-                                            <div class="text-xs text-gray-600 mb-1">充值额度</div>
-                                            <div class="text-lg font-semibold text-green-600" id="preview-quota">-</div>
-                                        </div>
-                                        <div class="bg-white/60 backdrop-blur-sm rounded-xl p-4">
-                                            <div class="text-xs text-gray-600 mb-1">订阅时长</div>
-                                            <div class="text-lg font-semibold text-gray-900" id="preview-duration">-
-                                            </div>
-                                        </div>
-                                        <div class="bg-white/60 backdrop-blur-sm rounded-xl p-4">
-                                            <div class="text-xs text-gray-600 mb-1">到期日期</div>
-                                            <div class="text-lg font-semibold text-purple-600" id="preview-expires">-
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="mt-4 pt-4 border-t border-green-200">
-                                        <div class="flex items-center justify-between">
-                                            <span class="text-sm text-gray-600">预计总充值</span>
-                                            <span class="text-2xl font-bold text-blue-600" id="preview-total">-</span>
-                                        </div>
-                                    </div>
+                                <div class="bg-white rounded-lg p-3 border border-blue-100">
+                                    <div class="text-xs text-gray-500 mb-1">每次充值</div>
+                                    <div class="text-sm font-semibold text-green-600" id="preview-quota">-</div>
+                                </div>
+                                <div class="bg-white rounded-lg p-3 border border-blue-100">
+                                    <div class="text-xs text-gray-500 mb-1">订阅时长</div>
+                                    <div class="text-sm font-semibold text-gray-900" id="preview-duration">-</div>
+                                </div>
+                                <div class="bg-white rounded-lg p-3 border border-blue-100">
+                                    <div class="text-xs text-gray-500 mb-1">到期时间</div>
+                                    <div class="text-sm font-semibold text-indigo-600" id="preview-expires">-</div>
                                 </div>
                             </div>
+                            <div class="bg-white rounded-lg p-3 border border-cyan-100">
+                                <div class="text-xs text-gray-500 mb-1">预计总充值</div>
+                                <div class="text-lg font-bold text-blue-600" id="preview-total">-</div>
+                            </div>
+                        </div>
+
+                        <div id="subscription-preview-empty" class="bg-gray-50 border border-gray-200 rounded-2xl p-5 text-sm text-gray-500">
+                            选择订阅类型、充值额度和时长后，这里会显示完整预览。
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Footer -->
-            <div class="border-t border-gray-200 bg-gray-50 p-6">
-                <div class="flex items-center justify-between gap-4">
-                    <button onclick="cancelSubscription()"
-                        class="px-5 py-2.5 bg-white border-2 border-red-200 text-red-600 rounded-xl font-medium hover:bg-red-50 hover:border-red-300 transition-all flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                        取消订阅
+            <div class="p-6 border-t border-gray-100 bg-white flex items-center justify-between gap-3 z-10">
+                <button onclick="cancelSubscription()"
+                    class="px-5 py-2.5 border border-red-200 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition shadow-sm">
+                    取消订阅
+                </button>
+                <div class="flex items-center gap-3">
+                    <button onclick="hideModal('subscriptionModal')"
+                        class="px-6 py-2.5 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition shadow-sm">
+                        关闭
                     </button>
-                    <div class="flex gap-3">
-                        <button onclick="hideModal('subscriptionModal')"
-                            class="px-6 py-2.5 bg-white border-2 border-gray-200 rounded-xl font-medium text-gray-600 hover:bg-gray-100 transition-all">
-                            取消
-                        </button>
-                        <button onclick="setSubscription()"
-                            class="px-8 py-2.5 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-700 hover:via-indigo-700 hover:to-blue-700 text-white rounded-xl font-semibold transition-all flex items-center gap-2 shadow-lg shadow-purple-500/30">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M5 13l4 4L19 7" />
-                            </svg>
-                            确认设置
-                        </button>
-                    </div>
+                    <button onclick="setSubscription()"
+                        class="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white rounded-xl text-sm font-medium shadow-lg shadow-blue-500/30 transition transform hover:-translate-y-0.5 flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        确认设置
+                    </button>
                 </div>
             </div>
         </div>

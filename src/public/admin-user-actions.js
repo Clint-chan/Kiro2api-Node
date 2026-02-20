@@ -555,7 +555,20 @@ function showSubscriptionModal(userId, username) {
 	document.querySelectorAll('input[name="sub-type-radio"]').forEach((r) => {
 		r.checked = false;
 	});
+	document.querySelectorAll(".duration-btn").forEach((btn) => {
+		btn.classList.remove(
+			"border-purple-500",
+			"bg-purple-50",
+			"text-purple-600",
+			"border-blue-500",
+			"bg-blue-50",
+			"text-blue-600",
+		);
+	});
 	document.getElementById("subscription-preview").classList.add("hidden");
+	document
+		.getElementById("subscription-preview-empty")
+		?.classList.remove("hidden");
 
 	fetchApi(`/api/admin/users/${userId}/subscription`)
 		.then((data) => {
@@ -585,38 +598,23 @@ function _updateSubscriptionType(type) {
 	updatePreview();
 }
 
-function _applyTemplate(type, quota, duration) {
-	document.getElementById("sub-type").value = type;
-	const radio = document.querySelector(
-		`input[name="sub-type-radio"][value="${type}"]`,
-	);
-	if (radio) radio.checked = true;
-
-	document.getElementById("sub-quota").value = quota;
-	document.getElementById("sub-duration").value = duration;
+function _setDuration(months, evt) {
+	document.getElementById("sub-duration").value = months;
 
 	document.querySelectorAll(".duration-btn").forEach((btn) => {
 		btn.classList.remove(
 			"border-purple-500",
 			"bg-purple-50",
 			"text-purple-600",
+			"border-blue-500",
+			"bg-blue-50",
+			"text-blue-600",
 		);
-	});
-
-	updatePreview();
-	showToast("已应用套餐模板", "success");
-}
-
-function _setDuration(months, evt) {
-	document.getElementById("sub-duration").value = months;
-
-	document.querySelectorAll(".duration-btn").forEach((btn) => {
-		btn.classList.remove("border-purple-500", "bg-purple-50");
 	});
 	const target = evt?.target ? evt.target : null;
 	const button = target ? target.closest(".duration-btn") : null;
 	if (button) {
-		button.classList.add("border-purple-500", "bg-purple-50");
+		button.classList.add("border-blue-500", "bg-blue-50", "text-blue-600");
 	}
 
 	updatePreview();
@@ -631,10 +629,16 @@ function updatePreview() {
 
 	if (!type || !quota || !months) {
 		preview.classList.add("hidden");
+		document
+			.getElementById("subscription-preview-empty")
+			?.classList.remove("hidden");
 		return;
 	}
 
 	preview.classList.remove("hidden");
+	document
+		.getElementById("subscription-preview-empty")
+		?.classList.add("hidden");
 
 	const typeName = type === "daily" ? "每日重置" : "每月重置";
 	document.getElementById("preview-type").textContent = typeName;
@@ -765,7 +769,6 @@ window.showPermissionModalFromButton = _showPermissionModalFromButton;
 window.batchSelectModels = _batchSelectModels;
 window.saveUserPermissions = _saveUserPermissions;
 window.updateSubscriptionType = _updateSubscriptionType;
-window.applyTemplate = _applyTemplate;
 window.setDuration = _setDuration;
 window.setSubscription = _setSubscription;
 window.cancelSubscription = _cancelSubscription;
