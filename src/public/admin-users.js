@@ -21,6 +21,22 @@ function bindUserActionButtons(container) {
 
 			if (action === "permission") {
 				showPermissionModalFromButton(button);
+				return;
+			}
+
+			if (action === "view-stats") {
+				showUserStatsModal(button.dataset.userId, button.dataset.username);
+			}
+		});
+	});
+
+	container.querySelectorAll("button.copy-btn").forEach((button) => {
+		button.addEventListener("click", (event) => {
+			event.preventDefault();
+			event.stopPropagation();
+			const text = button.dataset.copyText;
+			if (text) {
+				copyText(text, event);
 			}
 		});
 	});
@@ -95,7 +111,7 @@ function renderUsersPage() {
                                 <td class="px-4 py-4">
                                     <div class="flex items-center gap-2">
                                         <code class="text-xs bg-gray-100 px-2 py-1 rounded font-mono select-all">${escapeHtml(u.api_key)}</code>
-                                        <button onclick="copyText(\`${escapeHtml(u.api_key)}\`)" class="text-blue-500 hover:text-blue-700 text-xs" title="复制API Key">
+                                        <button type="button" data-copy-text="${escapeHtml(u.api_key)}" class="copy-btn text-blue-500 hover:text-blue-700 text-xs" title="复制API Key">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
                                             </svg>
@@ -146,6 +162,16 @@ function renderUsersPage() {
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"/>
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422A12.083 12.083 0 0112 20.055a12.083 12.083 0 01-6.16-9.477L12 14z"/>
+                                            </svg>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            data-user-action="view-stats"
+                                            data-user-id="${u.id}"
+                                            data-username="${escapeHtml(u.username)}"
+                                            class="p-1.5 text-cyan-600 hover:bg-cyan-50 rounded transition" title="查看统计">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
                                             </svg>
                                         </button>
                                         <button onclick="refreshUserStats('${u.id}')" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition" title="刷新统计">

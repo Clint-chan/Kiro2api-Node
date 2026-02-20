@@ -1514,6 +1514,18 @@ function _showModal(id) {
 function hideModal(id) {
 	document.getElementById(id).classList.add("hidden");
 	if (id === "importModal") resetImportResultView(true);
+	if (id === "userStatsModal") {
+		if (window.userStatsCharts) {
+			if (window.userStatsCharts.request) {
+				window.userStatsCharts.request.destroy();
+				window.userStatsCharts.request = null;
+			}
+			if (window.userStatsCharts.cost) {
+				window.userStatsCharts.cost.destroy();
+				window.userStatsCharts.cost = null;
+			}
+		}
+	}
 }
 function _toggleIdcFields() {
 	document
