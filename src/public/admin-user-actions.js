@@ -772,3 +772,168 @@ window.updateSubscriptionType = _updateSubscriptionType;
 window.setDuration = _setDuration;
 window.setSubscription = _setSubscription;
 window.cancelSubscription = _cancelSubscription;
+
+const userStatsCharts = { request: null, cost: null };
+let currentStatsUserId = null;
+
+window.userStatsCharts = userStatsCharts;
+
+async function _showUserStatsModal(userId, username) {
+	currentStatsUserId = userId;
+
+	// 清空旧数据
+	document.getElementById("user-stats-username").textContent = username;
+	document.getElementById("user-stat-total-requests").textContent = "-";
+	document.getElementById("user-stat-total-cost").textContent = "-";
+	document.getElementById("user-stat-success-rate").textContent = "-";
+	document.getElementById("user-stat-avg-tokens").textContent = "-";
+	document.getElementById("userStatsModelTable").innerHTML =
+		'<div class="text-center py-8 text-gray-500">加载中...</div>';
+
+	showModal("userStatsModal");
+
+	if (userStatsCharts.request) userStatsCharts.request.destroy();
+	if (userStatsCharts.cost) userStatsCharts.cost.destroy();
+
+	try {
+		const endDate = new Date();
+		const startDate = new Date();
+		startDate.setDate(startDate.getDate() - 30);
+
+		const startStr = startDate.toISOString().split("T")[0];
+		const endStr = endDate.toISOString().split("T")[0] + "T23:59:59.999Z";
+
+		const [statsRes, dailyRes, modelRes] = await Promise.all([
+			fetchApi(
+				`/api/admin/users/${userId}/stats?startDate=${startStr}&endDate=${endStr}`,
+			),
+			fetchApi(
+				`/api/admin/users/${userId}/stats/daily?startDate=${startStr}&endDate=${endStr}`,
+			),
+			fetchApi(
+				`/api/admin/users/${userId}/stats/models?startDate=${startStr}&endDate=${endStr}`,
+			),
+		]);
+
+		if (currentStatsUserId !== userId) {
+			return;
+		}
+
+		const stats = statsRes.data;
+		document.getElementById("user-stat-total-requests").textContent =
+			stats.total_requests || 0;
+		document.getElementById("user-stat-total-cost").textContent =
+			`$${(stats.total_cost || 0).toFixed(4)}`;
+		const successRate =
+			stats.total_requests > 0
+				? ((stats.successful_requests / stats.total_requests) * 100).toFixed(1)
+				: 0;
+		document.getElementById("user-stat-success-rate").textContent =
+			`${successRate}%`;
+		const avgTokens =
+			stats.total_requests > 0
+				? Math.round(
+						(stats.total_input_tokens + stats.total_output_tokens) /
+							stats.total_requests,
+					)
+				: 0;
+		document.getElementById("user-stat-avg-tokens").textContent = avgTokens;
+
+		const dailyStats = dailyRes.data || [];
+		const labels = dailyStats.map((d) => d.date.substring(5));
+		const requests = dailyStats.map((d) => d.request_count);
+		const costs = dailyStats.map((d) => d.total_cost);
+
+		const ctx1 = document
+			.getElementById("userStatsRequestChart")
+			.getContext("2d");
+		userStatsCharts.request = new Chart(ctx1, {
+			type: "line",
+			data: {
+				labels: labels,
+				datasets: [
+					{
+						label: "请求数",
+						data: requests,
+						borderColor: "rgb(59, 130, 246)",
+						backgroundColor: "rgba(59, 130, 246, 0.1)",
+						tension: 0.4,
+						fill: true,
+					},
+				],
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				plugins: { legend: { display: false } },
+				scales: { y: { beginAtZero: true } },
+			},
+		});
+
+		const ctx2 = document.getElementById("userStatsCostChart").getContext("2d");
+		userStatsCharts.cost = new Chart(ctx2, {
+			type: "line",
+			data: {
+				labels: labels,
+				datasets: [
+					{
+						label: "消费 ($)",
+						data: costs,
+						borderColor: "rgb(168, 85, 247)",
+						backgroundColor: "rgba(168, 85, 247, 0.1)",
+						tension: 0.4,
+						fill: true,
+					},
+				],
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				plugins: { legend: { display: false } },
+				scales: {
+					y: {
+						beginAtZero: true,
+						ticks: { callback: (value) => `$${value.toFixed(2)}` },
+					},
+				},
+			},
+		});
+
+		const models = modelRes.data || [];
+		const tableHtml =
+			models.length > 0
+				? `
+            <table class="w-full text-sm">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">模型</th>
+                        <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">请求数</th>
+                        <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">总Token</th>
+                        <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">总消费</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    ${models
+											.map(
+												(m) => `
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-2 text-gray-900">${escapeHtml(m.model)}</td>
+                            <td class="px-4 py-2 text-right text-gray-600">${m.request_count || 0}</td>
+                            <td class="px-4 py-2 text-right text-gray-600">${((m.total_input_tokens || 0) + (m.total_output_tokens || 0)).toLocaleString()}</td>
+                            <td class="px-4 py-2 text-right text-gray-900 font-medium">$${(m.total_cost || 0).toFixed(4)}</td>
+                        </tr>
+                    `,
+											)
+											.join("")}
+                </tbody>
+            </table>
+        `
+				: '<div class="text-center py-8 text-gray-500">暂无模型使用数据</div>';
+		document.getElementById("userStatsModelTable").innerHTML = tableHtml;
+	} catch (error) {
+		console.error("Load user stats error:", error);
+		showToast(`加载统计失败: ${error.message}`, "error");
+	}
+}
+
+window.showUserStatsModal = _showUserStatsModal;
