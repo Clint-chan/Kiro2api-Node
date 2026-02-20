@@ -149,39 +149,59 @@ function renderUsersPage() {
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422A12.083 12.083 0 0112 20.055a12.083 12.083 0 01-6.16-9.477L12 14z"/>
                                             </svg>
                                         </button>
-                                        <button
-                                            type="button"
-                                            data-user-action="view-stats"
-                                            data-user-id="${u.id}"
-                                            data-username="${escapeHtml(u.username)}"
-                                            class="p-1.5 text-cyan-600 hover:bg-cyan-50 rounded transition" title="查看统计">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                                            </svg>
-                                        </button>
-                                        <button onclick="refreshUserStats('${u.id}')" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition" title="刷新统计">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                                            </svg>
-                                        </button>
-                                        ${
-																					u.status === "active"
-																						? `<button onclick="toggleUserStatus('${u.id}', 'suspended')" class="p-1.5 text-orange-600 hover:bg-orange-50 rounded transition" title="禁用">
+                                        <div class="relative inline-block">
+                                            <button
+                                                type="button"
+                                                onclick="toggleUserActionsMenu(event, '${u.id}')"
+                                                class="p-1.5 text-gray-600 hover:bg-gray-100 rounded transition" title="更多操作">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
                                                 </svg>
-                                            </button>`
-																						: `<button onclick="toggleUserStatus('${u.id}', 'active')" class="p-1.5 text-green-600 hover:bg-green-50 rounded transition" title="启用">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                                </svg>
-                                            </button>`
-																				}
-                                        <button onclick="deleteUser('${u.id}')" class="p-1.5 text-red-600 hover:bg-red-50 rounded transition" title="删除">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                            </svg>
-                                        </button>
+                                            </button>
+                                            <div id="user-actions-menu-${u.id}" class="hidden absolute right-0 mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                                                <button
+                                                    type="button"
+                                                    data-user-action="view-stats"
+                                                    data-user-id="${u.id}"
+                                                    data-username="${escapeHtml(u.username)}"
+                                                    class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                                                    <svg class="w-4 h-4 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                                                    </svg>
+                                                    查看统计
+                                                </button>
+                                                <button
+                                                    onclick="refreshUserStats('${u.id}')"
+                                                    class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                                                    <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                                    </svg>
+                                                    刷新统计
+                                                </button>
+                                                <div class="border-t border-gray-100 my-1"></div>
+                                                ${
+																									u.status === "active"
+																										? `<button onclick="toggleUserStatus('${u.id}', 'suspended')" class="w-full px-4 py-2 text-left text-sm text-orange-600 hover:bg-orange-50 flex items-center gap-2">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                                                    </svg>
+                                                    禁用用户
+                                                </button>`
+																										: `<button onclick="toggleUserStatus('${u.id}', 'active')" class="w-full px-4 py-2 text-left text-sm text-green-600 hover:bg-green-50 flex items-center gap-2">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                    </svg>
+                                                    启用用户
+                                                </button>`
+																								}
+                                                <button onclick="deleteUser('${u.id}')" class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                    </svg>
+                                                    删除用户
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </td>
                             </tr>
@@ -194,6 +214,27 @@ function renderUsersPage() {
 
 	bindUserActionButtons(container);
 }
+
+window.toggleUserActionsMenu = (event, userId) => {
+	event.stopPropagation();
+	const menu = document.getElementById(`user-actions-menu-${userId}`);
+	const allMenus = document.querySelectorAll('[id^="user-actions-menu-"]');
+
+	allMenus.forEach((m) => {
+		if (m.id !== `user-actions-menu-${userId}`) {
+			m.classList.add("hidden");
+		}
+	});
+
+	menu.classList.toggle("hidden");
+};
+
+document.addEventListener("click", () => {
+	const allMenus = document.querySelectorAll('[id^="user-actions-menu-"]');
+	allMenus.forEach((m) => {
+		m.classList.add("hidden");
+	});
+});
 
 function renderUsersPageNumbers(totalPages) {
 	const container = document.getElementById("users-page-numbers");
