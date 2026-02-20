@@ -71,6 +71,10 @@ function formatNumber(n) {
 	return n.toString();
 }
 
+function formatNumberNoAbbrev(n) {
+	return n.toLocaleString();
+}
+
 function formatPercent(value) {
 	const num = Number(value);
 	if (!Number.isFinite(num)) return "0.0%";
@@ -125,7 +129,10 @@ async function loadStatus() {
 		);
 
 		// 今日统计
-		setElementText("today-requests", formatNumber(stats.today?.requests || 0));
+		setElementText(
+			"today-requests",
+			formatNumberNoAbbrev(stats.today?.requests || 0),
+		);
 		setElementText(
 			"today-revenue",
 			`$${(stats.today?.revenue || 0).toFixed(2)}`,
