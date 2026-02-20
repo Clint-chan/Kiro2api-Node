@@ -357,7 +357,7 @@ export class AccountPool {
 
 		const results = [];
 
-		// 并发刷新，每次最多 50 个，使用 Promise.allSettled 避免单个失败影响整体\n		const batchSize = 50;
+		const batchSize = 50;
 		for (let i = 0; i < accounts.length; i += batchSize) {
 			const batch = accounts.slice(i, i + batchSize);
 			const batchPromises = batch.map(async ([id, account]) => {

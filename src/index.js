@@ -211,6 +211,7 @@ async function startServer() {
 						role: user.role,
 						balance: user.balance,
 						isSystemAdmin: user.isSystemAdmin,
+						adminPath: user.adminPath || null,
 					},
 				});
 			},

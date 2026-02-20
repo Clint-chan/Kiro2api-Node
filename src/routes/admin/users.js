@@ -367,7 +367,7 @@ export function createUserAdminRouter(db, billing) {
 			const result = billing.recharge(
 				req.params.id,
 				numericAmount,
-				req.admin.id,
+				req.authUser?.id || "system",
 				notes,
 			);
 
