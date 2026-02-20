@@ -158,7 +158,7 @@ function renderUsersPage() {
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
                                                 </svg>
                                             </button>
-                                            <div id="user-actions-menu-${u.id}" class="hidden absolute right-0 mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                                            <div id="user-actions-menu-${u.id}" class="hidden opacity-0 scale-95 absolute right-0 mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 transition-all duration-150 ease-out origin-top-right">
                                                 <button
                                                     type="button"
                                                     data-user-action="view-stats"
@@ -222,17 +222,33 @@ window.toggleUserActionsMenu = (event, userId) => {
 
 	allMenus.forEach((m) => {
 		if (m.id !== `user-actions-menu-${userId}`) {
-			m.classList.add("hidden");
+			m.classList.remove("opacity-100", "scale-100");
+			m.classList.add("opacity-0", "scale-95");
+			setTimeout(() => m.classList.add("hidden"), 150);
 		}
 	});
 
-	menu.classList.toggle("hidden");
+	if (menu.classList.contains("hidden")) {
+		menu.classList.remove("hidden");
+		setTimeout(() => {
+			menu.classList.remove("opacity-0", "scale-95");
+			menu.classList.add("opacity-100", "scale-100");
+		}, 10);
+	} else {
+		menu.classList.remove("opacity-100", "scale-100");
+		menu.classList.add("opacity-0", "scale-95");
+		setTimeout(() => menu.classList.add("hidden"), 150);
+	}
 };
 
 document.addEventListener("click", () => {
 	const allMenus = document.querySelectorAll('[id^="user-actions-menu-"]');
 	allMenus.forEach((m) => {
-		m.classList.add("hidden");
+		if (!m.classList.contains("hidden")) {
+			m.classList.remove("opacity-100", "scale-100");
+			m.classList.add("opacity-0", "scale-95");
+			setTimeout(() => m.classList.add("hidden"), 150);
+		}
 	});
 });
 
