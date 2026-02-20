@@ -386,6 +386,9 @@ async function showPermissionModal(userId, username) {
 	currentPermissionUserId = userId;
 	document.getElementById("manage-username").textContent = username;
 
+	switchManageTab("permission");
+	showModal("userManageModal");
+
 	document.querySelectorAll(".channel-checkbox").forEach((cb) => {
 		cb.checked = false;
 	});
@@ -420,9 +423,6 @@ async function showPermissionModal(userId, username) {
 	} catch (e) {
 		showToast(`加载权限失败: ${e.message}`, "error");
 	}
-
-	switchManageTab("permission");
-	showModal("userManageModal");
 }
 
 function updateModelCheckboxes() {
