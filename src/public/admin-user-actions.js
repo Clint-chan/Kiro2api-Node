@@ -277,16 +277,6 @@ function _resetCreateUserForm() {
 	if (window.updatePackagePreview) window.updatePackagePreview();
 }
 
-function showRechargeModal(userId, username, balance) {
-	currentRechargeUserId = userId;
-	document.getElementById("recharge-username").textContent = username;
-	document.getElementById("recharge-balance").textContent =
-		`$${balance.toFixed(4)}`;
-	document.getElementById("recharge-amount").value = "";
-	document.getElementById("recharge-notes").value = "";
-	showModal("rechargeModal");
-}
-
 async function _doRecharge() {
 	const amount = parseFloat(document.getElementById("recharge-amount").value);
 	const notes = document.getElementById("recharge-notes").value.trim();
@@ -301,7 +291,7 @@ async function _doRecharge() {
 			method: "POST",
 			body: JSON.stringify({ amount, notes }),
 		});
-		hideModal("rechargeModal");
+		hideModal("userManageModal");
 		loadUsers();
 		showToast(amount > 0 ? "额度增加成功" : "额度扣减成功", "success");
 	} catch (e) {
@@ -545,54 +535,6 @@ async function _saveUserPermissions() {
 	}
 }
 
-function showSubscriptionModal(userId, username) {
-	currentSubscriptionUserId = userId;
-	document.getElementById("sub-username").textContent = username;
-
-	document.getElementById("sub-type").value = "";
-	document.getElementById("sub-quota").value = "";
-	document.getElementById("sub-duration").value = "";
-	document.querySelectorAll('input[name="sub-type-radio"]').forEach((r) => {
-		r.checked = false;
-	});
-	document.querySelectorAll(".duration-btn").forEach((btn) => {
-		btn.classList.remove(
-			"border-purple-500",
-			"bg-purple-50",
-			"text-purple-600",
-			"border-blue-500",
-			"bg-blue-50",
-			"text-blue-600",
-		);
-	});
-	document.getElementById("subscription-preview").classList.add("hidden");
-	document
-		.getElementById("subscription-preview-empty")
-		?.classList.remove("hidden");
-
-	fetchApi(`/api/admin/users/${userId}/subscription`)
-		.then((data) => {
-			const sub = data.data;
-			if (sub.subscription_type && sub.subscription_type !== "none") {
-				document.getElementById("sub-type").value = sub.subscription_type;
-				document.getElementById("sub-quota").value =
-					sub.subscription_quota || "";
-
-				const radio = document.querySelector(
-					`input[name="sub-type-radio"][value="${sub.subscription_type}"]`,
-				);
-				if (radio) radio.checked = true;
-
-				updatePreview();
-			}
-		})
-		.catch((e) => {
-			console.error("Load subscription error:", e);
-		});
-
-	showModal("subscriptionModal");
-}
-
 function _updateSubscriptionType(type) {
 	document.getElementById("sub-type").value = type;
 	updatePreview();
@@ -722,7 +664,7 @@ async function _setSubscription() {
 				body: JSON.stringify({ type, quota, duration: months }),
 			},
 		);
-		hideModal("subscriptionModal");
+		hideModal("userManageModal");
 		loadUsers();
 		showToast("订阅设置成功", "success");
 	} catch (e) {
@@ -745,7 +687,7 @@ async function _cancelSubscription() {
 				method: "DELETE",
 			},
 		);
-		hideModal("subscriptionModal");
+		hideModal("userManageModal");
 		loadUsers();
 		showToast("订阅已取消", "success");
 	} catch (e) {
@@ -937,3 +879,97 @@ async function _showUserStatsModal(userId, username) {
 }
 
 window.showUserStatsModal = _showUserStatsModal;
+
+function switchManageTab(tab) {
+	const tabs = ["recharge", "subscription"];
+	tabs.forEach((t) => {
+		const btn = document.getElementById(`tab-btn-${t}`);
+		const content = document.getElementById(`tab-content-${t}`);
+
+		if (t === tab) {
+			btn.classList.add("border-blue-500", "text-blue-600");
+			btn.classList.remove("border-transparent", "text-gray-600");
+			content.classList.remove("hidden");
+		} else {
+			btn.classList.remove("border-blue-500", "text-blue-600");
+			btn.classList.add("border-transparent", "text-gray-600");
+			content.classList.add("hidden");
+		}
+	});
+
+	if (tab === "recharge") {
+		document.getElementById("recharge-submit-btn").classList.remove("hidden");
+		document.getElementById("subscription-submit-btn").classList.add("hidden");
+		document.getElementById("cancel-subscription-btn").classList.add("hidden");
+	} else {
+		document.getElementById("recharge-submit-btn").classList.add("hidden");
+		document
+			.getElementById("subscription-submit-btn")
+			.classList.remove("hidden");
+		document
+			.getElementById("cancel-subscription-btn")
+			.classList.remove("hidden");
+	}
+}
+
+function showRechargeModal(userId, username, balance) {
+	currentRechargeUserId = userId;
+	document.getElementById("manage-username").textContent = username;
+	document.getElementById("recharge-balance").textContent =
+		`$${balance.toFixed(4)}`;
+	document.getElementById("recharge-amount").value = "";
+	document.getElementById("recharge-notes").value = "";
+	switchManageTab("recharge");
+	showModal("userManageModal");
+}
+
+function showSubscriptionModal(userId, username) {
+	currentSubscriptionUserId = userId;
+	document.getElementById("manage-username").textContent = username;
+
+	document.getElementById("sub-type").value = "";
+	document.getElementById("sub-quota").value = "";
+	document.getElementById("sub-duration").value = "";
+	document.querySelectorAll('input[name="sub-type-radio"]').forEach((r) => {
+		r.checked = false;
+	});
+	document.querySelectorAll(".duration-btn").forEach((btn) => {
+		btn.classList.remove(
+			"border-purple-500",
+			"bg-purple-50",
+			"text-purple-600",
+			"border-blue-500",
+			"bg-blue-50",
+			"text-blue-600",
+		);
+	});
+	document.getElementById("subscription-preview").classList.add("hidden");
+	document
+		.getElementById("subscription-preview-empty")
+		?.classList.remove("hidden");
+
+	fetchApi(`/api/admin/users/${userId}/subscription`)
+		.then((data) => {
+			const sub = data.data;
+			if (sub.subscription_type && sub.subscription_type !== "none") {
+				document.getElementById("sub-type").value = sub.subscription_type;
+				document.getElementById("sub-quota").value =
+					sub.subscription_quota || "";
+
+				const radio = document.querySelector(
+					`input[name="sub-type-radio"][value="${sub.subscription_type}"]`,
+				);
+				if (radio) radio.checked = true;
+
+				updatePreview();
+			}
+		})
+		.catch((e) => {
+			console.error("Load subscription error:", e);
+		});
+
+	switchManageTab("subscription");
+	showModal("userManageModal");
+}
+
+window.switchManageTab = switchManageTab;

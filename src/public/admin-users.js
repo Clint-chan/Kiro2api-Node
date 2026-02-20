@@ -9,12 +9,7 @@ function bindUserActionButtons(container) {
 			event.stopPropagation();
 
 			const action = button.dataset.userAction;
-			if (action === "subscription") {
-				showSubscriptionModalFromButton(button);
-				return;
-			}
-
-			if (action === "recharge") {
+			if (action === "manage-account") {
 				showRechargeModalFromButton(button);
 				return;
 			}
@@ -134,23 +129,13 @@ function renderUsersPage() {
                                     <div class="flex items-center gap-2">
                                         <button
                                             type="button"
-                                            data-user-action="subscription"
-                                            data-user-id="${u.id}"
-                                            data-username="${escapeHtml(u.username)}"
-                                            class="p-1.5 text-purple-600 hover:bg-purple-50 rounded transition" title="订阅管理">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                            </svg>
-                                        </button>
-                                        <button
-                                            type="button"
-                                            data-user-action="recharge"
+                                            data-user-action="manage-account"
                                             data-user-id="${u.id}"
                                             data-username="${escapeHtml(u.username)}"
                                             data-balance="${Number(u.balance) || 0}"
-                                            class="p-1.5 text-green-600 hover:bg-green-50 rounded transition" title="修改额度">
+                                            class="p-1.5 text-purple-600 hover:bg-purple-50 rounded transition" title="账户管理">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                                             </svg>
                                         </button>
                                         <button
