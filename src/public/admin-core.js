@@ -1292,12 +1292,59 @@ async function _refreshUsage(id) {
 }
 
 async function _refreshAllUsage() {
+	const refreshBtn = document.getElementById("refreshAllUsageBtn");
+	const refreshIcon = document.getElementById("refreshAllUsageIcon");
+	const refreshText = document.getElementById("refreshAllUsageText");
+	const notice = document.getElementById("refreshAllUsageNotice");
+	const noticeText = document.getElementById("refreshAllUsageNoticeText");
+	const noticeElapsed = document.getElementById("refreshAllUsageElapsed");
+	const noticeDot = document.getElementById("refreshAllUsageDot");
+	const noticeBar = document.getElementById("refreshAllUsageBar");
+	let timeoutId;
+	let progressTimer;
+	const startedAt = Date.now();
+
+	const updateElapsed = () => {
+		if (!noticeElapsed) return;
+		const elapsedSeconds = Math.max(
+			0,
+			Math.floor((Date.now() - startedAt) / 1000),
+		);
+		const mm = String(Math.floor(elapsedSeconds / 60)).padStart(2, "0");
+		const ss = String(elapsedSeconds % 60).padStart(2, "0");
+		noticeElapsed.textContent = `${mm}:${ss}`;
+	};
+
+	if (refreshBtn) {
+		refreshBtn.disabled = true;
+	}
+	if (refreshIcon) {
+		refreshIcon.classList.add("animate-spin");
+	}
+	if (refreshText) {
+		refreshText.textContent = "刷新中...";
+	}
+	if (notice) {
+		notice.classList.remove("hidden");
+	}
+	if (noticeText) {
+		noticeText.textContent = "正在刷新全部账号额度，请勿关闭页面...";
+	}
+	if (noticeDot) {
+		noticeDot.classList.remove("bg-red-500", "bg-green-500");
+		noticeDot.classList.add("bg-blue-500", "animate-pulse");
+	}
+	if (noticeBar) {
+		noticeBar.classList.remove("bg-red-500", "bg-green-500");
+		noticeBar.classList.add("bg-blue-500", "animate-pulse", "w-1/3");
+	}
+	updateElapsed();
+	progressTimer = setInterval(updateElapsed, 1000);
+
 	try {
 		showToast("正在刷新所有账号，请稍候...", "info");
-
-		// 设置较长的超时时间（2分钟）
 		const controller = new AbortController();
-		const timeoutId = setTimeout(() => controller.abort(), 120000);
+		timeoutId = setTimeout(() => controller.abort(), 120000);
 
 		const response = await fetch("/api/admin/accounts/refresh-all-usage", {
 			method: "POST",
@@ -1307,8 +1354,6 @@ async function _refreshAllUsage() {
 			},
 			signal: controller.signal,
 		});
-
-		clearTimeout(timeoutId);
 
 		if (!response.ok) {
 			const error = await response.json();
@@ -1323,13 +1368,71 @@ async function _refreshAllUsage() {
 			(r) => r.usage && !r.usage.error,
 		).length;
 		const failCount = data.data.filter((r) => r.usage?.error).length;
+		const totalCount = data.data.length;
 
 		showToast(`刷新完成！成功: ${successCount}, 失败: ${failCount}`, "success");
+		if (noticeText) {
+			noticeText.textContent = `刷新完成：${successCount}/${totalCount} 成功，${failCount} 失败`;
+		}
+		if (noticeDot) {
+			noticeDot.classList.remove("bg-blue-500", "animate-pulse", "bg-red-500");
+			noticeDot.classList.add("bg-green-500");
+		}
+		if (noticeBar) {
+			noticeBar.classList.remove(
+				"bg-blue-500",
+				"animate-pulse",
+				"bg-red-500",
+				"w-1/3",
+			);
+			noticeBar.classList.add("bg-green-500", "w-full");
+		}
 	} catch (e) {
 		if (e.name === "AbortError") {
 			showToast("刷新超时，请稍后重试", "error");
+			if (noticeText) {
+				noticeText.textContent = "刷新超时，请稍后重试";
+			}
 		} else {
 			showToast(`刷新失败: ${e.message}`, "error");
+			if (noticeText) {
+				noticeText.textContent = `刷新失败：${e.message}`;
+			}
+		}
+		if (noticeDot) {
+			noticeDot.classList.remove(
+				"bg-blue-500",
+				"animate-pulse",
+				"bg-green-500",
+			);
+			noticeDot.classList.add("bg-red-500");
+		}
+		if (noticeBar) {
+			noticeBar.classList.remove(
+				"bg-blue-500",
+				"animate-pulse",
+				"bg-green-500",
+				"w-full",
+				"w-1/3",
+			);
+			noticeBar.classList.add("bg-red-500", "w-full");
+		}
+	} finally {
+		if (progressTimer) {
+			clearInterval(progressTimer);
+		}
+		updateElapsed();
+		if (timeoutId) {
+			clearTimeout(timeoutId);
+		}
+		if (refreshBtn) {
+			refreshBtn.disabled = false;
+		}
+		if (refreshIcon) {
+			refreshIcon.classList.remove("animate-spin");
+		}
+		if (refreshText) {
+			refreshText.textContent = "刷新全部额度";
 		}
 	}
 }
@@ -1355,7 +1458,8 @@ async function _setStrategy(value) {
 	}
 }
 
-function _switchTab(tab) {
+function _switchTab(tab, options = {}) {
+	const skipLoad = Boolean(options.skipLoad);
 	document.querySelectorAll(".tab-btn").forEach((t) => {
 		t.classList.remove("border-blue-500", "text-blue-600");
 		t.classList.add("border-transparent", "text-gray-500");
@@ -1370,17 +1474,17 @@ function _switchTab(tab) {
 		c.classList.add("hidden");
 	});
 	document.getElementById(`tab-${tab}`).classList.remove("hidden");
-	if (tab === "users") loadUsers();
-	if (tab === "accounts") loadAccounts();
+	if (tab === "users" && !skipLoad) loadUsers();
+	if (tab === "accounts" && !skipLoad) loadAccounts();
 	if (tab === "antigravity-accounts") {
 		// 只在没有缓存数据时才加载
-		if (cliproxyAntigravityAccounts.length === 0) {
+		if (cliproxyAntigravityAccounts.length === 0 && !skipLoad) {
 			loadCliProxyAccounts();
 		} else {
 			renderCliProxyAccounts();
 		}
 	}
-	if (tab === "logs") {
+	if (tab === "logs" && !skipLoad) {
 		if (typeof initLogFilterEvents === "function") {
 			initLogFilterEvents();
 		}
@@ -2333,6 +2437,7 @@ window.fetchCliProxyModels = _fetchCliProxyModels;
 window.showModelCooldownConfig = _showModelCooldownConfig;
 window.formatUserChannelBadges = _formatUserChannelBadges;
 window.refreshUsage = _refreshUsage;
+window.refreshAllUsage = _refreshAllUsage;
 window.disableAccount = _disableAccount;
 window.enableAccount = _enableAccount;
 window.removeAccount = _removeAccount;

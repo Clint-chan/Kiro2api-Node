@@ -21,15 +21,17 @@ function updateUsernamePreview() {
 function _selectPackage(value) {
 	const pkgOptions = document.getElementById("package-options");
 	const customRow = document.getElementById("custom-amount-row");
+	const amountInput = document.getElementById("new-package-amount");
 
 	if (value === "none") {
-		pkgOptions.classList.add("hidden");
+		if (pkgOptions) pkgOptions.classList.add("hidden");
 	} else {
-		pkgOptions.classList.remove("hidden");
+		if (pkgOptions) pkgOptions.classList.remove("hidden");
 		if (value === "custom") {
-			customRow.classList.remove("hidden");
+			if (customRow) customRow.classList.remove("hidden");
+			if (amountInput) amountInput.focus();
 		} else {
-			customRow.classList.add("hidden");
+			if (customRow) customRow.classList.add("hidden");
 		}
 		_updatePackagePreview();
 	}
@@ -54,7 +56,15 @@ function _updatePackagePreview() {
 	const pkgValue = document.querySelector(
 		'input[name="new-package"]:checked',
 	)?.value;
-	if (!pkgValue || pkgValue === "none") return;
+	if (!pkgValue || pkgValue === "none") {
+		const amountEl = document.getElementById("preview-pkg-amount");
+		const monthsEl = document.getElementById("preview-pkg-months");
+		const expiresEl = document.getElementById("preview-pkg-expires");
+		if (amountEl) amountEl.textContent = "-";
+		if (monthsEl) monthsEl.textContent = "-";
+		if (expiresEl) expiresEl.textContent = "-";
+		return;
+	}
 
 	let amount = 0;
 	if (pkgValue === "custom") {
@@ -65,7 +75,7 @@ function _updatePackagePreview() {
 	}
 
 	const months =
-		parseInt(document.getElementById("new-package-months").value, 10) || 1;
+		parseInt(document.getElementById("new-package-months")?.value, 10) || 1;
 
 	const amountEl = document.getElementById("preview-pkg-amount");
 	const monthsEl = document.getElementById("preview-pkg-months");
@@ -93,10 +103,6 @@ function _updatePackagePreview() {
 
 async function _createUser() {
 	const username = document.getElementById("new-username").value.trim();
-	// Validate username and password if manually provided (though password field removed in new UI, let's check logic)
-	// New UI: Username (optional), Count, Balance, Channels, Package
-	// Removed: Password (auto-generated 123456 as per UI hint)
-
 	const count = parseInt(document.getElementById("new-count").value, 10) || 1;
 	const balance = parseFloat(document.getElementById("new-balance").value) || 0;
 
@@ -134,7 +140,7 @@ async function _createUser() {
 			subQuota = parseFloat(pkgValue);
 		}
 		subDuration =
-			parseInt(document.getElementById("new-package-months")?.value, 10) || 0;
+			parseInt(document.getElementById("new-package-months")?.value, 10) || 1; // Default 1 if missing
 
 		if (!subQuota || subQuota <= 0) {
 			showToast("请输入有效的每月额度", "warning");
@@ -152,7 +158,7 @@ async function _createUser() {
 		submitBtn.disabled = true;
 		const spinner = submitBtn.querySelector(".button-spinner");
 		if (spinner) spinner.classList.remove("hidden");
-		const textSpan = submitBtn.querySelector("span");
+		const textSpan = submitBtn.querySelector(".button-text");
 		if (textSpan) textSpan.textContent = "创建中...";
 	}
 
@@ -234,7 +240,7 @@ async function _createUser() {
 			submitBtn.disabled = false;
 			const spinner = submitBtn.querySelector(".button-spinner");
 			if (spinner) spinner.classList.add("hidden");
-			const textSpan = submitBtn.querySelector("span");
+			const textSpan = submitBtn.querySelector(".button-text");
 			if (textSpan) textSpan.textContent = "确认创建";
 		}
 	}
@@ -255,17 +261,20 @@ function _resetCreateUserForm() {
 		'input[name="new-package"][value="none"]',
 	);
 	if (noneRadio) noneRadio.checked = true;
-	// Trigger package UI update
-	if (window.selectPackage) window.selectPackage("none");
 
+	// Reset custom inputs
 	if (el("package-options")) el("package-options").classList.add("hidden");
+	if (el("custom-amount-row")) el("custom-amount-row").classList.add("hidden");
+
 	if (el("new-package-amount")) el("new-package-amount").value = "";
 	if (el("new-package-months")) el("new-package-months").value = "1";
+
 	document.querySelectorAll(".new-pkg-month-btn").forEach((btn) => {
 		btn.classList.remove("border-blue-500", "bg-blue-50", "text-blue-700");
 		btn.classList.add("border-gray-200");
 	});
 	if (window.updateUsernamePreview) window.updateUsernamePreview();
+	if (window.updatePackagePreview) window.updatePackagePreview();
 }
 
 function showRechargeModal(userId, username, balance) {
