@@ -30,7 +30,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 		fetchUsersForAutocomplete();
 	}
 
-	switchTab("users");
+	switchTab("users", { skipLoad: true });
 });
 
 setInterval(() => {
