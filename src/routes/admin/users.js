@@ -211,6 +211,78 @@ export function createUserAdminRouter(db, billing) {
 	});
 
 	/**
+	 * GET /api/admin/users/:id/stats
+	 * Get user statistics (aggregated)
+	 */
+	router.get("/users/:id/stats", (req, res) => {
+		try {
+			const { startDate, endDate } = req.query;
+			const stats = db.getUserStats(req.params.id, startDate, endDate);
+
+			res.json({
+				success: true,
+				data: stats,
+			});
+		} catch (error) {
+			logger.error("Get user stats error", { error });
+			res.status(500).json({
+				error: {
+					type: "internal_error",
+					message: "Failed to retrieve user statistics.",
+				},
+			});
+		}
+	});
+
+	/**
+	 * GET /api/admin/users/:id/stats/daily
+	 * Get user daily statistics
+	 */
+	router.get("/users/:id/stats/daily", (req, res) => {
+		try {
+			const { startDate, endDate } = req.query;
+			const stats = db.getDailyStats(req.params.id, startDate, endDate);
+
+			res.json({
+				success: true,
+				data: stats,
+			});
+		} catch (error) {
+			logger.error("Get user daily stats error", { error });
+			res.status(500).json({
+				error: {
+					type: "internal_error",
+					message: "Failed to retrieve daily statistics.",
+				},
+			});
+		}
+	});
+
+	/**
+	 * GET /api/admin/users/:id/stats/models
+	 * Get user model statistics
+	 */
+	router.get("/users/:id/stats/models", (req, res) => {
+		try {
+			const { startDate, endDate } = req.query;
+			const stats = db.getModelStats(req.params.id, startDate, endDate);
+
+			res.json({
+				success: true,
+				data: stats,
+			});
+		} catch (error) {
+			logger.error("Get user model stats error", { error });
+			res.status(500).json({
+				error: {
+					type: "internal_error",
+					message: "Failed to retrieve model statistics.",
+				},
+			});
+		}
+	});
+
+	/**
 	 * PUT /api/admin/users/:id
 	 * Update user
 	 */
