@@ -384,8 +384,7 @@ const ALL_MODELS = {
 
 async function showPermissionModal(userId, username) {
 	currentPermissionUserId = userId;
-	document.getElementById("permission-username").textContent =
-		`用户：${username}`;
+	document.getElementById("manage-username").textContent = username;
 
 	document.querySelectorAll(".channel-checkbox").forEach((cb) => {
 		cb.checked = false;
@@ -422,7 +421,8 @@ async function showPermissionModal(userId, username) {
 		showToast(`加载权限失败: ${e.message}`, "error");
 	}
 
-	showModal("permissionModal");
+	switchManageTab("permission");
+	showModal("userManageModal");
 }
 
 function updateModelCheckboxes() {
@@ -527,7 +527,7 @@ async function _saveUserPermissions() {
 			}),
 		});
 
-		hideModal("permissionModal");
+		hideModal("userManageModal");
 		await loadUsers();
 		showToast("权限已更新", "success");
 	} catch (e) {
@@ -881,7 +881,7 @@ async function _showUserStatsModal(userId, username) {
 window.showUserStatsModal = _showUserStatsModal;
 
 function switchManageTab(tab) {
-	const tabs = ["recharge", "subscription"];
+	const tabs = ["recharge", "subscription", "permission"];
 	tabs.forEach((t) => {
 		const btn = document.getElementById(`tab-btn-${t}`);
 		const content = document.getElementById(`tab-content-${t}`);
@@ -897,18 +897,22 @@ function switchManageTab(tab) {
 		}
 	});
 
+	document.getElementById("recharge-submit-btn").classList.add("hidden");
+	document.getElementById("subscription-submit-btn").classList.add("hidden");
+	document.getElementById("permission-submit-btn").classList.add("hidden");
+	document.getElementById("cancel-subscription-btn").classList.add("hidden");
+
 	if (tab === "recharge") {
 		document.getElementById("recharge-submit-btn").classList.remove("hidden");
-		document.getElementById("subscription-submit-btn").classList.add("hidden");
-		document.getElementById("cancel-subscription-btn").classList.add("hidden");
-	} else {
-		document.getElementById("recharge-submit-btn").classList.add("hidden");
+	} else if (tab === "subscription") {
 		document
 			.getElementById("subscription-submit-btn")
 			.classList.remove("hidden");
 		document
 			.getElementById("cancel-subscription-btn")
 			.classList.remove("hidden");
+	} else if (tab === "permission") {
+		document.getElementById("permission-submit-btn").classList.remove("hidden");
 	}
 }
 

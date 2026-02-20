@@ -1063,6 +1063,14 @@
                             订阅套餐
                         </div>
                     </button>
+                    <button onclick="switchManageTab('permission')" id="tab-btn-permission" class="flex-1 px-6 py-3 text-sm font-medium text-gray-600 hover:text-gray-900 border-b-2 border-transparent transition">
+                        <div class="flex items-center justify-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                            </svg>
+                            权限管理
+                        </div>
+                    </button>
                 </div>
             </div>
 
@@ -1249,6 +1257,47 @@
                 </div>
             </div>
 
+            <!-- 权限管理 Tab 内容 -->
+            <div id="tab-content-permission" class="flex-1 overflow-y-auto p-6 hidden">
+                <div class="max-w-4xl mx-auto space-y-5">
+                    <div>
+                        <div class="text-sm font-medium text-gray-700 mb-2">渠道权限</div>
+                        <div class="flex items-center gap-4 flex-wrap">
+                            <label class="inline-flex items-center gap-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded transition">
+                                <input type="checkbox" name="perm-channel" value="kiro" id="perm-channel-kiro" class="rounded border-gray-300 text-blue-500 focus:ring-blue-500 channel-checkbox">
+                                <span class="font-medium">Kiro</span>
+                            </label>
+                            <label class="inline-flex items-center gap-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded transition">
+                                <input type="checkbox" name="perm-channel" value="antigravity" id="perm-channel-antigravity" class="rounded border-gray-300 text-purple-500 focus:ring-purple-500 channel-checkbox">
+                                <span class="font-medium">Antigravity</span>
+                            </label>
+                            <label class="inline-flex items-center gap-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded transition">
+                                <input type="checkbox" name="perm-channel" value="codex" id="perm-channel-codex" class="rounded border-gray-300 text-blue-500 focus:ring-blue-500 channel-checkbox">
+                                <span class="font-medium">Codex</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="text-sm font-medium text-gray-700 mb-2">模型白名单（可选）</div>
+                        <div id="perm-models-container" class="max-h-[50vh] overflow-y-auto border border-gray-200 rounded-xl bg-gray-50/50 p-4">
+                        </div>
+                    </div>
+                    <div class="bg-blue-50 border border-blue-100 rounded-lg p-3 flex items-start gap-2">
+                        <svg class="w-4 h-4 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <div class="text-xs text-blue-700 leading-relaxed">
+                            <span class="font-semibold">说明：</span>
+                            <ul class="list-disc list-inside mt-1 space-y-0.5">
+                                <li>勾选渠道后，该渠道的模型配置才会生效。</li>
+                                <li>若某渠道下<strong>未勾选任何模型</strong>，则该渠道所有模型均可用（黑名单模式）。</li>
+                                <li>Claude 渠道默认开启。</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- 底部按钮 -->
             <div class="p-6 border-t border-gray-100 bg-white flex items-center justify-between gap-3 z-10">
                 <button onclick="cancelSubscription()" id="cancel-subscription-btn" class="hidden px-5 py-2.5 border border-red-200 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition shadow-sm">
@@ -1271,6 +1320,12 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                         </svg>
                         确认设置
+                    </button>
+                    <button onclick="saveUserPermissions()" id="permission-submit-btn" class="hidden px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl text-sm font-medium shadow-lg shadow-indigo-500/30 transition transform hover:-translate-y-0.5 flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        保存权限
                     </button>
                 </div>
             </div>
