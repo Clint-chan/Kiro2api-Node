@@ -79,10 +79,16 @@ export class SubscriptionManager {
 			);
 
 		const balanceBefore = user.balance;
-		const adjustedBalanceBase = hadActiveSubscription
+
+		// 计算用户的充值余额（排除旧套餐额度）
+		// 如果有旧订阅，从当前余额中减去旧套餐额度，得到纯充值余额
+		// 如果没有旧订阅，当前余额就是纯充值余额
+		const rechargeBalance = hadActiveSubscription
 			? Math.max(0, balanceBefore - previousQuota)
 			: balanceBefore;
-		const balanceAfter = adjustedBalanceBase + quota;
+
+		// 新余额 = 充值余额 + 新套餐额度
+		const balanceAfter = rechargeBalance + quota;
 
 		this.db.db
 			.prepare(`
