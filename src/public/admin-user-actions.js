@@ -918,6 +918,8 @@ function switchManageTab(tab) {
 
 function showRechargeModal(userId, username, balance) {
 	currentRechargeUserId = userId;
+	currentSubscriptionUserId = userId;
+	currentPermissionUserId = userId;
 	document.getElementById("manage-username").textContent = username;
 	document.getElementById("recharge-balance").textContent =
 		`$${balance.toFixed(4)}`;
