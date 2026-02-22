@@ -99,8 +99,50 @@ function renderUsersPage() {
                                     ${
 																			u.subscription_type &&
 																			u.subscription_type !== "none"
-																				? `<div class="mt-1"><span class="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">${u.subscription_type === "daily" ? "每日套餐" : "每月套餐"}</span></div>`
-																				: ""
+																				? (
+																						() => {
+																							const expiresAt =
+																								u.subscription_expires_at
+																									? new Date(
+																											u.subscription_expires_at,
+																										)
+																									: null;
+																							const now = new Date();
+																							const isExpired =
+																								expiresAt && expiresAt < now;
+																							const daysLeft = expiresAt
+																								? Math.ceil(
+																										(expiresAt - now) /
+																											(1000 * 60 * 60 * 24),
+																									)
+																								: 0;
+																							const typeText =
+																								u.subscription_type === "daily"
+																									? "每日套餐"
+																									: "每月套餐";
+																							const expiresText = expiresAt
+																								? expiresAt.toLocaleDateString(
+																										"zh-CN",
+																										{
+																											month: "2-digit",
+																											day: "2-digit",
+																										},
+																									)
+																								: "";
+																							const statusColor = isExpired
+																								? "bg-red-100 text-red-700"
+																								: daysLeft <= 7
+																									? "bg-orange-100 text-orange-700"
+																									: "bg-purple-100 text-purple-700";
+																							const statusIcon = isExpired
+																								? "⚠️"
+																								: daysLeft <= 7
+																									? "⏰"
+																									: "✓";
+																							return `<div class="mt-1"><span class="inline-flex items-center gap-1 px-2 py-0.5 ${statusColor} rounded-full text-xs font-medium" title="到期时间: ${expiresAt ? expiresAt.toLocaleString("zh-CN") : "未知"}">${statusIcon} ${typeText} · ${expiresText}</span></div>`;
+																						}
+																					)()
+																				: `<div class="mt-1"><span class="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs font-medium">免费用户</span></div>`
 																		}
                                 </td>
                                 <td class="px-4 py-4">
