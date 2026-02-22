@@ -50,6 +50,11 @@ export function createUserAdminRouter(db, billing) {
 					notes: user.notes,
 					allowed_channels: user.allowed_channels,
 					allowed_models: user.allowed_models,
+					subscription_type: user.subscription_type,
+					subscription_quota: user.subscription_quota,
+					subscription_expires_at: user.subscription_expires_at,
+					last_reset_at: user.last_reset_at,
+					period_used: user.period_used,
 				}),
 			);
 
