@@ -389,40 +389,8 @@ async function showPermissionModal(userId, username) {
 	switchManageTab("permission");
 	showModal("userManageModal");
 
-	document.querySelectorAll(".channel-checkbox").forEach((cb) => {
-		cb.checked = false;
-	});
-
-	try {
-		const response = await fetchApi(`/api/admin/users/${userId}`);
-		const user = response?.data || {};
-		const channels =
-			Array.isArray(user.allowed_channels) && user.allowed_channels.length > 0
-				? user.allowed_channels
-				: ["kiro"];
-
-		channels.forEach((ch) => {
-			const cb = document.getElementById(`perm-channel-${ch}`);
-			if (cb) cb.checked = true;
-		});
-
-		if (document.querySelectorAll(".channel-checkbox:checked").length === 0) {
-			const kiroCb = document.getElementById("perm-channel-kiro");
-			if (kiroCb) kiroCb.checked = true;
-		}
-
-		window.currentUserModels = Array.isArray(user.allowed_models)
-			? user.allowed_models
-			: [];
-		updateModelCheckboxes();
-
-		document.querySelectorAll(".channel-checkbox").forEach((cb) => {
-			cb.removeEventListener("change", updateModelCheckboxes);
-			cb.addEventListener("change", updateModelCheckboxes);
-		});
-	} catch (e) {
-		showToast(`加载权限失败: ${e.message}`, "error");
-	}
+	window.permissionTabInitialized = false;
+	await initPermissionTab(userId);
 }
 
 function updateModelCheckboxes() {
@@ -913,6 +881,48 @@ function switchManageTab(tab) {
 			.classList.remove("hidden");
 	} else if (tab === "permission") {
 		document.getElementById("permission-submit-btn").classList.remove("hidden");
+		if (currentPermissionUserId && !window.permissionTabInitialized) {
+			initPermissionTab(currentPermissionUserId);
+		}
+	}
+}
+
+async function initPermissionTab(userId) {
+	window.permissionTabInitialized = true;
+
+	document.querySelectorAll(".channel-checkbox").forEach((cb) => {
+		cb.checked = false;
+	});
+
+	try {
+		const response = await fetchApi(`/api/admin/users/${userId}`);
+		const user = response?.data || {};
+		const channels =
+			Array.isArray(user.allowed_channels) && user.allowed_channels.length > 0
+				? user.allowed_channels
+				: ["kiro"];
+
+		channels.forEach((ch) => {
+			const cb = document.getElementById(`perm-channel-${ch}`);
+			if (cb) cb.checked = true;
+		});
+
+		if (document.querySelectorAll(".channel-checkbox:checked").length === 0) {
+			const kiroCb = document.getElementById("perm-channel-kiro");
+			if (kiroCb) kiroCb.checked = true;
+		}
+
+		window.currentUserModels = Array.isArray(user.allowed_models)
+			? user.allowed_models
+			: [];
+		updateModelCheckboxes();
+
+		document.querySelectorAll(".channel-checkbox").forEach((cb) => {
+			cb.removeEventListener("change", updateModelCheckboxes);
+			cb.addEventListener("change", updateModelCheckboxes);
+		});
+	} catch (e) {
+		showToast(`加载权限失败: ${e.message}`, "error");
 	}
 }
 
@@ -920,6 +930,7 @@ function showRechargeModal(userId, username, balance) {
 	currentRechargeUserId = userId;
 	currentSubscriptionUserId = userId;
 	currentPermissionUserId = userId;
+	window.permissionTabInitialized = false;
 	document.getElementById("manage-username").textContent = username;
 	document.getElementById("recharge-balance").textContent =
 		`$${balance.toFixed(4)}`;
